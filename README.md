@@ -20,7 +20,7 @@
 
 > **Made by the Sanskar**
 
-SpendCalc is built for real everyday bills rather than classroom-demo arithmetic. It keeps the calculation engine separate from Android UI/infrastructure, uses `BigDecimal` for money, works without a required network connection, and provides local history, templates, accessibility settings, and export options.
+SpendCalc is built for everyday expense calculations rather than demo arithmetic. It keeps finance rules separate from Android UI/infrastructure, uses `BigDecimal` for money, works without a required network connection or account, and provides local history, templates, explicit backup/restore, accessibility settings, and offline export options.
 
 ## Screenshots
 
@@ -30,20 +30,35 @@ Verified screenshots are intentionally captured from real release-candidate buil
 
 ### Expense calculation
 
-- Itemized expense lines with quick totals.
+- Itemized expense lines with live totals.
 - Discount, tax, tip, and service-charge percentages.
-- Split-bill calculation for one or more people.
+- Discount capped at 100% so valid input cannot produce a negative discounted base.
+- Split-bill calculation for 1 through 1,000,000 people.
 - Manual exchange-rate conversion with three-letter currency codes.
-- Explicit charge order documented in the architecture guide.
 - Precision-safe `BigDecimal` arithmetic and centralized rounding policy.
-- Live receipt-style result view.
+- Bounded decimal precision/scale and input lengths to prevent pathological numeric expansion.
+- Receipt-style result view.
 
-### Save and reuse
+### Save, find, and reuse
 
 - Room-backed calculation history.
-- Individual history deletion and clear-all confirmation.
+- Local history search by labels, currencies, totals, and per-person values.
+- Individual history deletion with Snackbar Undo.
+- Clear-all confirmation.
 - Optional history auto-delete after 30 or 90 days.
 - Saved templates for common discount/tax/tip/service/split/currency settings.
+
+### Backup and restore
+
+- Explicit user-driven local backup for history, templates, and preferences.
+- Android Storage Access Framework document creation/selection; no broad storage permission.
+- Versioned, bounded backup format with URL-safe Base64 text fields.
+- SHA-256 accidental-corruption detection.
+- Strict schema, record, identifier, timestamp, currency, split, checksum, and decimal validation.
+- Restore confirmation before replacing current data.
+- Transactional Room replacement plus compensating rollback for the separate DataStore preference write when a multi-store restore fails.
+
+See [`docs/backup-restore.md`](docs/backup-restore.md) and [`docs/security-backup.md`](docs/security-backup.md).
 
 ### Export
 
@@ -51,6 +66,8 @@ Verified screenshots are intentionally captured from real release-candidate buil
 - CSV export with quote escaping and spreadsheet-formula neutralization for text cells.
 - Offline PDF receipt creation using Android `PdfDocument`.
 - Cache-file sharing through a non-exported Android `FileProvider` with temporary read permission.
+- Canonical-path containment prevents sharing files outside the private export cache directory.
+- Backup/CSV/PDF file I/O runs off the main thread.
 
 ### UI and accessibility
 
@@ -58,7 +75,7 @@ Verified screenshots are intentionally captured from real release-candidate buil
 - Responsive phone/tablet layout.
 - Light, dark, and system theme modes.
 - Large-text preference.
-- Reduced-motion preference and no fake loading delays.
+- Reduced-motion preference that removes navigation transitions when enabled.
 - Externalized user-facing strings for localization readiness.
 - Clear validation text in addition to color/state styling.
 - First-run onboarding.
@@ -66,11 +83,12 @@ Verified screenshots are intentionally captured from real release-candidate buil
 
 ### Privacy
 
-- Core calculation requires no account.
-- Core calculation requires no network.
+- Core use requires no account.
+- Core calculation, history, templates, backup encoding, and receipt generation require no network.
 - Current manifest does not request Android Internet permission.
 - History/templates/preferences live in app-local storage.
 - No analytics or advertising SDK is required by the current implementation.
+- Android system-managed backup/device transfer is documented separately from user-created backup files.
 
 See [`PRIVACY.md`](PRIVACY.md) and [`SECURITY.md`](SECURITY.md).
 
@@ -94,7 +112,7 @@ See [`PRIVACY.md`](PRIVACY.md) and [`SECURITY.md`](SECURITY.md).
 - Preferences DataStore
 - Kotlin coroutines/Flow
 - Android `PdfDocument`
-- JUnit + Compose UI tests
+- JUnit + Android/Compose UI tests
 - GitHub Actions + CodeQL + Dependabot
 
 ## Architecture
@@ -110,10 +128,10 @@ Domain calculation + repositories
    ↓
 Room / DataStore
 
-Platform adapters: FileProvider, PDF, share intents, external links
+Platform adapters: document picker, FileProvider, PDF, share intents, external links
 ```
 
-The domain layer contains the finance rules and does not depend on Compose, Room, Activity, or Android resources.
+The finance domain layer does not depend on Compose, Room, Activity, or Android resources. Backup orchestration coordinates Room and DataStore through explicit repositories rather than bypassing persistence boundaries.
 
 Full details: [`docs/architecture.md`](docs/architecture.md)
 
@@ -122,10 +140,11 @@ Architecture decisions:
 - [`ADR 0001 — BigDecimal finance arithmetic`](docs/adr/0001-use-bigdecimal-for-finance.md)
 - [`ADR 0002 — Local-first core`](docs/adr/0002-local-first-core.md)
 - [`ADR 0003 — Room and DataStore`](docs/adr/0003-room-and-datastore.md)
+- [`ADR 0004 — Versioned bounded backup format`](docs/adr/0004-versioned-bounded-backup-format.md)
 
 ## Calculation rule
 
-The initial calculation order is intentionally deterministic:
+The calculation order is deterministic:
 
 1. Sum item amounts.
 2. Calculate discount from subtotal.
@@ -164,17 +183,17 @@ For Android Studio, open the repository, use JDK 17 for Gradle, allow sync to co
 
 Detailed platform-specific setup: [`docs/setup.md`](docs/setup.md)
 
-## Development setup
-
-The app uses Android SDK 35 and Java 17 bytecode. `local.properties` is intentionally excluded from Git.
-
-Recommended checks while developing:
+## Development checks
 
 ```bash
 gradle testDebugUnitTest
+gradle assembleDebugAndroidTest
 gradle lintDebug
 gradle assembleDebug
+gradle assembleRelease
 python3 scripts/check_format.py
+python3 scripts/check_kotlin_namespace.py
+python3 scripts/check_repository.py
 python3 scripts/scan_secrets.py
 ```
 
@@ -190,14 +209,18 @@ See [`docs/development.md`](docs/development.md).
 
 The repository includes:
 
-- finance arithmetic and validation unit tests;
-- decimal/rounding regression tests;
-- history repository tests;
-- template repository tests;
-- CSV security/escaping tests;
-- receipt formatter tests;
-- Room Android integration tests;
-- a Compose calculator screen smoke test.
+- finance arithmetic, rounding, bounds, and validation unit tests;
+- deterministic seeded finance fuzz/regression coverage;
+- history and template repository tests;
+- backup round-trip, corruption, schema, structural-bound, and semantic-validation tests;
+- deterministic seeded backup serialization/corruption fuzz coverage;
+- CSV security/escaping and receipt formatter tests;
+- export path-containment and structured-log redaction tests;
+- Room history/template/backup integration tests;
+- Compose screen smoke tests;
+- a real-activity calculate/save/history journey test.
+
+CI compiles the instrumentation suite; final release verification still requires executing it on a connected emulator/device.
 
 Testing strategy: [`docs/testing.md`](docs/testing.md)
 
@@ -215,41 +238,45 @@ Release compilation:
 gradle assembleRelease
 ```
 
-Production signing material is **not** committed to the repository. Tagged release-candidate workflow runs produce an unsigned release artifact after build/test/lint verification. Signing and store distribution should use protected secrets outside source control.
+Production signing material is **not** committed to the repository. Tagged release-candidate workflow runs produce an unsigned release artifact after repository/test/lint/release-build verification. Signing and store distribution use protected credentials outside source control.
+
+A configured or queued workflow is not treated as a successful release check. The exact commit being released must satisfy [`docs/verification.md`](docs/verification.md).
 
 Release guide: [`docs/release.md`](docs/release.md)
 
 ## CI and repository automation
 
-- `CI`: format guard, common-secret-pattern guard, JVM tests, Android lint, debug build, release compilation.
+- `CI`: format, Kotlin namespace, repository/link audit, repository scanning, JVM tests, instrumentation-test compilation, Android lint, debug build, release build.
 - `CodeQL`: Java/Kotlin static analysis.
 - `Dependency Review`: pull-request dependency change review.
+- `Repository Audit`: independent required-file/local-link audit.
 - `Dependabot`: weekly Gradle and GitHub Actions updates.
-- `Release Candidate`: tag-triggered verified unsigned release build.
+- `Release Candidate`: tag-triggered unsigned release build.
+- Superseded PR workflow runs use concurrency cancellation so the newest revision receives runner priority.
 
 Repository workflow files live under [`.github/workflows/`](.github/workflows/).
 
 ## Security
 
-SpendCalc intentionally minimizes permissions and remote dependencies. The export provider is non-exported and only grants temporary read access during a user-selected share action. CSV text cells are escaped and common formula-leading characters are neutralized.
+SpendCalc minimizes permissions and remote dependencies. The export provider is non-exported, path-restricted, and grants temporary read access only during a user-selected share action. CSV text cells are escaped and common formula-leading characters are neutralized. Explicit backup parsing is bounded and fail-closed for unsupported/malformed records.
 
 Do not report exploitable vulnerability details in a public issue. Follow [`SECURITY.md`](SECURITY.md).
 
 ## Privacy and data
 
-History/templates use Room, while preferences use DataStore. Users can clear history and delete templates, and history can automatically expire after 30 or 90 days. Android system backup/device transfer may include app-local database/preferences according to OS/device backup settings.
+History/templates use Room while preferences use DataStore. Users can search/clear history, undo an individual deletion, delete templates, and configure history expiry. Explicit backup is user-selected and local; Android system backup/device transfer may separately include the documented private database/preferences according to OS/device settings.
 
-Read [`PRIVACY.md`](PRIVACY.md).
+Read [`PRIVACY.md`](PRIVACY.md) and [`docs/privacy-backup.md`](docs/privacy-backup.md).
 
 ## Accessibility
 
-Release checks include TalkBack traversal, large system font scale, light/dark themes, touch-target review, small/wide screen behavior, and non-color-only validation.
+Release checks include TalkBack traversal, large system font scale, light/dark/system themes, app large-text behavior, reduced-motion behavior, touch-target review, small/wide screen behavior, and non-color-only validation.
 
 Read [`docs/accessibility.md`](docs/accessibility.md).
 
 ## Performance
 
-The app avoids network initialization and keeps ordinary calculation work in memory. Performance work should be based on profiling rather than replacing correct decimal math with faster but unsafe primitives.
+The app avoids network initialization, keeps ordinary calculation work in memory, bounds user/backup inputs, and moves document/PDF/CSV file I/O off the main thread. Optimization should remain evidence-driven rather than replacing correct decimal math with unsafe primitives.
 
 Read [`docs/performance.md`](docs/performance.md).
 
@@ -267,13 +294,11 @@ For local commits, the requested project commit email is:
 git config user.email "sanskarin@outlook.in"
 ```
 
-The connected GitHub contents API may attribute commits to the authenticated GitHub identity; local contributors can explicitly set the requested Git email as shown above.
-
 ## Roadmap and changes
 
 - [`ROADMAP.md`](ROADMAP.md)
 - [`CHANGELOG.md`](CHANGELOG.md)
-- [`what_changed.md`](what_changed.md) — multi-session engineering handoff/current verification state
+- [`what_changed.md`](what_changed.md) — canonical multi-session engineering handoff/current verification state
 
 ## Support and contact
 
