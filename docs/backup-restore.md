@@ -27,7 +27,7 @@ Malformed, corrupted, unsupported, oversized, or semantically invalid records ar
 
 ## What is included
 
-- calculation history summaries;
+- calculation history summaries, including the optional label saved with each history record;
 - calculation templates;
 - theme preference;
 - large-text preference;
