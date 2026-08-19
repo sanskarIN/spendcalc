@@ -43,11 +43,13 @@ Verified screenshots are intentionally captured from real release-candidate buil
 ### Save, find, and reuse
 
 - Room-backed calculation history.
+- Optional user-provided history labels, bounded to 120 characters, with a safe default when left blank.
 - Local history search by labels, currencies, totals, and per-person values.
 - Individual history deletion with Snackbar Undo.
 - Clear-all confirmation.
 - Optional history auto-delete after 30 or 90 days.
 - Saved templates for common discount/tax/tip/service/split/currency settings.
+- Saved history labels and template names are normalized at the persistence boundary so locally stored data remains valid for backup/export.
 - Individual template deletion with Snackbar Undo.
 
 ### Backup and restore
@@ -218,13 +220,13 @@ The repository includes:
 
 - finance arithmetic, rounding, bounds, and validation unit tests;
 - deterministic seeded finance fuzz/regression coverage;
-- history and template repository tests, including exact restore-after-delete behavior;
+- history and template repository tests, including exact restore-after-delete behavior and saved-name normalization bounds;
 - backup round-trip, corruption, schema, structural-bound, and semantic-validation tests;
 - deterministic seeded backup serialization/corruption fuzz coverage;
 - CSV security/escaping and receipt formatter tests;
 - export path-containment and structured-log redaction tests;
 - Room history/template/backup integration tests;
-- Compose calculator and Settings busy-state tests;
+- Compose calculator, named-history-save dialog, and Settings busy-state tests;
 - a real-activity calculate/save/history journey test.
 
 CI compiles the instrumentation suite; final release verification still requires executing it on a connected emulator/device.
@@ -271,7 +273,7 @@ Do not report exploitable vulnerability details in a public issue. Follow [`SECU
 
 ## Privacy and data
 
-History/templates use Room while preferences use DataStore. Users can search/clear history, undo an individual history deletion, delete/undo templates, and configure history expiry. Explicit backup is user-selected and local; Android system backup/device transfer may separately include the documented private database/preferences according to OS/device settings.
+History/templates use Room while preferences use DataStore. Users can name saved calculations, search/clear history, undo an individual history deletion, delete/undo templates, and configure history expiry. Explicit backup is user-selected and local; Android system backup/device transfer may separately include the documented private database/preferences according to OS/device settings.
 
 Read [`PRIVACY.md`](PRIVACY.md) and [`docs/privacy-backup.md`](docs/privacy-backup.md).
 
