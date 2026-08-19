@@ -132,7 +132,7 @@ class SpendCalcViewModel(
     fun saveHistory(label: String = "Calculation") {
         val result = _calculator.value.result ?: return
         viewModelScope.launch {
-            historyRepository.save(result, label.take(MAX_NAME_INPUT_CHARS))
+            historyRepository.save(result, label)
             showFeedback(ActionFeedback.HISTORY_SAVED)
         }
     }
@@ -143,7 +143,7 @@ class SpendCalcViewModel(
         val parsed = parseForm(state)
         val input = parsed.input ?: return
         viewModelScope.launch {
-            templateRepository.save(name.take(MAX_NAME_INPUT_CHARS), input)
+            templateRepository.save(name, input)
             showFeedback(ActionFeedback.TEMPLATE_SAVED)
         }
     }
