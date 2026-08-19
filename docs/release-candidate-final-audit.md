@@ -2,7 +2,7 @@
 
 Date: 2026-08-19
 
-This file is the final source-audit checklist for the first public release candidate. It complements `docs/verification.md` and the root work-continuity document.
+This file is the final **source-level** audit checklist for the first public release candidate. It complements [`verification.md`](verification.md), [`codebase-reference.md`](codebase-reference.md), and the root work-continuity document. Checked items below mean the implementation/documentation exists and was source-audited; they do not imply pending CI/device/signing/screenshot gates have run successfully.
 
 ## Source completeness
 
@@ -33,7 +33,7 @@ This file is the final source-audit checklist for the first public release candi
 - [x] The shared 120-character saved-name contract is reused by backup validation so normal persisted data cannot later violate backup name limits.
 - [x] Valid accepted history/template names entering restore/replace paths are validated and preserved exactly instead of being silently normalized again.
 - [x] Saved-name truncation never leaves a valid surrogate pair split at the boundary, and malformed surrogate input fails closed.
-- [x] A shared persisted-record policy defines ID, timestamp, canonical-currency, saved-name, history split, and saved-result-shape rules.
+- [x] A shared persisted-record policy defines ID, timestamp, canonical-currency, saved-name, history split, saved-result-shape, and batch-identifier rules.
 - [x] History persistence validates records before DAO writes, including direct save/restore callers that bypass ViewModel/UI code.
 - [x] Template persistence validates both structural envelope fields and the exact finance settings it stores through `CalculatorEngine`.
 - [x] `AppContainer` supplies the same `CalculatorEngine` validator instance to template persistence used by the app domain layer.
@@ -49,6 +49,7 @@ This file is the final source-audit checklist for the first public release candi
 - [x] Backup parser is versioned, bounded, checksum-validated, and avoids arbitrary object deserialization.
 - [x] Backup restore requires confirmation and coordinates rollback across Room/DataStore boundaries when needed.
 - [x] Room history/template replacement is transactional.
+- [x] Android system-backup/data-extraction policy files are documented separately from SpendCalc's explicit user-created backup format.
 - [x] Common secret-pattern scanning exists.
 - [x] CodeQL and dependency-review workflows exist.
 - [x] Structured logging boundary redacts common sensitive field categories using locale-stable key normalization.
@@ -77,7 +78,9 @@ This file is the final source-audit checklist for the first public release candi
 - [x] Primary calculate/named-save/history instrumentation journey coverage verifies both label and amount.
 - [x] Kotlin reserved-namespace regression guard.
 - [x] Android default string-resource reference/duplicate-name guard.
+- [x] Android manifest/FileProvider local-first security guard.
 - [x] Repository required-file/local-link audit.
+- [x] Tracked-file documentation coverage guard rejects missing, stale, and duplicate file-reference entries.
 
 ## Accessibility, UX, and performance source audit
 
@@ -96,6 +99,27 @@ This file is the final source-audit checklist for the first public release candi
 - [x] Expensive document/PDF/file work is dispatched off the UI thread.
 - [x] Performance budgets and future profiling thresholds are documented.
 
+## Exhaustive documentation audit
+
+- [x] Every current tracked root policy/build/handoff file is described individually in `docs/codebase-reference.md`.
+- [x] Every `.github` funding/template/Dependabot/workflow file is described individually.
+- [x] Every app build/schema metadata file is described individually.
+- [x] Every production Kotlin bootstrap/data/domain/platform/UI/theme/screen/component file is described individually.
+- [x] Every Android manifest/drawable/values/xml resource file is described individually.
+- [x] Every JVM unit/fuzz/regression test file is described individually.
+- [x] Every Android instrumentation/Compose/activity test file is described individually.
+- [x] Every repository guard script is described individually.
+- [x] Every permanent documentation/ADR/asset/compatibility handoff file is described individually.
+- [x] `docs/documentation-map.md` defines authority and update relationships among public, architecture, persistence/security/privacy, testing, setup/maintenance, release, ADR, planning, and handoff docs.
+- [x] `scripts/check_documentation_coverage.py` makes the exhaustive file index self-maintaining by comparing it to `git ls-files`.
+- [x] Main CI runs the documentation-coverage guard before Android build work.
+- [x] Lightweight Repository Audit also runs documentation coverage.
+- [x] `scripts/check_repository.py` requires the exhaustive codebase reference, documentation map, and coverage guard.
+- [x] Contributor/development/setup/testing/release docs explain how to maintain the tracked-file documentation invariant.
+- [x] The intentional absence of a committed Gradle wrapper is explicitly documented rather than treated as an omitted file.
+- [x] Future tracked Room schema files are explicitly called out as documentation-covered migration/release evidence.
+- [x] Brand artwork is distinguished from real release screenshots; fabricated screenshots are prohibited as release evidence.
+
 ## Repository engineering
 
 - [x] MIT license.
@@ -105,13 +129,14 @@ This file is the final source-audit checklist for the first public release candi
 - [x] Changelog, roadmap, and canonical work-continuity document.
 - [x] Architecture/setup/development/testing/release/troubleshooting/accessibility/performance/design-system documentation.
 - [x] Dedicated `docs/persistence-invariants.md` defines repository/backup structural contracts and replacement ordering.
-- [x] Repository audit requires the persistence-invariant document.
+- [x] Exhaustive `docs/codebase-reference.md` documents the complete tracked repository.
+- [x] `docs/documentation-map.md` defines documentation source-of-truth/anti-drift rules.
+- [x] Repository audit requires persistence and exhaustive documentation artifacts.
 - [x] ADR set includes precision arithmetic, local-first behavior, persistence, and backup-format decisions.
 - [x] Issue and pull-request templates.
 - [x] Dependabot configuration.
-- [x] CI formatting/namespace/string-resource/security/repository/secret checks, unit tests, instrumentation compilation, full Android lint, debug build, and release build.
-- [x] Lightweight Repository Audit also runs the Android string-resource guard.
-- [x] The repository audit requires release-critical verification/privacy/security/persistence documentation and both Android audit scripts.
+- [x] CI formatting/namespace/documentation/string-resource/security/repository/secret checks, unit tests, instrumentation compilation, full Android lint, debug build, and release build.
+- [x] Lightweight Repository Audit runs repository metadata/link, tracked-file documentation, and Android string-resource guards.
 - [x] CodeQL workflow.
 - [x] Dependency review workflow.
 - [x] Release-candidate artifact workflow.
@@ -121,8 +146,10 @@ This file is the final source-audit checklist for the first public release candi
 
 ## Verification boundary
 
-Automated Android build/lint/test checks are authoritative only after the configured GitHub-hosted jobs finish for the exact final commit. Queued or pending jobs are not treated as success.
+Automated Android build/lint/test/security/repository checks are authoritative only after the configured GitHub-hosted jobs finish for the **exact final commit**. Queued, pending, cancelled, skipped, or superseded jobs are not treated as success.
 
-The source branch may remain open while runners are unavailable. `v1.0.0` must not be represented as a fully verified release until the automated checks and the manual Android accessibility/export/backup/device checks in `docs/verification.md` complete. The manual pass explicitly includes Unicode-heavy saved-name/search behavior, template-dialog naming semantics, and successful backup/restore of those records.
+This audit can mark source/documentation existence and structural review complete, but it cannot execute a connected Android runtime, perform TalkBack review, externally sign an artifact, capture real screenshots, or verify store distribution. Those remain explicit unchecked gates in `docs/verification.md` until actually performed.
+
+The source branch may remain open while runners are unavailable. `v1.0.0` must not be represented as a fully verified release until the exact-head automated checks and manual Android accessibility/export/backup/device/signing/screenshot checks complete.
 
 Production signing material, store credentials, real personal test data, and fabricated screenshots must remain outside source control.
