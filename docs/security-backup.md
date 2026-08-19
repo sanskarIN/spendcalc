@@ -12,6 +12,8 @@ The explicit SpendCalc backup format is treated as untrusted input during restor
 - Split counts are bounded to 1 through 1,000,000.
 - History/template identifiers must be nonblank, no longer than 128 characters, and unique inside their record type.
 - History labels/template names must be nonblank and no longer than the application's 120-character saved-name limit.
+- New saved names use a shared UTF-16-safe truncation policy that never splits a valid surrogate pair at the 120-character boundary; malformed surrogate input still fails closed.
+- Valid decoded/restored saved names are preserved exactly rather than being silently trimmed or rewritten during repository replacement.
 - Timestamps must be non-negative.
 - URL-safe Base64 field encoding keeps tabs/newlines in text from changing record boundaries.
 - Decoded text must be valid UTF-8 and re-encode to the exact original bytes; malformed UTF-8 fails closed.
