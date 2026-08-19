@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="onboarding_title">Welcome to SpendCalc</string>
+    <string name="onboarding_subtitle">A fast, private way to calculate shared expenses with confidence.</string>
+    <string name="onboarding_precision_title">Precision-safe totals</string>
+    <string name="onboarding_precision_body">Decimal arithmetic keeps tax, discount, tip, service charge, currency conversion, and split calculations predictable.</string>
+    <string name="onboarding_private_title">Private by default</string>
+    <string name="onboarding_private_body">No account and no required network connection. Saved data stays on your device.</string>
+    <string name="onboarding_flexible_title">Built for real bills</string>
+    <string name="onboarding_flexible_body">Save templates, keep history, export receipts, and use manual exchange rates whenever you need them.</string>
+    <string name="onboarding_continue">Start calculating</string>
+</resources>
