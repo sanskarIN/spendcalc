@@ -1,9 +1,9 @@
-package in.sanskar.spendcalc.domain
+package `in`.sanskar.spendcalc.domain
 
-import in.sanskar.spendcalc.domain.model.CalculationError
-import in.sanskar.spendcalc.domain.model.CalculationInput
-import in.sanskar.spendcalc.domain.model.CalculationOutcome
-import in.sanskar.spendcalc.domain.model.ExpenseItem
+import `in`.sanskar.spendcalc.domain.model.CalculationError
+import `in`.sanskar.spendcalc.domain.model.CalculationInput
+import `in`.sanskar.spendcalc.domain.model.CalculationOutcome
+import `in`.sanskar.spendcalc.domain.model.ExpenseItem
 import java.math.BigDecimal
 import java.util.Locale
 import org.junit.Assert.assertEquals
