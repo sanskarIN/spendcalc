@@ -13,9 +13,9 @@
 - License: MIT.
 - Required product credit: `Made by the Sanskar`.
 - Requested Git email observed in GitHub commit metadata: `Sanskar <sanskarin@outlook.in>`.
-- Pre-handoff head for this update: `873b8ac2dd4c690ccf531b3143232920cc068f9f`.
-- Pull request state at the start of this continuation: open, non-draft, mergeable.
-- Source state: the planned application implementation and release-candidate source hardening are complete on `complete/v1-finalization`. This continuation closed additional repository/backup persistence-invariant gaps, expanded template naming/accessibility behavior, added duplicate-ID protection, deepened regression tests, and reconciled architecture/security/testing/release documentation.
+- Pre-handoff head for this update: `7a06ab391c9586ae8082a279de429af2d9ce3a1e`.
+- Pull request state at the start of this documentation continuation: open, non-draft, mergeable.
+- Source state: the planned application implementation, persistence/export hardening, regression suite, repository automation, and deep permanent documentation are complete at source level on `complete/v1-finalization`. Every tracked file is now covered by an exhaustive file reference whose coverage is enforced by CI.
 - Release state: do not tag or describe `v1.0.0` as verified until the exact final commit has successful CI, CodeQL, Dependency Review, and Repository Audit results plus the manual Android/accessibility/export/backup/signing/screenshot gates in `docs/verification.md`.
 
 ## Continuation starting point
@@ -43,7 +43,7 @@ The previous handoff already included:
 
 The active branch head at that previous handoff was `2470b124c19d628009428436788dd400aed05d2a`.
 
-## Exact workflow status observed during this continuation
+## Exact workflow status observed during the persistence continuation
 
 At head `eaad544f3ed4e5bd9f8658b7a70dac181ee0ccaa`, GitHub reported:
 
@@ -56,7 +56,7 @@ Earlier exact heads in the same continuation also repeatedly registered the same
 
 The connected execution container still cannot resolve `github.com`, so a clean local Gradle dependency resolution/build cannot be used as release proof in this environment. Do not claim local `gradle test`, lint, debug, release, or instrumentation results unless they are actually run in a network-capable environment. GitHub Actions remains the authoritative automated Android/Gradle verification source here.
 
-## Work completed in this continuation
+## Work completed in the persistence continuation
 
 ### 1. Template repository finance validation
 
@@ -248,13 +248,13 @@ A dedicated `docs/persistence-invariants.md` now defines:
 - backup relationship;
 - future schema/regression expectations.
 
-The repository audit now requires this file.
+The repository audit requires this file.
 
-`docs/architecture.md` now describes repositories as validation boundaries and links to the persistence contract.
+`docs/architecture.md` describes repositories as validation boundaries and links to the persistence contract.
 
 `docs/security-backup.md` documents local repository validation in the backup threat model rather than treating only decoded backup files as untrusted.
 
-`docs/testing.md` now includes the complete persistence-invariant regression strategy.
+`docs/testing.md` includes the complete persistence-invariant regression strategy.
 
 `docs/verification.md` includes automated/manual persistence, template-dialog, duplicate-ID, canonical-currency, and backup-alignment gates.
 
@@ -262,7 +262,7 @@ The repository audit now requires this file.
 
 `docs/accessibility.md` includes template dialog guidance/confirmation/Unicode checks.
 
-`README.md`, `ROADMAP.md`, and `CHANGELOG.md` now describe the hardened persistence model.
+`README.md`, `ROADMAP.md`, and `CHANGELOG.md` describe the hardened persistence model.
 
 ## Current complete implementation state
 
@@ -404,9 +404,10 @@ The repository audit now requires this file.
 
 - Formatting/UTF-8/final-newline/trailing-whitespace/tab guard.
 - Kotlin namespace guard.
+- Tracked-file documentation coverage guard.
 - Android string-resource reference/duplicate-name audit.
 - Android local-first manifest/FileProvider audit.
-- Required-file/local Markdown-link repository audit.
+- Complete required-file/local Markdown-link repository audit.
 - Common secret-pattern scan.
 
 ## Current CI/repository automation
@@ -415,27 +416,28 @@ Main `CI` performs:
 
 1. formatting guard;
 2. Kotlin namespace guard;
-3. Android string-resource audit;
-4. Android local-first security audit;
-5. repository metadata/required-file/local-link audit;
-6. secret-pattern scan;
-7. JVM tests;
-8. instrumentation-test compilation;
-9. full Android lint;
-10. debug build;
-11. release build.
+3. tracked-file documentation coverage guard;
+4. Android string-resource audit;
+5. Android local-first security audit;
+6. repository metadata/required-file/local-link audit;
+7. secret-pattern scan;
+8. JVM tests;
+9. instrumentation-test compilation;
+10. full Android lint;
+11. debug build;
+12. release build.
 
 Separate workflows:
 
 - CodeQL;
 - Dependency Review;
-- Repository Audit;
+- Repository Audit, including documentation coverage and Android string-resource audit;
 - Dependabot;
-- tag-triggered unsigned Release Candidate artifact build.
+- tag-triggered unsigned Release Candidate artifact build, now repeating the fast guards, JVM tests, instrumentation compilation, full lint, and release compilation before artifact upload.
 
 Superseded PR revisions use concurrency cancellation.
 
-## Commits added in this continuation
+## Commits from the persistence continuation
 
 - `1c4f891` — `fix: validate template settings at repository boundary`
 - `0c1a01d` — `test: enforce template finance persistence invariants`
@@ -471,15 +473,179 @@ Superseded PR revisions use concurrency cancellation.
 - `0dbb9fb` — `docs: expose persistence invariant hardening in README`
 - `873b8ac` — `docs: mark persistence invariant audit complete`
 
-This handoff update creates one additional commit after the list above. Use GitHub to resolve its exact SHA before making release decisions.
+## Exhaustive documentation continuation
+
+This documentation pass started from release-candidate head `4c935e4baaa6d9b7fd75afaf4e0976ea3d611afb`.
+
+At that exact starting head, PR `#12` was still open, non-draft, mergeable, and GitHub registered:
+
+- CI — pending;
+- Dependency Review — pending;
+- CodeQL — queued;
+- Repository Audit — queued.
+
+No queued/pending result was represented as successful.
+
+### Full repository inventory
+
+A recursive inventory covered root files, `.github`, `app`, all source sets, Android resources, JVM tests, instrumentation tests, scripts, schemas, ADRs, assets, and permanent/compatibility documentation.
+
+Before this pass, the repository inventory contained 147 tracked files. Three maintained documentation/coverage files were added:
+
+- `docs/codebase-reference.md`;
+- `docs/documentation-map.md`;
+- `scripts/check_documentation_coverage.py`.
+
+The exhaustive reference is therefore designed for the resulting 150 tracked paths. This numeric expectation is not treated as proof until the new exact-head documentation guard actually runs successfully in GitHub Actions; the invariant is defined by exact set equality with `git ls-files`, not by a hard-coded count.
+
+The audit also confirmed that the repository intentionally does **not** commit Gradle wrapper files. Setup/development/troubleshooting/README now state this explicitly rather than implying `gradlew` should exist.
+
+### `docs/codebase-reference.md`
+
+A permanent file-by-file repository reference now documents every tracked path individually, grouped by role:
+
+- root build/policy/handoff files;
+- GitHub funding/templates/Dependabot/workflows;
+- app build/schema metadata;
+- all Android instrumentation/Compose/activity tests;
+- manifest/application bootstrap;
+- every data/Room repository/DAO/entity file;
+- every finance/domain/export/model file;
+- every Android platform adapter;
+- every Compose state/navigation/component/screen/theme file;
+- every drawable/value/XML Android resource;
+- every JVM repository/domain/export/model/platform/UI test;
+- every permanent document/ADR/asset;
+- every repository guard script.
+
+Each entry describes ownership plus the behavior/test/security/release invariant the file supports. The marked file-index block is deliberately machine-readable.
+
+### `docs/documentation-map.md`
+
+A documentation information architecture now defines:
+
+- public product documentation authority;
+- architecture/implementation authority;
+- persistence/backup/privacy/security authority;
+- testing/verification authority;
+- setup/operations/maintenance authority;
+- ADR durability rules;
+- changelog/roadmap responsibilities;
+- current-work handoff responsibilities;
+- screenshot/artwork distinction;
+- change-to-document matrix;
+- anti-drift rules.
+
+Important rule: `what_changed.md` owns volatile continuation state but does not replace permanent architecture/security/testing documentation.
+
+### Tracked-file documentation coverage guard
+
+`scripts/check_documentation_coverage.py` now:
+
+- invokes `git ls-files -z`;
+- parses only the marked file index in `docs/codebase-reference.md`;
+- requires exactly one marker pair;
+- rejects tracked files missing from the index;
+- rejects documented paths that are no longer tracked;
+- rejects duplicate documented paths;
+- reports the exact tracked-file count only on successful equality.
+
+This turns “document every file” from a one-time promise into a continuing repository invariant.
+
+### CI/repository/release enforcement
+
+The documentation guard is now run by:
+
+- `.github/workflows/ci.yml`;
+- `.github/workflows/repository-audit.yml`;
+- tag-triggered `.github/workflows/release.yml`.
+
+The tagged Release Candidate workflow was also strengthened to run:
+
+- format guard;
+- Kotlin namespace guard;
+- documentation coverage;
+- Android string-resource guard;
+- Android local-first security guard;
+- repository required-file/link audit;
+- secret scan;
+- JVM unit tests;
+- instrumentation-test compilation;
+- full Android lint;
+- release compilation;
+
+before uploading the unsigned APK artifact.
+
+`scripts/check_repository.py` now requires the complete permanent documentation/ADR/brand-screenshot-policy set plus the Android/documentation guard scripts, rather than only a smaller subset.
+
+### Permanent documentation reconciled
+
+This pass deeply updated:
+
+- `README.md` — public exhaustive documentation entry points, no-wrapper setup, documentation guard, CI/release boundaries;
+- `CONTRIBUTING.md` — every tracked-file change must update the codebase reference; complete quality commands and persistence/UI rules;
+- `docs/features.md` — calculator/history/template/persistence/backup/export/accessibility limits and actual behavior;
+- `docs/development.md` — file ownership/documentation maintenance, persistence/manifest/resources/build rules, complete guard commands;
+- `docs/testing.md` — documentation-coverage guard behavior and the full regression/CI/manual strategy;
+- `docs/github-maintenance.md` — workflow responsibilities, documentation maintenance, dependency/template/release/handoff practices;
+- `docs/setup.md` — explicit local Gradle/no-wrapper model, fast guards, build/test/release setup;
+- `docs/architecture.md` — application composition, persistence/backup/resource/repository-documentation architecture;
+- `docs/release.md` — separate source/automated/manual/distribution evidence classes and complete release procedure;
+- `docs/verification.md` — exhaustive documentation consistency gates alongside source/runtime/security/signing gates;
+- `docs/release-candidate-final-audit.md` — explicit exhaustive documentation source audit without faking pending runtime evidence;
+- `CHANGELOG.md` — documentation engineering, release workflow hardening, required-doc expansion;
+- `ROADMAP.md` — complete tracked-file documentation phase and still-open runtime/release gates;
+- `docs/troubleshooting.md` — no-wrapper, documentation/resource/security/repository guard diagnostics plus persistence/Actions troubleshooting;
+- `docs/design-system.md` — named-history/template dialog/search design contracts and screenshot/artwork distinction;
+- `docs/logging.md` — `Locale.ROOT` redaction semantics, URI/backup/exception privacy rules, testing/documentation links.
+
+The following existing deep documents were re-audited and remained consistent with the implementation without speculative rewrites:
+
+- `docs/backup-restore.md`;
+- `docs/persistence-invariants.md`;
+- `docs/privacy-backup.md`;
+- `docs/performance.md`.
+
+Earlier continuation work had already reconciled `docs/security-backup.md` and `docs/accessibility.md` with current persistence/Unicode/dialog behavior.
+
+### Documentation-pass commits
+
+- `ececde2` — `docs: add exhaustive codebase file reference`
+- `e07f7f1` — `docs: define documentation source-of-truth map`
+- `a35ec62` — `ci: add tracked-file documentation coverage guard`
+- `d3cac74` — `ci: enforce tracked-file documentation coverage`
+- `5a52efe` — `ci: add documentation coverage to repository audit`
+- `4a36c55` — `ci: require exhaustive documentation artifacts`
+- `3a2f92b` — `docs: deepen implemented feature contract`
+- `2f0b3ba` — `docs: add exhaustive documentation maintenance rules`
+- `fc1f34c` — `docs: document tracked-file coverage testing`
+- `9454ef5` — `docs: deepen repository maintenance guidance`
+- `1a1aced` — `docs: clarify reproducible local build setup`
+- `6084e4c` — `docs: connect architecture to exhaustive code reference`
+- `a83bade` — `docs: require complete documentation in contributions`
+- `bbd9a78` — `docs: deepen exact-commit release procedure`
+- `728221b` — `docs: add complete documentation release gates`
+- `7cb936f` — `docs: complete exhaustive repository documentation audit`
+- `63f7bbf` — `docs: record exhaustive documentation engineering`
+- `bdf07b8` — `docs: mark exhaustive documentation engineering complete`
+- `9e9021d` — `docs: add documentation and build guard troubleshooting`
+- `f3036e8` — `docs: expose exhaustive repository documentation`
+- `775adf3` — `ci: harden tagged release verification gates`
+- `93f34d8` — `ci: require complete permanent documentation set`
+- `33de194` — `docs: document saved-name dialog design contract`
+- `cf54f48` — `docs: deepen safe logging contract`
+- `7a06ab3` — `docs: record hardened tagged release workflow`
+
+This handoff update creates one additional commit after the list above. Resolve its exact SHA and exact-head workflow state from GitHub before any release decision.
 
 ## Known verification limitation
 
-The connected execution environment used for this continuation cannot resolve `github.com` for a clean clone/dependency download. Therefore:
+The connected execution environment used for these continuations cannot resolve `github.com` for a clean clone/dependency download. Therefore:
 
 - no local Gradle success is claimed;
 - no local lint success is claimed;
 - no connected Android test success is claimed;
+- the new documentation coverage guard is not claimed successful until the exact-head GitHub workflow runs it;
 - queued/pending GitHub workflows are not treated as green.
 
 This is a verification-environment limitation, not evidence of a source failure.
@@ -488,6 +654,7 @@ This is a verification-environment limitation, not evidence of a source failure.
 
 ### Automated
 
+- exact-final-head documentation coverage success;
 - exact-final-head CI success;
 - exact-final-head CodeQL success;
 - exact-final-head Dependency Review success;
@@ -517,7 +684,7 @@ This is a verification-environment limitation, not evidence of a source failure.
 - capture real screenshots from the exact verified build using fictional data;
 - provide production signing material outside source control;
 - produce signed artifact from the exact verified commit;
-- verify signed artifact;
+- verify signed artifact version/checksum/source SHA;
 - merge/tag/release only after all blocking gates pass.
 
 ## Database/migration state
@@ -526,15 +693,17 @@ This is a verification-environment limitation, not evidence of a source failure.
 - No previous public production schema exists yet.
 - No fake v1→v2 migration has been added.
 - Destructive migration fallback is intentionally not the default.
+- Room schema export is configured under `app/schemas/`.
+- Future tracked generated schema files must be preserved as migration/release evidence and individually added to `docs/codebase-reference.md`.
 - The first future schema change must add an explicit Room migration and migration test.
 
 ## Next exact actions
 
 1. Treat the commit containing this handoff as the new candidate head.
-2. Stop speculative feature/source churn unless a concrete release-blocking defect is found.
+2. Stop speculative feature/source/documentation churn unless a concrete release-blocking defect or verified documentation contradiction is found.
 3. Re-fetch PR `#12` exact head.
 4. Re-fetch CI, CodeQL, Dependency Review, and Repository Audit for that exact head.
-5. If a workflow fails, inspect the exact failing job/log and add the smallest regression-tested fix.
+5. If a workflow fails, inspect the exact failing job/log and add the smallest regression-tested/documented fix.
 6. Any fix creates a new head and requires fresh exact-head automated verification.
 7. When automated checks are green, execute `docs/verification.md` manual Android/accessibility/export/backup gates.
 8. Merge PR `#12` only when branch protection/repository policy and release gates allow it.
@@ -543,4 +712,4 @@ This is a verification-environment limitation, not evidence of a source failure.
 
 ## Continuation rule
 
-While PR `#12` remains open, continue from `complete/v1-finalization`. After it is merged, continue from `main`. Do not use an older handoff, older branch head, or older successful run as proof for the newest revision. Inspect current source and exact-head workflow state first. Keep fixes small, meaningful, regression-tested, documented, and reflected here.
+While PR `#12` remains open, continue from `complete/v1-finalization`. After it is merged, continue from `main`. Do not use an older handoff, older branch head, or older successful run as proof for the newest revision. Inspect current source and exact-head workflow state first. Keep fixes small, meaningful, regression-tested, permanently documented, and reflected here.
