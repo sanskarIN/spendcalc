@@ -7,4 +7,8 @@
     <string name="history_no_results_title">No matching calculations</string>
     <string name="history_no_results_body">Try a different label, currency code, or amount.</string>
     <string name="clear_search">Clear search</string>
+    <string name="history_label_title">Save calculation</string>
+    <string name="history_label">History label (optional)</string>
+    <string name="history_label_hint">Give this result a short name so it is easier to find later. Up to 120 characters.</string>
+    <string name="save_history_confirm">Save</string>
 </resources>
