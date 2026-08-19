@@ -36,6 +36,7 @@ All notable changes to SpendCalc are documented here. The project follows a sema
 - Deterministic seeded fuzz/regression coverage for finance arithmetic and backup serialization/corruption handling.
 - Android integration tests for Room persistence and backup replacement, plus Compose and real-activity journey smoke tests.
 - Compose regression coverage for the named-history save dialog and callback wiring.
+- Compose regression coverage proving History filtering finds saved labels and removes non-matching entries.
 - Settings UI coverage for the backup busy state.
 - CI compilation of instrumentation tests in addition to JVM tests, full Android lint, debug build, and release compilation.
 - Android manifest/FileProvider local-first policy guard in CI.
@@ -51,6 +52,7 @@ All notable changes to SpendCalc are documented here. The project follows a sema
 - Calculator item/name/input counts are bounded before expensive conversion or rendering work.
 - Saved history labels and template names now share one 120-character domain limit; persistence normalizes the value before storage so valid local data cannot later violate backup validation.
 - Saved-name normalization now occurs at the repository boundary instead of being partially duplicated in the ViewModel.
+- History search input is capped at 120 characters and the UI explains the limit, bounding repeated in-memory filtering work.
 - Backup document I/O runs on `Dispatchers.IO`, while bounded backup encoding/decoding runs on `Dispatchers.Default` instead of the UI thread.
 - Room history/templates are captured in one transaction for backups and restored with batch DAO inserts.
 - Backup result decimals accept the full bounded magnitude that `CalculatorEngine` can legitimately produce, including converted totals up to 34 integer digits.
