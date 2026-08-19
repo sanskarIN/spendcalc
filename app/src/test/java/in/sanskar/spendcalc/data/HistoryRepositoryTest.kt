@@ -6,6 +6,7 @@ import `in`.sanskar.spendcalc.domain.CalculatorEngine
 import `in`.sanskar.spendcalc.domain.model.CalculationInput
 import `in`.sanskar.spendcalc.domain.model.CalculationOutcome
 import `in`.sanskar.spendcalc.domain.model.ExpenseItem
+import `in`.sanskar.spendcalc.domain.model.HistoryRecord
 import java.math.BigDecimal
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -60,6 +61,36 @@ class HistoryRepositoryTest {
 
         assertTrue(repository.observeHistory().first().isEmpty())
     }
+
+    @Test
+    fun `restore re-inserts the same history record`() = runTest {
+        val dao = FakeHistoryDao()
+        val repository = HistoryRepository(dao)
+        val record = sampleRecord("undo", 900L)
+
+        repository.restore(record)
+        val restored = repository.observeHistory().first().single()
+
+        assertEquals(record, restored)
+    }
+
+    private fun sampleRecord(id: String, createdAt: Long) = HistoryRecord(
+        id = id,
+        createdAtEpochMillis = createdAt,
+        label = "Test",
+        currencyCode = "INR",
+        convertedCurrencyCode = "INR",
+        subtotal = BigDecimal("10.00"),
+        discountAmount = BigDecimal("0.00"),
+        taxAmount = BigDecimal("0.00"),
+        tipAmount = BigDecimal("0.00"),
+        serviceChargeAmount = BigDecimal("0.00"),
+        total = BigDecimal("10.00"),
+        convertedTotal = BigDecimal("10.00"),
+        perPerson = BigDecimal("10.00"),
+        convertedPerPerson = BigDecimal("10.00"),
+        splitCount = 1,
+    )
 
     private fun sampleEntity(id: String, createdAt: Long) = HistoryEntity(
         id = id,
