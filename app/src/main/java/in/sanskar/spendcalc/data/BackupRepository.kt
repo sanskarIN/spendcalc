@@ -3,7 +3,9 @@ package `in`.sanskar.spendcalc.data
 import androidx.room.withTransaction
 import `in`.sanskar.spendcalc.data.local.SpendCalcDatabase
 import `in`.sanskar.spendcalc.domain.model.SpendCalcBackup
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 
 class BackupRepository(
     private val database: SpendCalcDatabase,
@@ -24,10 +26,26 @@ class BackupRepository(
         require(backup.schemaVersion == SpendCalcBackup.CURRENT_SCHEMA_VERSION) {
             "Unsupported backup schema"
         }
+
+        val previous = snapshot()
+        try {
+            replaceDatabaseData(backup)
+            settingsRepository.replace(backup.preferences)
+        } catch (error: Throwable) {
+            withContext(NonCancellable) {
+                runCatching {
+                    replaceDatabaseData(previous)
+                    settingsRepository.replace(previous.preferences)
+                }
+            }
+            throw error
+        }
+    }
+
+    private suspend fun replaceDatabaseData(backup: SpendCalcBackup) {
         database.withTransaction {
             historyRepository.replaceAll(backup.history)
             templateRepository.replaceAll(backup.templates)
         }
-        settingsRepository.replace(backup.preferences)
     }
 }
