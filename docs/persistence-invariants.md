@@ -41,7 +41,7 @@ History labels and template names use `SavedNamePolicy.kt`:
 
 Persisted currency codes are canonical three-letter uppercase values such as `INR` or `USD`.
 
-Repository save/restore paths normalize otherwise valid caller input with `trim().uppercase(Locale.ROOT)` before persistence. The backup codec expects persisted/in-memory backup records to already be canonical and rejects noncanonical objects during encoding instead of silently changing backup semantics.
+Repository save/restore paths normalize otherwise valid caller input with `trim().uppercase(Locale.ROOT)` before persistence. The backup codec expects persisted/in-memory backup records to already be canonical and rejects noncanonical objects during encoding instead of silently changing backup semantics. During decoding, the exact decoded currency text is validated before repository restore; lowercase or whitespace-padded backup currency values are rejected rather than silently normalized.
 
 ### History records
 
@@ -85,7 +85,7 @@ Room's database-level replacement transaction still provides the final database 
 
 `BackupCodec` validates backup records independently because in-memory backup objects can be constructed without repository calls. The codec reuses shared persisted-record structural predicates and additionally enforces backup-format limits, checksum rules, schema compatibility, field encoding, record counts, and template finance validation.
 
-Duplicate IDs are rejected by both encode/decode logic and repository batch replacement.
+Duplicate IDs are rejected by both encode/decode logic and repository batch replacement. Backup document bytes are also decoded strictly as UTF-8 before codec parsing, so malformed byte sequences cannot be repaired into a different payload before structural checks.
 
 The same layered rule is intentional:
 
