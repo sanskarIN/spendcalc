@@ -1,0 +1,59 @@
+package in.sanskar.spendcalc.platform
+
+import android.content.Context
+import android.content.Intent
+import androidx.core.content.FileProvider
+import java.io.File
+
+object ExportManager {
+    fun shareText(
+        context: Context,
+        title: String,
+        text: String,
+        mimeType: String = "text/plain",
+    ) {
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = mimeType
+            putExtra(Intent.EXTRA_TEXT, text)
+        }
+        context.startActivity(Intent.createChooser(intent, title))
+    }
+
+    fun shareTextFile(
+        context: Context,
+        chooserTitle: String,
+        fileName: String,
+        mimeType: String,
+        text: String,
+    ) {
+        val directory = File(context.cacheDir, "exports").apply { mkdirs() }
+        val file = File(directory, safeFileName(fileName))
+        file.writeText(text, Charsets.UTF_8)
+        shareFile(context, chooserTitle, file, mimeType)
+    }
+
+    fun shareFile(
+        context: Context,
+        chooserTitle: String,
+        file: File,
+        mimeType: String,
+    ) {
+        require(file.canonicalPath.startsWith(File(context.cacheDir, "exports").canonicalPath)) {
+            "Only SpendCalc cache exports may be shared"
+        }
+        val uri = FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.files",
+            file,
+        )
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = mimeType
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(Intent.createChooser(intent, chooserTitle))
+    }
+
+    private fun safeFileName(value: String): String =
+        value.replace(Regex("[^A-Za-z0-9._-]"), "_").take(96).ifBlank { "spendcalc-export.txt" }
+}
