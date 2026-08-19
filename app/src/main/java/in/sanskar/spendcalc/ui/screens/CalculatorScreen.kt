@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import `in`.sanskar.spendcalc.R
 import `in`.sanskar.spendcalc.domain.model.CalculationResult
 import `in`.sanskar.spendcalc.domain.model.MAX_SAVED_NAME_CHARS
+import `in`.sanskar.spendcalc.domain.model.truncateUtf16Safely
 import `in`.sanskar.spendcalc.ui.CalculatorUiState
 import `in`.sanskar.spendcalc.ui.FormIssue
 import `in`.sanskar.spendcalc.ui.MAX_EXPENSE_ITEMS
@@ -82,7 +83,9 @@ fun CalculatorScreen(
             text = {
                 OutlinedTextField(
                     value = historyLabel,
-                    onValueChange = { historyLabel = it.take(MAX_SAVED_NAME_CHARS) },
+                    onValueChange = {
+                        historyLabel = truncateUtf16Safely(it, MAX_SAVED_NAME_CHARS)
+                    },
                     label = { Text(stringResource(R.string.history_label)) },
                     supportingText = { Text(stringResource(R.string.history_label_hint)) },
                     singleLine = true,
@@ -123,7 +126,9 @@ fun CalculatorScreen(
             text = {
                 OutlinedTextField(
                     value = templateName,
-                    onValueChange = { templateName = it.take(MAX_SAVED_NAME_CHARS) },
+                    onValueChange = {
+                        templateName = truncateUtf16Safely(it, MAX_SAVED_NAME_CHARS)
+                    },
                     label = { Text(stringResource(R.string.template_name)) },
                     singleLine = true,
                 )
