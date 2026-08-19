@@ -29,6 +29,7 @@ All notable changes to SpendCalc are documented here. The project follows a sema
 - User-driven local backup/export and restore for history, templates, and preferences through Android's document picker.
 - Visible modal backup progress state while backup reads, writes, serialization, or restore work is active.
 - Versioned backup format with SHA-256 corruption detection, strict record validation, bounded decoding, duplicate-ID rejection, and compensating rollback if a multi-store restore fails.
+- Shared persisted-record policy covering IDs, timestamps, canonical currencies, saved names, split counts, and stored history result bounds.
 - Responsive phone/tablet calculator layout.
 - About/support/funding UI with `Made by the Sanskar` credit.
 - Sequenced user-feedback events so repeated saves, deletes, backup results, and errors are not collapsed by `StateFlow` equality.
@@ -37,7 +38,9 @@ All notable changes to SpendCalc are documented here. The project follows a sema
 - Android integration tests for Room persistence and backup replacement, plus Compose and real-activity journey smoke tests.
 - Compose regression coverage for the named-history save dialog and callback wiring.
 - Compose regression coverage proving History filtering finds saved labels and removes non-matching entries.
+- Compose regression coverage for template naming guidance, confirm semantics, and Unicode boundary truncation.
 - UTF-16-safe saved-name policy tests plus backup round-trip coverage at an emoji boundary.
+- Persisted-record policy tests covering invalid history/template envelopes and backup encode rejection.
 - Settings UI coverage for the backup busy state.
 - CI compilation of instrumentation tests in addition to JVM tests, full Android lint, debug build, and release compilation.
 - Android manifest/FileProvider local-first policy guard in CI.
@@ -57,6 +60,12 @@ All notable changes to SpendCalc are documented here. The project follows a sema
 - Valid history/template names entering restore/replace paths are validated and preserved exactly rather than silently trimmed or rewritten.
 - Saved-name normalization now occurs at the repository boundary instead of being partially duplicated in the ViewModel.
 - History search input is capped at 120 characters, truncated with the same surrogate-safe helper, and the UI explains the limit.
+- Template naming now displays the same 120-character guidance and uses a concise `Save` confirm action distinct from the underlying `Save template` control.
+- Template persistence now validates finance settings at the repository boundary rather than assuming every caller has already passed through the ViewModel.
+- History and template repositories now validate persisted record envelopes before writing, so direct save/restore/replace calls cannot manufacture data that explicit backup validation later rejects.
+- Restore/replace operations validate every mapped record before invoking DAO replacement, preserving existing data when a supplied record is invalid.
+- Backup validation reuses the same persisted-record policy as repositories, including canonical template/history currency forms.
+- The production container shares one `CalculatorEngine` validator instance with template persistence.
 - Backup document I/O runs on `Dispatchers.IO`, while bounded backup encoding/decoding runs on `Dispatchers.Default` instead of the UI thread.
 - Room history/templates are captured in one transaction for backups and restored with batch DAO inserts.
 - Backup result decimals accept the full bounded magnitude that `CalculatorEngine` can legitimately produce, including converted totals up to 34 integer digits.
@@ -75,6 +84,7 @@ All notable changes to SpendCalc are documented here. The project follows a sema
 - Backup parser rejects oversized payloads, excessive line counts, malformed checksum fields, exponent-expansion decimal shapes, duplicate identifiers, invalid timestamps, invalid currencies, unsupported schema versions, oversized saved names, malformed UTF-8 input, and out-of-contract result magnitudes.
 - Backup export rejects malformed Unicode instead of silently replacing invalid surrogate data.
 - Saved-name input hardening prevents normal UI truncation from manufacturing malformed trailing surrogate data.
+- Repository persistence rejects invalid history/template IDs, timestamps, result shapes, split counts, and finance settings before DAO writes, reducing the risk of locally stored data becoming un-exportable.
 - Structured logging redacts sensitive keys and performs key normalization with `Locale.ROOT` so redaction is locale independent.
 - Production signing material is intentionally not stored in the repository.
 
