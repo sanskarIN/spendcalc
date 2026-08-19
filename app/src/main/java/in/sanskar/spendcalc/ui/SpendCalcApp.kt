@@ -24,6 +24,9 @@ import androidx.navigation.compose.rememberNavController
 import in.sanskar.spendcalc.R
 import in.sanskar.spendcalc.domain.export.CsvExportFormatter
 import in.sanskar.spendcalc.domain.export.ReceiptTextFormatter
+import in.sanskar.spendcalc.domain.model.CalculationTemplate
+import in.sanskar.spendcalc.domain.model.HistoryRecord
+import in.sanskar.spendcalc.domain.model.UserPreferences
 import in.sanskar.spendcalc.platform.ExportManager
 import in.sanskar.spendcalc.platform.ExternalLinks
 import in.sanskar.spendcalc.platform.PdfReceiptExporter
@@ -48,7 +51,7 @@ private data class NavigationDestination(
 )
 
 private val primaryDestinations = listOf(
-    NavigationDestination(ROUTE_CALCULATOR, R.string.nav_calculator, "=") ,
+    NavigationDestination(ROUTE_CALCULATOR, R.string.nav_calculator, "="),
     NavigationDestination(ROUTE_HISTORY, R.string.nav_history, "H"),
     NavigationDestination(ROUTE_TEMPLATES, R.string.nav_templates, "T"),
     NavigationDestination(ROUTE_SETTINGS, R.string.nav_settings, "S"),
@@ -83,9 +86,9 @@ fun SpendCalcApp(viewModel: SpendCalcViewModel) {
 private fun SpendCalcMainScaffold(
     viewModel: SpendCalcViewModel,
     calculator: CalculatorUiState,
-    history: List<in.sanskar.spendcalc.domain.model.HistoryRecord>,
-    templates: List<in.sanskar.spendcalc.domain.model.CalculationTemplate>,
-    preferences: in.sanskar.spendcalc.domain.model.UserPreferences,
+    history: List<HistoryRecord>,
+    templates: List<CalculationTemplate>,
+    preferences: UserPreferences,
 ) {
     val context = LocalContext.current
     val navController = rememberNavController()
@@ -111,22 +114,25 @@ private fun SpendCalcMainScaffold(
         }
     }
 
+    fun showGenericError() {
+        Toast.makeText(context, R.string.generic_error, Toast.LENGTH_SHORT).show()
+    }
+
     fun openUrl(url: String) {
-        if (!ExternalLinks.openUrl(context, url)) {
-            Toast.makeText(context, R.string.generic_error, Toast.LENGTH_SHORT).show()
-        }
+        if (!ExternalLinks.openUrl(context, url)) showGenericError()
     }
 
     fun shareReceipt() {
         val input = calculator.toCalculationInputOrNull() ?: return
         val result = calculator.result ?: return
-        val text = receiptFormatter.format(input, result)
-        ExportManager.shareText(
-            context = context,
-            title = context.getString(R.string.share_chooser_title),
-            text = text,
-            mimeType = receiptFormatter.mimeType,
-        )
+        runCatching {
+            ExportManager.shareText(
+                context = context,
+                title = context.getString(R.string.share_chooser_title),
+                text = receiptFormatter.format(input, result),
+                mimeType = receiptFormatter.mimeType,
+            )
+        }.onFailure { showGenericError() }
     }
 
     fun shareCsv() {
@@ -206,7 +212,7 @@ private fun SpendCalcMainScaffold(
                     onCurrencyChange = viewModel::updateCurrencyCode,
                     onExchangeRateChange = viewModel::updateExchangeRate,
                     onConvertedCurrencyChange = viewModel::updateConvertedCurrencyCode,
-                    onSaveHistory = viewModel::saveHistory,
+                    onSaveHistory = { viewModel.saveHistory() },
                     onSaveTemplate = viewModel::saveTemplate,
                     onReset = viewModel::resetCalculator,
                     onShareReceipt = ::shareReceipt,
@@ -251,13 +257,19 @@ private fun SpendCalcMainScaffold(
                     onOpenRepository = { openUrl(context.getString(R.string.repository_url)) },
                     onOpenBmc = { openUrl(context.getString(R.string.bmc_url)) },
                     onBusinessEmailPrimary = {
-                        ExternalLinks.email(context, context.getString(R.string.business_email_primary))
+                        if (!ExternalLinks.email(context, context.getString(R.string.business_email_primary))) {
+                            showGenericError()
+                        }
                     },
                     onBusinessEmailSecondary = {
-                        ExternalLinks.email(context, context.getString(R.string.business_email_secondary))
+                        if (!ExternalLinks.email(context, context.getString(R.string.business_email_secondary))) {
+                            showGenericError()
+                        }
                     },
                     onSupportEmail = {
-                        ExternalLinks.email(context, context.getString(R.string.support_email))
+                        if (!ExternalLinks.email(context, context.getString(R.string.support_email))) {
+                            showGenericError()
+                        }
                     },
                 )
             }
