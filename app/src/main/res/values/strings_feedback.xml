@@ -3,8 +3,8 @@
     <string name="history_saved">Calculation saved to history.</string>
     <string name="template_saved">Template saved.</string>
     <string name="history_deleted">History entry deleted.</string>
+    <string name="template_deleted">Template deleted.</string>
     <string name="undo">Undo</string>
-    <string name="entry_deleted">Deleted.</string>
     <string name="history_cleared">History cleared.</string>
     <string name="backup_exported">Backup exported successfully.</string>
     <string name="backup_restored">Backup restored successfully.</string>
