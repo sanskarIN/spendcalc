@@ -2,23 +2,10 @@
 
 Date: 2026-08-19
 
-The detailed release-candidate implementation and verification handoff is recorded in:
+The canonical engineering and continuation record is [`what_changed.md`](what_changed.md). Use it together with [`docs/verification.md`](docs/verification.md) and the current GitHub pull-request checks.
 
-- `what_changed.md` — primary continuity file;
-- `what_changed_latest.md` — expanded release-candidate work performed after the original checkpoint;
-- `docs/release-candidate-final-audit.md` — source-completeness and release audit;
-- `docs/verification.md` — automated/manual release checklist.
+`what_changed_latest.md` is now only a compatibility pointer and must not be treated as a newer source than the root work log.
 
-## Current implementation state
+The source implementation includes the Android Kotlin/Jetpack Compose application, precision-safe bounded finance engine, Room/DataStore persistence, searchable/undoable history, templates, text/CSV/PDF exports, explicit local backup/restore, preferences/accessibility behavior, automated tests/fuzz regressions, CI/security automation, and repository documentation.
 
-The repository contains the Android Kotlin/Jetpack Compose SpendCalc implementation, precision-safe finance domain, Room/DataStore persistence, history/templates, local search, text/CSV/PDF export, explicit local backup/restore, settings/onboarding/About UI, accessibility/theme support, automated tests, CI/security workflows, repository templates, and documentation required by the project plan.
-
-Release signing secrets and store credentials intentionally remain outside source control. Real release screenshots must be captured from a verified Android build using fictional data.
-
-## Verification rule
-
-Do not describe `v1.0.0` as fully verified until the configured Android CI jobs and the manual device/emulator accessibility/export/backup checks have completed successfully. If GitHub-hosted jobs are queued or temporarily unavailable, preserve that exact limitation in the handoff rather than claiming a green build.
-
-## Commit identity
-
-Repository work for this project uses the requested commit email `sanskarin@outlook.in` where the connected GitHub operation permits author metadata.
+Do not describe `v1.0.0` as fully verified until the exact release commit has successful automated checks plus the documented manual connected-device, accessibility, export/restore, screenshot, and external-signing gates. Production signing material and store credentials intentionally remain outside source control.
