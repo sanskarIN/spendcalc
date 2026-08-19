@@ -105,6 +105,14 @@ class BackupCodecTest {
     }
 
     @Test
+    fun `rejects malformed unicode before backup export`() {
+        val malformedLabel = String(charArrayOf('\uD800'))
+        val backup = emptyBackup().copy(history = listOf(history("history", 10L, malformedLabel)))
+
+        assertTrue(runCatching { codec.encode(backup) }.isFailure)
+    }
+
+    @Test
     fun `rejects malformed utf8 from a checksummed text field`() {
         val encoded = codec.encode(emptyBackup().copy(history = listOf(history("one", 10L, "One"))))
         val historyLine = encoded.lineSequence().first { it.startsWith("H\t") }
