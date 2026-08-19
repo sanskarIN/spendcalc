@@ -31,8 +31,11 @@ Coverage includes:
 - shared persisted-record policy coverage for IDs, timestamps, canonical currencies, split bounds, saved names, stored history decimal shapes, and unique batch identifiers;
 - backup round-trip coverage for a saved label whose emoji crosses the saved-name limit boundary;
 - backup encode rejection for invalid persisted-record envelopes, including noncanonical template currency and invalid history identifiers;
+- backup decode rejection for checksum-valid history/template records whose currency text is noncanonical instead of silently repairing those records;
+- strict backup-document UTF-8 decoder rejection of malformed byte sequences before parser validation;
 - CSV quoting, embedded quotes, and spreadsheet-formula neutralization;
 - text receipt output;
+- Unicode-safe PDF line truncation, including a surrogate pair crossing the ellipsis boundary;
 - versioned backup round trips, Unicode text, corruption detection, unsupported schemas, duplicate identifiers, structural limits, checksum validation, and exponent-expansion rejection;
 - safe log redaction, including Turkish-locale regression coverage;
 - canonical export path containment, including sibling-prefix bypass prevention.
@@ -123,7 +126,7 @@ The persisted-record policy therefore checks:
 
 Repositories normalize only fields that are intentionally canonicalized, such as currency codes and newly entered names. Valid restored names remain exact. `replaceAll` maps and validates every candidate and checks duplicate IDs before invoking DAO replacement, so invalid input cannot clear existing data first.
 
-The backup codec reuses the same persisted-record policy for history and template envelopes. This prevents repository and backup rules from drifting apart. See [`persistence-invariants.md`](persistence-invariants.md).
+The backup codec reuses the same persisted-record policy for history and template envelopes. Decode validates the exact decoded canonical currency form rather than normalizing malformed/noncanonical backup records first. This prevents repository and backup rules from drifting apart. See [`persistence-invariants.md`](persistence-invariants.md).
 
 ## Regression policy
 
@@ -133,6 +136,7 @@ Examples:
 
 - finance formula or validation defect -> pure JVM test/fuzz invariant;
 - backup parser or integrity defect -> codec unit test;
+- backup document byte-decoding defect -> pure JVM charset-decoder regression where possible;
 - repository/backup persistence-contract drift -> persisted-record policy plus repository/codec tests;
 - duplicate replacement identifiers -> repository batch-policy test and codec coverage;
 - saved-name normalization/Unicode-boundary defect -> saved-name policy + repository test, plus UI coverage when the user flow changes;
@@ -140,7 +144,7 @@ Examples:
 - Room replacement/migration defect -> Android database test;
 - missing Android string-resource reference -> fast Python resource audit;
 - untracked/missing codebase documentation entry -> documentation coverage guard;
-- path containment/logging defect -> pure JVM platform helper test where possible;
+- path containment/logging/PDF text-boundary defect -> pure JVM platform helper test where possible;
 - rendering/semantics/busy-state defect -> Compose or activity test.
 
 ## Database migrations
@@ -169,7 +173,7 @@ Before a production release:
 8. paste a Unicode-heavy saved name near the 120-character boundary and verify the UI remains valid and the resulting backup exports/restores successfully;
 9. create/load/delete/undo templates, verify the template dialog explains its 120-character limit, and verify its confirm action is announced distinctly from the underlying `Save template` control;
 10. verify the 100-item calculator limit is visible and the Add item action becomes disabled at the limit;
-11. share text, CSV, and PDF exports;
+11. share text, CSV, and PDF exports, including a long Unicode item name near a PDF truncation boundary;
 12. export a backup, confirm the busy state, restore it after confirmation, and verify history/templates/preferences;
 13. open GitHub/BMC/email actions from About;
 14. verify the AndroidX branded launch splash on supported OS versions;
