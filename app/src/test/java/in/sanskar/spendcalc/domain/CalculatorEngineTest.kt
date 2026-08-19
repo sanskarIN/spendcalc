@@ -123,6 +123,31 @@ class CalculatorEngineTest {
     }
 
     @Test
+    fun `rejects discount above one hundred percent`() {
+        val outcome = engine.calculate(
+            CalculationInput(
+                items = listOf(ExpenseItem("1", "Bill", BigDecimal("100"))),
+                discountPercent = BigDecimal("100.01"),
+            ),
+        )
+
+        val errors = (outcome as CalculationOutcome.Failure).errors
+        assertTrue(errors.contains(CalculationError.InvalidDiscount))
+    }
+
+    @Test
+    fun `allows bounded charge percentages above one hundred percent`() {
+        val outcome = engine.calculate(
+            CalculationInput(
+                items = listOf(ExpenseItem("1", "Bill", BigDecimal("10"))),
+                taxPercent = BigDecimal("125"),
+            ),
+        )
+
+        assertTrue(outcome is CalculationOutcome.Success)
+    }
+
+    @Test
     fun `rejects zero exchange rate and split count`() {
         val outcome = engine.calculate(
             CalculationInput(
