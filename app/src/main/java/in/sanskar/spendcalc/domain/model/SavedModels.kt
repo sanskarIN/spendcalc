@@ -2,6 +2,8 @@ package `in`.sanskar.spendcalc.domain.model
 
 import java.math.BigDecimal
 
+const val MAX_SAVED_NAME_CHARS = 120
+
 data class HistoryRecord(
     val id: String,
     val createdAtEpochMillis: Long,
