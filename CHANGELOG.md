@@ -55,6 +55,7 @@ All notable changes to SpendCalc are documented here. The project follows a sema
 
 ### Changed
 
+- Release metadata targets SpendCalc `2.0.12` with Android `versionCode` `20012`; Room database version and explicit backup schema version remain independent compatibility versions.
 - Discount validation now caps discounts at 100% so a valid discount cannot make the taxable base negative.
 - Monetary/exchange-rate inputs are bounded by supported precision, scale, text length, and integer-digit limits.
 - Split counts are bounded to 1 through 1,000,000.
@@ -100,6 +101,6 @@ All notable changes to SpendCalc are documented here. The project follows a sema
 - Structured logging redacts sensitive keys and performs key normalization with `Locale.ROOT` so redaction is locale independent.
 - Production signing material is intentionally not stored in the repository.
 
-## [1.0.0] - Planned
+## [2.0.12] - Planned
 
-First production release after the exact release-candidate pull-request automation and remaining manual Android device/accessibility/export/backup/signing/screenshot release gates are completed.
+Target production release after the exact release-candidate pull-request automation and remaining manual Android device/accessibility/export/backup/signing/screenshot release gates are completed.
