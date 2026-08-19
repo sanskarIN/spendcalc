@@ -41,6 +41,10 @@ class HistoryRepository(
         return id
     }
 
+    suspend fun restore(record: HistoryRecord) {
+        dao.upsert(record.toEntity())
+    }
+
     suspend fun delete(id: String) = dao.deleteById(id)
 
     suspend fun clear() = dao.clear()
