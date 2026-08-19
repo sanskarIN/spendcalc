@@ -33,11 +33,38 @@ jobs:
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
 
+      - name: Check formatting
+        run: python3 scripts/check_format.py
+
+      - name: Check Kotlin namespace declarations
+        run: python3 scripts/check_kotlin_namespace.py
+
+      - name: Check tracked-file documentation coverage
+        run: python3 scripts/check_documentation_coverage.py
+
+      - name: Check Android string resource references
+        run: python3 scripts/check_android_resources.py
+
+      - name: Check Android local-first security policy
+        run: python3 scripts/check_android_security.py
+
       - name: Verify repository metadata and links
         run: python3 scripts/check_repository.py
 
-      - name: Verify release candidate
-        run: gradle --no-daemon clean testDebugUnitTest lintDebug assembleRelease
+      - name: Scan repository for common secret patterns
+        run: python3 scripts/scan_secrets.py
+
+      - name: Unit tests
+        run: gradle --no-daemon clean testDebugUnitTest
+
+      - name: Compile instrumentation tests
+        run: gradle --no-daemon assembleDebugAndroidTest
+
+      - name: Android lint
+        run: gradle --no-daemon lint
+
+      - name: Release compilation
+        run: gradle --no-daemon assembleRelease
 
       - name: Upload unsigned release artifact
         uses: actions/upload-artifact@v4
