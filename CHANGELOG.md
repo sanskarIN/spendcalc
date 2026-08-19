@@ -45,7 +45,11 @@ All notable changes to SpendCalc are documented here. The project follows a sema
 - CI compilation of instrumentation tests in addition to JVM tests, full Android lint, debug build, and release compilation.
 - Android manifest/FileProvider local-first policy guard in CI.
 - Android string-resource reference/duplicate-name audit in CI and the lightweight Repository Audit workflow.
-- Repository metadata/link audit, secret-pattern scan, CodeQL, and dependency-review workflows.
+- Exhaustive `docs/codebase-reference.md` documenting every tracked root/configuration/GitHub/build/source/test/resource/script/policy/documentation file and its ownership/invariant role.
+- `docs/documentation-map.md` defining documentation authority, update triggers, anti-drift rules, and a change-to-document matrix.
+- `scripts/check_documentation_coverage.py` comparing the codebase file index with `git ls-files` and rejecting missing, stale, or duplicated documentation entries.
+- Documentation coverage enforcement in both the main CI workflow and the lightweight Repository Audit workflow.
+- Repository required-file enforcement for the exhaustive codebase reference, documentation map, and documentation coverage guard.
 - Project policies for privacy, security, support, contribution, and community conduct.
 
 ### Changed
@@ -63,7 +67,7 @@ All notable changes to SpendCalc are documented here. The project follows a sema
 - Template naming now displays the same 120-character guidance and uses a concise `Save` confirm action distinct from the underlying `Save template` control.
 - Template persistence now validates finance settings at the repository boundary rather than assuming every caller has already passed through the ViewModel.
 - History and template repositories now validate persisted record envelopes before writing, so direct save/restore/replace calls cannot manufacture data that explicit backup validation later rejects.
-- Restore/replace operations validate every mapped record before invoking DAO replacement, preserving existing data when a supplied record is invalid.
+- Restore/replace operations validate every mapped record and duplicate identifier before invoking DAO replacement, preserving existing data when supplied records are invalid.
 - Backup validation reuses the same persisted-record policy as repositories, including canonical template/history currency forms.
 - The production container shares one `CalculatorEngine` validator instance with template persistence.
 - Backup document I/O runs on `Dispatchers.IO`, while bounded backup encoding/decoding runs on `Dispatchers.Default` instead of the UI thread.
@@ -74,6 +78,9 @@ All notable changes to SpendCalc are documented here. The project follows a sema
 - Bottom-navigation icon graphics are decorative when a visible text label already provides the accessible name, avoiding duplicate screen-reader announcements.
 - GitHub Actions use maintained major action versions and concurrency cancellation for superseded pull-request runs.
 - CI runs Android lint across configured variants rather than only the debug variant.
+- Development, testing, architecture, setup, contribution, maintenance, release, verification, and source-audit documentation now cross-reference one explicit documentation source-of-truth model instead of duplicating ambiguous status.
+- The repository's intentional absence of a committed Gradle wrapper is documented explicitly; command-line setup uses compatible local Gradle 8.9 while CI pins Gradle 8.9 through the setup action.
+- Future tracked Room schema files are explicitly treated as migration/release evidence that must be individually covered by the exhaustive file reference.
 
 ### Security
 
@@ -84,10 +91,10 @@ All notable changes to SpendCalc are documented here. The project follows a sema
 - Backup parser rejects oversized payloads, excessive line counts, malformed checksum fields, exponent-expansion decimal shapes, duplicate identifiers, invalid timestamps, invalid currencies, unsupported schema versions, oversized saved names, malformed UTF-8 input, and out-of-contract result magnitudes.
 - Backup export rejects malformed Unicode instead of silently replacing invalid surrogate data.
 - Saved-name input hardening prevents normal UI truncation from manufacturing malformed trailing surrogate data.
-- Repository persistence rejects invalid history/template IDs, timestamps, result shapes, split counts, and finance settings before DAO writes, reducing the risk of locally stored data becoming un-exportable.
+- Repository persistence rejects invalid history/template IDs, timestamps, result shapes, split counts, finance settings, and duplicate batch identifiers before DAO writes/replacement, reducing the risk of locally stored data becoming un-exportable.
 - Structured logging redacts sensitive keys and performs key normalization with `Locale.ROOT` so redaction is locale independent.
 - Production signing material is intentionally not stored in the repository.
 
 ## [1.0.0] - Planned
 
-First production release after the current pull-request automation and remaining manual device/accessibility/signing/screenshot release gates are completed.
+First production release after the exact release-candidate pull-request automation and remaining manual Android device/accessibility/export/backup/signing/screenshot release gates are completed.
