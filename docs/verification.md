@@ -1,14 +1,15 @@
 # Release Candidate Verification
 
-This checklist is the source of truth for deciding whether an exact SpendCalc commit is ready to tag. A configured workflow is not counted as passed until GitHub reports success for the final commit.
+This checklist is the source of truth for deciding whether an exact SpendCalc commit is ready to tag. A configured workflow is not counted as passed until GitHub reports an acceptable successful conclusion for the final commit. Source completeness, automated checks, manual Android checks, signing, and screenshots are distinct evidence classes.
 
 ## Automated pull-request checks
 
 - [ ] Formatting guard passes.
 - [ ] Kotlin namespace/package guard passes.
+- [ ] Tracked-file documentation coverage guard passes: every `git ls-files` path appears exactly once in `docs/codebase-reference.md`, with no stale entries.
 - [ ] Android default string-resource reference/duplicate-name audit passes.
 - [ ] Android local-first manifest/FileProvider security audit passes.
-- [ ] Repository metadata and local Markdown-link audit passes.
+- [ ] Repository required-file/metadata/local Markdown-link audit passes, including the exhaustive codebase reference, documentation map, and documentation-coverage guard.
 - [ ] Common secret-pattern scan passes.
 - [ ] JVM unit and deterministic fuzz/regression tests pass, including UTF-16 saved-name boundary coverage.
 - [ ] Persistence-invariant tests pass for history/template IDs, timestamps, names, currencies, split/result bounds, template finance settings, and duplicate replacement IDs.
@@ -20,7 +21,21 @@ This checklist is the source of truth for deciding whether an exact SpendCalc co
 - [ ] Release APK compiles with the repository's current release configuration.
 - [ ] CodeQL Java/Kotlin analysis completes without a release-blocking finding.
 - [ ] Dependency review completes without a release-blocking finding.
-- [ ] Repository Audit workflow passes, including the Android string-resource guard and required persistence-invariant documentation.
+- [ ] Repository Audit workflow passes, including documentation coverage and Android string-resource checks.
+
+## Documentation consistency checks
+
+These are source/repository checks and do not replace runtime/manual verification.
+
+- [ ] `docs/codebase-reference.md` describes every tracked root/configuration/GitHub/build/source/test/resource/script/policy/documentation file exactly once.
+- [ ] `docs/documentation-map.md` correctly identifies the authoritative document for public behavior, architecture, persistence/backup/security/privacy, testing, maintenance, release, and active-work continuity.
+- [ ] New/renamed/deleted tracked files have matching codebase-reference changes in the same release candidate.
+- [ ] `README.md` and `docs/features.md` describe implemented behavior and limits rather than roadmap-only work.
+- [ ] `docs/architecture.md`, `docs/development.md`, and `docs/testing.md` agree on dependency boundaries, persistence validation, build tooling, and quality commands.
+- [ ] `docs/persistence-invariants.md`, `docs/security-backup.md`, and backup/repository tests agree on the persisted-record contract.
+- [ ] `PRIVACY.md`, `docs/privacy-backup.md`, manifest backup/data-extraction XML, and explicit-backup docs do not contradict each other.
+- [ ] `what_changed_final.md` and `what_changed_latest.md` remain compatibility pointers to canonical `what_changed.md`, not independent/current release-state documents.
+- [ ] No permanent document falsely promotes a queued/pending/cancelled/superseded workflow to successful verification.
 
 ## Android device/emulator checks
 
@@ -31,6 +46,7 @@ These require a connected Android runtime and are intentionally not claimed by a
 - [ ] Compose calculator, named-history-save/Unicode-boundary dialog, template-name/Unicode-boundary dialog, History label-filter, and Settings busy-state tests pass.
 - [ ] Real-activity calculate -> named save -> History journey passes and verifies both the saved label and amount.
 - [ ] Fresh install shows the branded SpendCalc launch splash and then onboarding.
+- [ ] Returning install does not show a false onboarding flash while preferences load.
 - [ ] Calculator, History, Templates, Settings, and About navigation work.
 - [ ] Saving with a meaningful history label stores that label and History search finds the entry by it; blank labels fall back to `Calculation`.
 - [ ] Pasting a Unicode-heavy saved name near the 120-character boundary does not leave malformed text, and the resulting record can be backed up and restored successfully.
@@ -40,6 +56,7 @@ These require a connected Android runtime and are intentionally not claimed by a
 - [ ] Template save dialog explains the 120-character name limit and its `Save` confirmation is distinct from the underlying `Save template` action.
 - [ ] Calculator stops at 100 editable line items, disables Add item, and explains the limit.
 - [ ] Text, CSV, and PDF exports open the expected Android share flow.
+- [ ] Exported cache files remain shareable only through the intended FileProvider flow.
 - [ ] Backup export opens the document creator; backup restore opens the document picker and requires confirmation before replacement.
 - [ ] Backup progress is visible during real work and duplicate backup actions remain disabled until completion.
 - [ ] Restored history, including exact accepted history labels, templates, theme/accessibility preferences, and retention preference match the selected backup.
@@ -57,18 +74,21 @@ These require a connected Android runtime and are intentionally not claimed by a
 - [ ] Named-history save dialog title, optional label field, supporting text, Save, and Cancel are announced in a logical order.
 - [ ] Template save dialog title, name field, length guidance, Save, and Cancel are announced in a logical order without duplicate `Save template` ambiguity.
 - [ ] Primary navigation destinations are announced once rather than duplicating icon + label names.
+- [ ] Validation/error meaning remains understandable without color alone.
 - [ ] Small phone layout reviewed.
 - [ ] Tablet/wide layout reviewed.
 - [ ] Touch targets and destructive-action wording reviewed.
 
 ## Data, privacy, and security checks
 
-- [ ] No private test data appears in committed assets.
+- [ ] No private test data appears in committed assets or screenshots.
 - [ ] No production signing material, secrets, tokens, or local configuration are committed.
+- [ ] `.env.example` remains non-secret documentation; core operation still requires no remote API key.
 - [ ] App manifest still has no `INTERNET` permission unless a future feature explicitly requires and documents it.
 - [ ] FileProvider remains non-exported and limited to the private export cache path.
-- [ ] CSV formula-neutralization regression tests pass.
-- [ ] Backup size/line/record/decimal/schema/checksum validation tests pass.
+- [ ] Canonical path-containment regression tests pass.
+- [ ] CSV formula-neutralization regression/fuzz tests pass.
+- [ ] Backup size/line/record/text/decimal/schema/checksum validation tests pass.
 - [ ] Saved history/template names produced through normal save operations stay within the shared 120-character contract and remain well-formed UTF-16.
 - [ ] Valid accepted history/template names entering restore/replace paths are preserved exactly rather than silently trimmed or rewritten.
 - [ ] Persisted record IDs are nonblank, bounded, valid Unicode, and unique inside replacement collections.
@@ -78,19 +98,24 @@ These require a connected Android runtime and are intentionally not claimed by a
 - [ ] Invalid or duplicate replacement records fail before DAO replacement and do not erase existing data.
 - [ ] Backup encoding applies the same persisted-record envelope rules as repositories instead of silently canonicalizing malformed in-memory backup objects.
 - [ ] Malformed Unicode saved names fail closed, while a valid emoji crossing the saved-name boundary is truncated safely and still round-trips through backup encoding/decoding.
-- [ ] SafeLogger redaction tests pass.
-- [ ] Android system-managed backup/device-transfer behavior matches `PRIVACY.md`.
+- [ ] SafeLogger redaction tests pass, including locale-independent sensitive-key normalization.
+- [ ] Android system-managed backup/device-transfer behavior matches `PRIVACY.md` and `docs/privacy-backup.md`.
+- [ ] Explicit backup documentation correctly states that the SHA-256 checksum detects accidental corruption but is not a signature/MAC/authorship proof.
 
 ## Release checks
 
-- [ ] `README.md`, `CHANGELOG.md`, `ROADMAP.md`, `docs/`, and `what_changed.md` match actual behavior.
+- [ ] `README.md`, `CHANGELOG.md`, `ROADMAP.md`, permanent `docs/`, and `what_changed.md` match actual behavior/status.
+- [ ] `docs/codebase-reference.md` and `docs/documentation-map.md` are current for the exact release commit.
 - [ ] `docs/persistence-invariants.md` matches the repository and backup codec implementation.
 - [ ] Version code/name are correct for the intended release.
+- [ ] Any committed Room schema history matches the database version/migration contract; future schema files are individually documented in the file reference.
 - [ ] Production signing material remains outside source control and is supplied by the release environment only.
 - [ ] Real release screenshots are captured from the verified build and use fictional data only.
-- [ ] The signed artifact is produced from the exact verified commit.
+- [ ] The signed artifact is produced from the exact verified/tagged commit.
+- [ ] The signed artifact installs and reports the expected version.
+- [ ] Artifact checksum/source-SHA relationship is recorded/verified.
 - [ ] `v1.0.0` is created only after all release-blocking automated and manual items above are complete.
 
 ## Current status
 
-The feature implementation and source-level hardening are complete on the release-candidate branch. The final pull-request automation and manual Android/accessibility/signing/screenshot gates remain open until explicitly completed; this document must not be edited to claim success before those results exist.
+The feature implementation, persistence/export hardening, and deep source-level documentation work are present on the release-candidate branch. This checklist intentionally leaves automated boxes unchecked until exact-head GitHub runs report results, and leaves Android/accessibility/signing/screenshot boxes unchecked until those real external/manual activities occur. Source audit completion is not a substitute for those remaining gates.
