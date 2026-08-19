@@ -83,7 +83,7 @@ class CalculatorScreenTest {
         openTemplateDialog()
         composeRule.onNodeWithText("Give this template a short name. Up to 120 characters.").assertIsDisplayed()
         templateNameField().performTextInput("Dinner preset")
-        composeRule.onNodeWithText("Save template").performClick()
+        composeRule.onNodeWithText("Save").performClick()
 
         composeRule.runOnIdle {
             assertEquals("Dinner preset", savedTemplate)
@@ -101,7 +101,7 @@ class CalculatorScreenTest {
 
         openTemplateDialog()
         templateNameField().performTextInput(prefix + "😀")
-        composeRule.onNodeWithText("Save template").performClick()
+        composeRule.onNodeWithText("Save").performClick()
 
         composeRule.runOnIdle {
             assertEquals(prefix, savedTemplate)
