@@ -61,8 +61,9 @@ Android coverage includes:
 - backup replacement across persisted Room records;
 - Compose calculator/receipt smoke rendering;
 - Compose named-history save dialog rendering, text entry, and callback wiring;
+- Compose History filtering that verifies a saved label is found while non-matching entries disappear;
 - Settings backup busy/progress state and disabled duplicate backup actions;
-- a real-activity journey that completes onboarding when needed, enters an amount, verifies the calculated result, saves it, navigates to History, and verifies the saved amount.
+- a real-activity journey that completes onboarding when needed, enters an amount, verifies the calculated result, saves it with a meaningful label, navigates to History, and verifies both the saved label and amount.
 
 CI compiles the instrumentation suite on every pull request so Android tests cannot silently stop compiling. Actual emulator/device execution remains a documented release gate.
 
@@ -75,6 +76,7 @@ Examples:
 - finance formula or validation defect -> pure JVM test/fuzz invariant;
 - backup parser or integrity defect -> codec unit test;
 - saved-name normalization defect -> repository unit test plus UI test when the user flow changes;
+- history search/filter defect -> focused Compose History test;
 - Room replacement/migration defect -> Android database test;
 - path containment/logging defect -> pure JVM platform helper test where possible;
 - rendering/semantics/busy-state defect -> Compose or activity test.
@@ -99,7 +101,7 @@ Before a production release:
 4. enable large system font scale and the app large-text preference;
 5. enable reduced motion and verify navigation motion is removed;
 6. use TalkBack for major controls, dialogs, lists, primary navigation, and progress messaging;
-7. save a calculation with a meaningful history label, verify it is searchable by that label, then create/search/delete/undo/clear/auto-delete history with controlled test data;
+7. save a calculation with a meaningful history label, verify it is searchable by that label, confirm the search query stops at 120 characters, then create/search/delete/undo/clear/auto-delete history with controlled test data;
 8. create/load/delete/undo templates;
 9. verify the 100-item calculator limit is visible and the Add item action becomes disabled at the limit;
 10. share text, CSV, and PDF exports;
