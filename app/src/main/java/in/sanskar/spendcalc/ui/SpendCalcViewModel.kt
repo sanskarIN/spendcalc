@@ -271,7 +271,11 @@ class SpendCalcViewModel(
     }
 
     private fun showFeedback(value: ActionFeedback) {
-        _calculator.value = _calculator.value.copy(feedback = value)
+        val state = _calculator.value
+        _calculator.value = state.copy(
+            feedback = value,
+            feedbackSequence = state.feedbackSequence + 1L,
+        )
     }
 
     private fun updateNumericField(
