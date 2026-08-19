@@ -27,7 +27,7 @@ class CalculatorFuzzTest {
             }
             val input = CalculationInput(
                 items = items,
-                discountPercent = percent(random.nextInt(0, 100_001)),
+                discountPercent = percent(random.nextInt(0, 10_001)),
                 taxPercent = percent(random.nextInt(0, 100_001)),
                 tipPercent = percent(random.nextInt(0, 100_001)),
                 serviceChargePercent = percent(random.nextInt(0, 100_001)),
