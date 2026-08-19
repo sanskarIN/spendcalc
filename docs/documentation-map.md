@@ -149,7 +149,7 @@ Repository or backup validation changes must reconcile this document and its tes
 
 **Audience:** maintainers/release reviewers.
 
-**Authoritative for:** source-level completeness audit of the current `1.0.0` candidate. Its checked source items mean “implemented/audited in source,” not “all runtime/release gates passed.”
+**Authoritative for:** source-level completeness audit of the current `2.0.12` candidate. Its checked source items mean “implemented/audited in source,” not “all runtime/release gates passed.”
 
 ## Build, setup, and operations documentation
 
@@ -235,7 +235,7 @@ Compatibility files retained for older handoffs. They must point to the canonica
 | Build/dependency/toolchain | `setup.md`, `development.md`, `troubleshooting.md`, `github-maintenance.md`, `CHANGELOG.md` when release/user impact exists |
 | CI/repository guard | `development.md`, `testing.md`, `github-maintenance.md`, `verification.md`, `codebase-reference.md` |
 | New/renamed/deleted tracked file | `codebase-reference.md` is mandatory; nearest architecture/testing/docs should also be reviewed |
-| Release status | `what_changed.md`, `verification.md`, `ROADMAP.md`, `release-candidate-final-audit.md` as applicable |
+| Release status/version metadata | `CHANGELOG.md`, `ROADMAP.md`, `release.md`, `verification.md`, `release-candidate-final-audit.md`, `what_changed.md`; keep Room/backup schema versions independent unless compatibility actually changes |
 
 ## Anti-drift rules
 
