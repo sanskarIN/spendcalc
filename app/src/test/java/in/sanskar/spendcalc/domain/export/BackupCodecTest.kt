@@ -80,6 +80,26 @@ class BackupCodecTest {
     }
 
     @Test
+    fun `rejects exponent shaped decimals before rendering an export`() {
+        val unsafe = history("huge", 10L, "Unsafe").copy(subtotal = BigDecimal("1E+1000"))
+
+        assertTrue(runCatching { codec.encode(emptyBackup().copy(history = listOf(unsafe))) }.isFailure)
+    }
+
+    @Test
+    fun `rejects exponent shaped decimals from checksummed input`() {
+        val encoded = codec.encode(emptyBackup().copy(history = listOf(history("one", 10L, "One"))))
+        val body = encoded.substringBeforeLast("SHA256\t")
+            .replaceFirst("\t100.00\t", "\t1E+1000\t")
+        val payload = body + "SHA256\t${sha256(body)}\n"
+
+        assertEquals(
+            BackupDecodeResult.Failure(BackupDecodeError.INVALID_RECORD),
+            codec.decode(payload),
+        )
+    }
+
+    @Test
     fun `rejects duplicate identifiers from a checksummed payload`() {
         val first = history("same", 10L, "A")
         val second = first.copy(label = "B", createdAtEpochMillis = 20L)
