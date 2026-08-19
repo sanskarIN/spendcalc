@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
+import java.nio.charset.CodingErrorAction
 import java.nio.charset.StandardCharsets
 
 object BackupFileIo {
@@ -19,7 +20,10 @@ object BackupFileIo {
     fun read(context: Context, uri: Uri): String {
         val stream = context.contentResolver.openInputStream(uri)
             ?: error("Unable to open backup source")
-        return InputStreamReader(stream, StandardCharsets.UTF_8).use { reader ->
+        val decoder = StandardCharsets.UTF_8.newDecoder()
+            .onMalformedInput(CodingErrorAction.REPORT)
+            .onUnmappableCharacter(CodingErrorAction.REPORT)
+        return InputStreamReader(stream, decoder).use { reader ->
             val result = StringBuilder()
             val buffer = CharArray(BUFFER_SIZE)
             while (true) {
