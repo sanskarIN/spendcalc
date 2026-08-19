@@ -254,8 +254,9 @@ class BackupCodec {
     }.getOrNull()
 
     private fun validHistory(record: HistoryRecord): Boolean {
-        if (record.id.isBlank() || record.id.length > MAX_FIELD_CHARS) return false
-        if (record.createdAtEpochMillis < 0L || record.label.length > MAX_FIELD_CHARS) return false
+        if (record.id.isBlank() || record.id.length > MAX_ID_CHARS) return false
+        if (record.createdAtEpochMillis < 0L) return false
+        if (record.label.isBlank() || record.label.length > MAX_NAME_CHARS) return false
         if (!validCurrency(record.currencyCode) || !validCurrency(record.convertedCurrencyCode)) return false
         if (record.splitCount !in 1..MAX_SPLIT_COUNT) return false
         return listOf(
@@ -272,8 +273,9 @@ class BackupCodec {
     }
 
     private fun validTemplate(template: CalculationTemplate): Boolean {
-        if (template.id.isBlank() || template.id.length > MAX_FIELD_CHARS) return false
-        if (template.name.length > MAX_FIELD_CHARS || template.createdAtEpochMillis < 0L) return false
+        if (template.id.isBlank() || template.id.length > MAX_ID_CHARS) return false
+        if (template.name.isBlank() || template.name.length > MAX_NAME_CHARS) return false
+        if (template.createdAtEpochMillis < 0L) return false
         val errors = calculatorEngine.validate(
             CalculationInput(
                 items = emptyList(),
@@ -322,9 +324,10 @@ class BackupCodec {
         require(value.length <= MAX_ENCODED_FIELD_CHARS)
         val decoded = DECODER.decode(value)
         require(decoded.size <= MAX_FIELD_BYTES)
-        return String(decoded, StandardCharsets.UTF_8).also { text ->
-            require(text.length <= MAX_FIELD_CHARS)
-        }
+        val text = String(decoded, StandardCharsets.UTF_8)
+        require(text.toByteArray(StandardCharsets.UTF_8).contentEquals(decoded))
+        require(text.length <= MAX_FIELD_CHARS)
+        return text
     }
 
     private fun requireUniqueIds(ids: List<String>, label: String) {
@@ -349,6 +352,8 @@ class BackupCodec {
         const val MAX_FIELD_CHARS = 4_096
         const val MAX_FIELD_BYTES = 16_384
         const val MAX_ENCODED_FIELD_CHARS = 24_000
+        const val MAX_ID_CHARS = 128
+        const val MAX_NAME_CHARS = 120
         const val MAX_DECIMAL_CHARS = 128
         // A valid 100-item calculation with maximum bounded charges and exchange rate can
         // legitimately produce a converted total with up to 34 integer digits.
