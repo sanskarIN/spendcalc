@@ -56,7 +56,7 @@ The companion [`documentation-map.md`](documentation-map.md) explains which docu
 
 ### Android module build and schema metadata
 
-- `app/build.gradle.kts` — Android application configuration: namespace/application ID, API 26+ support, compile/target SDK, `1.0.0` version metadata, Java 17, Compose, release shrinking, dependencies, tests, packaging, and Room schema export arguments.
+- `app/build.gradle.kts` — Android application configuration: namespace/application ID, API 26+ support, compile/target SDK, `2.0.12`/`versionCode 20012` application metadata, Java 17, Compose, release shrinking, dependencies, tests, packaging, and Room schema export arguments.
 - `app/proguard-rules.pro` — App-specific R8/ProGuard rule location; intentionally minimal because current dependencies primarily provide their own consumer rules.
 - `app/schemas/README.md` — Explains the Room exported-schema directory and the requirement to preserve/version schema history when migrations begin.
 
@@ -91,7 +91,7 @@ The companion [`documentation-map.md`](documentation-map.md) explains which docu
 ### Finance domain, export contracts, and persisted models
 
 - `app/src/main/java/in/sanskar/spendcalc/domain/CalculatorEngine.kt` — Pure precision-safe finance engine and validator: item totals, discount, charges, manual conversion, split, rounding, numeric bounds, currency rules, and typed calculation errors.
-- `app/src/main/java/in/sanskar/spendcalc/domain/export/BackupCodec.kt` — Deterministic versioned backup serializer/parser with URL-safe Base64 text fields, SHA-256 corruption detection, bounded parsing, record validation, duplicate-ID rejection, canonical persisted-record policy reuse, and fail-closed decoding.
+- `app/src/main/java/in/sanskar/spendcalc/domain/export/BackupCodec.kt` — Deterministic versioned backup serializer/parser with URL-safe Base64 text fields, SHA-256 corruption detection, bounded parsing, duplicate-ID rejection, exact canonical persisted-currency validation, shared persisted-record policy reuse, and fail-closed decoding.
 - `app/src/main/java/in/sanskar/spendcalc/domain/export/CsvExportFormatter.kt` — Platform-independent CSV receipt serializer with quoting and spreadsheet-formula neutralization for text cells.
 - `app/src/main/java/in/sanskar/spendcalc/domain/export/ExportFormatter.kt` — Small domain interface for platform-independent text-based export implementations.
 - `app/src/main/java/in/sanskar/spendcalc/domain/export/ReceiptTextFormatter.kt` — Human-readable plain-text receipt serializer used by Android sharing.
@@ -102,11 +102,11 @@ The companion [`documentation-map.md`](documentation-map.md) explains which docu
 
 ### Android platform adapters
 
-- `app/src/main/java/in/sanskar/spendcalc/platform/BackupFileIo.kt` — Bounded UTF-8 document read/write adapter for Android Storage Access Framework backup URIs.
+- `app/src/main/java/in/sanskar/spendcalc/platform/BackupFileIo.kt` — Bounded Android Storage Access Framework backup I/O with strict UTF-8 document decoding that reports malformed/unmappable input instead of replacing invalid bytes.
 - `app/src/main/java/in/sanskar/spendcalc/platform/ExportManager.kt` — Android export/share coordinator that writes app-private cache exports and launches user-selected share flows with temporary URI access.
 - `app/src/main/java/in/sanskar/spendcalc/platform/ExternalLinks.kt` — Safe explicit-user-action helpers for opening repository/funding URLs and email applications without making the core app network-dependent.
 - `app/src/main/java/in/sanskar/spendcalc/platform/PathSafety.kt` — Canonical-path containment helper preventing cache-export path prefix/sibling escape mistakes.
-- `app/src/main/java/in/sanskar/spendcalc/platform/PdfReceiptExporter.kt` — Offline Android `PdfDocument` renderer for receipt export.
+- `app/src/main/java/in/sanskar/spendcalc/platform/PdfReceiptExporter.kt` — Offline Android `PdfDocument` renderer for receipt export with Unicode-safe line truncation at the ellipsis boundary.
 - `app/src/main/java/in/sanskar/spendcalc/platform/SafeLogger.kt` — Structured logging boundary that normalizes keys with `Locale.ROOT` and redacts sensitive categories instead of recording raw private values.
 
 ### Compose presentation, navigation, screens, and theme
@@ -164,7 +164,7 @@ The companion [`documentation-map.md`](documentation-map.md) explains which docu
 - `app/src/test/java/in/sanskar/spendcalc/domain/CalculatorEngineTest.kt` — Exact arithmetic, rounding, order-of-operations, validation, currency, split, percentage, and numeric-bound tests for `CalculatorEngine`.
 - `app/src/test/java/in/sanskar/spendcalc/domain/CalculatorFuzzTest.kt` — Deterministic seeded finance regression/fuzz invariants for valid and invalid generated inputs.
 - `app/src/test/java/in/sanskar/spendcalc/domain/export/BackupCodecFuzzTest.kt` — Deterministic generated backup round-trip/corruption mutations that must remain reproducible in CI.
-- `app/src/test/java/in/sanskar/spendcalc/domain/export/BackupCodecPersistedPolicyTest.kt` — Verifies backup encode/decode obeys the same persisted-record envelope and canonicalization expectations as repositories.
+- `app/src/test/java/in/sanskar/spendcalc/domain/export/BackupCodecPersistedPolicyTest.kt` — Verifies backup encode/decode obeys the same persisted-record envelope and exact canonical-currency expectations as repositories, including checksum-valid noncanonical decode rejection.
 - `app/src/test/java/in/sanskar/spendcalc/domain/export/BackupCodecSavedNamePolicyTest.kt` — Exercises saved-name Unicode/surrogate boundary behavior through real backup serialization round trips.
 - `app/src/test/java/in/sanskar/spendcalc/domain/export/BackupCodecTest.kt` — Primary backup-format tests for deterministic round trips, checksums, versions, records, Unicode, preferences, identifiers, and structural limits.
 - `app/src/test/java/in/sanskar/spendcalc/domain/export/BackupCodecValidationTest.kt` — Focused malformed/invalid backup-record validation regressions and fail-closed outcomes.
@@ -176,7 +176,7 @@ The companion [`documentation-map.md`](documentation-map.md) explains which docu
 
 ### JVM platform/presentation tests
 
-- `app/src/test/java/in/sanskar/spendcalc/platform/PathSafetyTest.kt` — Canonical path-containment tests including sibling-prefix bypass prevention.
+- `app/src/test/java/in/sanskar/spendcalc/platform/PathSafetyTest.kt` — Platform regression bundle covering canonical export-path containment, malformed UTF-8 backup-byte rejection through the strict decoder, and Unicode-safe PDF line truncation.
 - `app/src/test/java/in/sanskar/spendcalc/platform/SafeLoggerTest.kt` — Sensitive-key redaction and locale-independent key-normalization regressions, including Turkish-locale behavior.
 - `app/src/test/java/in/sanskar/spendcalc/ui/AppUiStateTest.kt` — Presentation feedback/event sequencing regression coverage.
 
@@ -201,7 +201,7 @@ The companion [`documentation-map.md`](documentation-map.md) explains which docu
 - `docs/performance.md` — Performance model, bounded-work decisions, off-main-thread I/O, profiling expectations, and thresholds for future optimization work.
 - `docs/persistence-invariants.md` — Permanent contract requiring every repository-accepted saved record to remain backup-exportable, including shared names/IDs/currency/timestamp/split/decimal/duplicate-ID rules.
 - `docs/privacy-backup.md` — Privacy analysis for explicit user-created backups versus Android system-managed backup/device transfer.
-- `docs/release-candidate-final-audit.md` — Source-level 1.0.0 release-candidate audit; records what is implemented without falsely claiming pending automated/manual gates passed.
+- `docs/release-candidate-final-audit.md` — Source-level `2.0.12` release-candidate audit; records what is implemented without falsely claiming pending automated/manual gates passed.
 - `docs/release.md` — Release workflow, versioning, exact-commit verification, unsigned artifact generation, external signing, screenshots, and tag/publication steps.
 - `docs/security-backup.md` — Backup/restore threat model, parser limits, Unicode/text/decimal validation, checksum semantics, rollback, and format-evolution security requirements.
 - `docs/setup.md` — Local environment/setup instructions for Git, JDK 17, Android SDK 35, Gradle/Android Studio, build/run, and troubleshooting handoff.
