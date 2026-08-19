@@ -27,8 +27,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -43,14 +41,15 @@ class SpendCalcViewModel(
 ) : ViewModel() {
     private val _calculator = MutableStateFlow(CalculatorUiState())
     val calculator: StateFlow<CalculatorUiState> = _calculator
+    private val _preferences = MutableStateFlow(UserPreferences())
+    val preferences: StateFlow<UserPreferences> = _preferences
     private var lastDeletedHistory: HistoryRecord? = null
     private var lastDeletedTemplate: CalculationTemplate? = null
+    private var lastAutoDeletePolicy: AutoDeleteHistory? = null
 
-    val preferences: StateFlow<UserPreferences> = settingsRepository.preferences.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = UserPreferences(),
-    )
+    @Volatile
+    var preferencesLoaded: Boolean = false
+        private set
 
     val history = historyRepository.observeHistory().stateIn(
         scope = viewModelScope,
@@ -67,10 +66,15 @@ class SpendCalcViewModel(
     init {
         recalculate()
         viewModelScope.launch {
-            settingsRepository.preferences
-                .map { it.autoDeleteHistory }
-                .distinctUntilChanged()
-                .collect(::applyAutoDeletePolicy)
+            settingsRepository.preferences.collect { storedPreferences ->
+                _preferences.value = storedPreferences
+                val policyChanged = lastAutoDeletePolicy != storedPreferences.autoDeleteHistory
+                lastAutoDeletePolicy = storedPreferences.autoDeleteHistory
+                preferencesLoaded = true
+                if (policyChanged) {
+                    applyAutoDeletePolicy(storedPreferences.autoDeleteHistory)
+                }
+            }
         }
     }
 
