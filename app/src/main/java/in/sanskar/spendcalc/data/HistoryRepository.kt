@@ -49,7 +49,7 @@ class HistoryRepository(
         dao.deleteOlderThan(cutoffEpochMillis)
 
     suspend fun replaceAll(records: List<HistoryRecord>) {
-        dao.replaceAll(records.map(HistoryRecord::toEntity))
+        dao.replaceAll(records.map { it.toEntity() })
     }
 
     private fun HistoryRecord.toEntity(): HistoryEntity =
