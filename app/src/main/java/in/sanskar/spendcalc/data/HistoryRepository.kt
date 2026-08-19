@@ -19,23 +19,23 @@ class HistoryRepository(
     suspend fun save(result: CalculationResult, label: String = "Calculation"): String {
         val id = UUID.randomUUID().toString()
         dao.upsert(
-            HistoryEntity(
+            HistoryRecord(
                 id = id,
                 createdAtEpochMillis = clock(),
                 label = label.trim().ifBlank { "Calculation" },
                 currencyCode = result.currencyCode,
                 convertedCurrencyCode = result.convertedCurrencyCode,
-                subtotal = result.subtotal.toPlainString(),
-                discountAmount = result.discountAmount.toPlainString(),
-                taxAmount = result.taxAmount.toPlainString(),
-                tipAmount = result.tipAmount.toPlainString(),
-                serviceChargeAmount = result.serviceChargeAmount.toPlainString(),
-                total = result.total.toPlainString(),
-                convertedTotal = result.convertedTotal.toPlainString(),
-                perPerson = result.perPerson.toPlainString(),
-                convertedPerPerson = result.convertedPerPerson.toPlainString(),
+                subtotal = result.subtotal,
+                discountAmount = result.discountAmount,
+                taxAmount = result.taxAmount,
+                tipAmount = result.tipAmount,
+                serviceChargeAmount = result.serviceChargeAmount,
+                total = result.total,
+                convertedTotal = result.convertedTotal,
+                perPerson = result.perPerson,
+                convertedPerPerson = result.convertedPerPerson,
                 splitCount = result.splitCount,
-            ),
+            ).toEntity(),
         )
         return id
     }
@@ -46,6 +46,29 @@ class HistoryRepository(
 
     suspend fun purgeOlderThan(cutoffEpochMillis: Long): Int =
         dao.deleteOlderThan(cutoffEpochMillis)
+
+    suspend fun replaceAll(records: List<HistoryRecord>) {
+        dao.replaceAll(records.map(HistoryRecord::toEntity))
+    }
+
+    private fun HistoryRecord.toEntity(): HistoryEntity =
+        HistoryEntity(
+            id = id,
+            createdAtEpochMillis = createdAtEpochMillis,
+            label = label.trim().ifBlank { "Calculation" },
+            currencyCode = currencyCode.trim().uppercase(),
+            convertedCurrencyCode = convertedCurrencyCode.trim().uppercase(),
+            subtotal = subtotal.toPlainString(),
+            discountAmount = discountAmount.toPlainString(),
+            taxAmount = taxAmount.toPlainString(),
+            tipAmount = tipAmount.toPlainString(),
+            serviceChargeAmount = serviceChargeAmount.toPlainString(),
+            total = total.toPlainString(),
+            convertedTotal = convertedTotal.toPlainString(),
+            perPerson = perPerson.toPlainString(),
+            convertedPerPerson = convertedPerPerson.toPlainString(),
+            splitCount = splitCount,
+        )
 
     private fun HistoryEntity.toDomain(): HistoryRecord =
         HistoryRecord(
