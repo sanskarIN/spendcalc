@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="converted_currency_code">Converted currency</string>
+    <string name="converted_per_person">Converted per person</string>
+    <string name="share_pdf">Share PDF</string>
+    <string name="receipt_invalid_hint">Fix the highlighted fields to generate a receipt.</string>
+    <string name="share_chooser_title">Share SpendCalc result</string>
+    <string name="export_failed">Could not create the export file.</string>
+</resources>
