@@ -1,0 +1,49 @@
+name: Feature request
+description: Suggest a focused improvement for SpendCalc.
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or user need
+      description: Explain the real workflow or limitation this would improve.
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed behavior
+      description: Describe the smallest useful solution without prescribing unnecessary implementation details.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Calculation
+        - History
+        - Templates
+        - Export
+        - Accessibility
+        - Settings
+        - Documentation
+        - Build/CI
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: privacy
+    attributes:
+      label: Privacy/offline impact
+      description: Note whether the idea changes local storage, permissions, or offline behavior.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched for similar requests first.
+          required: true
+        - label: The core request does not require SpendCalc to become unusable offline.
+          required: true
