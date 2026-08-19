@@ -80,8 +80,8 @@ class PdfReceiptExporter {
             page = null
             FileOutputStream(file).use(document::writeTo)
         } finally {
-            if (page != null) {
-                runCatching { document.finishPage(page) }
+            page?.let { unfinishedPage ->
+                runCatching { document.finishPage(unfinishedPage) }
             }
             document.close()
         }
