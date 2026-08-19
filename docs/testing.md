@@ -19,10 +19,17 @@ Coverage includes:
 - locale-independent currency normalization;
 - history repository save/delete/restore/clear/retention behavior;
 - history-label trimming, blank fallback, shared 120-character persistence bound, exact valid restore behavior, and over-limit restore rejection;
+- history persistence-envelope rejection for invalid IDs, timestamps, split counts, stored result magnitudes, negative stored values, and noncanonical result inputs after normalization;
+- history replace-all prevalidation that leaves existing records untouched when any candidate record is invalid;
 - template repository save/delete/exact-restore/replace behavior;
 - template-name trimming, blank fallback, shared 120-character persistence bound, exact valid restore behavior, and over-limit restore rejection;
+- template repository finance validation for discount/tax/tip/service, split, exchange-rate, and currency settings even when the caller bypasses the ViewModel;
+- template persistence-envelope validation for IDs/timestamps/canonical currencies plus replace-all prevalidation;
+- confirmation that template save validates only settings that are actually persisted, not line items that templates intentionally discard;
 - UTF-16-safe saved-name truncation, malformed-surrogate rejection, and recovery from a previously split trailing surrogate boundary;
+- shared persisted-record policy coverage for IDs, timestamps, canonical currencies, split bounds, saved names, and stored history decimal shapes;
 - backup round-trip coverage for a saved label whose emoji crosses the saved-name limit boundary;
+- backup encode rejection for invalid persisted-record envelopes, including noncanonical template currency and invalid history identifiers;
 - CSV quoting, embedded quotes, and spreadsheet-formula neutralization;
 - text receipt output;
 - versioned backup round trips, Unicode text, corruption detection, unsupported schemas, duplicate identifiers, structural limits, checksum validation, and exponent-expansion rejection;
@@ -63,6 +70,8 @@ Android coverage includes:
 - backup replacement across persisted Room records;
 - Compose calculator/receipt smoke rendering;
 - Compose named-history save dialog rendering, text entry, and callback wiring;
+- Compose history-label Unicode-boundary behavior;
+- Compose template dialog naming guidance, callback wiring, distinct confirm semantics, and Unicode-boundary behavior;
 - Compose History filtering that verifies a saved label is found while non-matching entries disappear;
 - Settings backup busy/progress state and disabled duplicate backup actions;
 - a real-activity journey that completes onboarding when needed, enters an amount, verifies the calculated result, saves it with a meaningful label, navigates to History, and verifies both the saved label and amount.
@@ -82,6 +91,24 @@ Fast Python guards run before the Android build work:
 
 The Android string-resource audit scans Kotlin sources plus manifest/resource XML references against default strings under `app/src/main/res/values/`. This catches missing `R.string.*`/`@string/*` references and duplicate default string names before resource compilation.
 
+## Persistence invariant policy
+
+History and template repositories are treated as trust boundaries, not passive DAO wrappers. A caller that bypasses Compose/ViewModel code must still be unable to store data that the explicit backup codec later rejects.
+
+The persisted-record policy therefore checks:
+
+- nonblank, bounded, well-formed identifiers;
+- nonnegative creation timestamps;
+- valid saved names;
+- canonical three-letter stored currency codes;
+- supported history split counts;
+- nonnegative bounded stored history result decimals;
+- template finance settings through `CalculatorEngine`.
+
+Repositories normalize only fields that are intentionally canonicalized, such as currency codes and newly entered names. Valid restored names remain exact. `replaceAll` maps and validates every candidate before invoking the DAO replacement operation, so one invalid record cannot clear existing data first.
+
+The backup codec reuses the same persisted-record policy for history and template envelopes. This prevents repository and backup rules from drifting apart.
+
 ## Regression policy
 
 Every confirmed bug should receive a regression test at the lowest practical layer before or with the fix.
@@ -90,6 +117,7 @@ Examples:
 
 - finance formula or validation defect -> pure JVM test/fuzz invariant;
 - backup parser or integrity defect -> codec unit test;
+- repository/backup persistence-contract drift -> persisted-record policy plus repository/codec tests;
 - saved-name normalization/Unicode-boundary defect -> saved-name policy + repository test, plus UI coverage when the user flow changes;
 - history search/filter defect -> focused Compose History test;
 - Room replacement/migration defect -> Android database test;
@@ -119,7 +147,7 @@ Before a production release:
 6. use TalkBack for major controls, dialogs, lists, primary navigation, and progress messaging;
 7. save a calculation with a meaningful history label, verify it is searchable by that label, confirm the search query stops at 120 characters, then create/search/delete/undo/clear/auto-delete history with controlled test data;
 8. paste a Unicode-heavy saved name near the 120-character boundary and verify the UI remains valid and the resulting backup exports/restores successfully;
-9. create/load/delete/undo templates;
+9. create/load/delete/undo templates, verify the template dialog explains its 120-character limit, and verify its confirm action is announced distinctly from the underlying `Save template` control;
 10. verify the 100-item calculator limit is visible and the Add item action becomes disabled at the limit;
 11. share text, CSV, and PDF exports;
 12. export a backup, confirm the busy state, restore it after confirmation, and verify history/templates/preferences;
