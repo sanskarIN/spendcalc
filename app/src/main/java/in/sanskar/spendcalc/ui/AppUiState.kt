@@ -50,3 +50,9 @@ data class CalculatorUiState(
     val feedback: ActionFeedback = ActionFeedback.NONE,
     val feedbackSequence: Long = 0L,
 )
+
+internal fun CalculatorUiState.withFeedback(value: ActionFeedback): CalculatorUiState =
+    copy(
+        feedback = value,
+        feedbackSequence = feedbackSequence + 1L,
+    )
