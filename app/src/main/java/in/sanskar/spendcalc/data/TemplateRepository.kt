@@ -4,7 +4,8 @@ import `in`.sanskar.spendcalc.data.local.TemplateDao
 import `in`.sanskar.spendcalc.data.local.TemplateEntity
 import `in`.sanskar.spendcalc.domain.model.CalculationInput
 import `in`.sanskar.spendcalc.domain.model.CalculationTemplate
-import `in`.sanskar.spendcalc.domain.model.MAX_SAVED_NAME_CHARS
+import `in`.sanskar.spendcalc.domain.model.normalizeSavedName
+import `in`.sanskar.spendcalc.domain.model.requireValidSavedName
 import java.math.BigDecimal
 import java.util.Locale
 import java.util.UUID
@@ -80,15 +81,6 @@ class TemplateRepository(
             exchangeRate = BigDecimal(exchangeRate),
             convertedCurrencyCode = convertedCurrencyCode,
         )
-
-    private fun normalizeSavedName(value: String, fallback: String): String =
-        value.trim().take(MAX_SAVED_NAME_CHARS).ifBlank { fallback }
-
-    private fun requireValidSavedName(value: String): String {
-        require(value.isNotBlank()) { "Template name must not be blank" }
-        require(value.length <= MAX_SAVED_NAME_CHARS) { "Template name is too long" }
-        return value
-    }
 
     private companion object {
         const val DEFAULT_TEMPLATE_NAME = "Template"
