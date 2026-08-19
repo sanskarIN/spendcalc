@@ -13,11 +13,15 @@ The release process has four distinct evidence classes:
 
 Do not collapse these classes into one “done” statement.
 
+## Current target
+
+The active release candidate targets app version **2.0.12** with Android `versionCode` **20012**. This is application/distribution metadata only: Room database version and explicit backup schema version remain independent compatibility versions and are not bumped merely to match the app version.
+
 ## Pre-release checklist
 
 1. Confirm `README.md`, `CHANGELOG.md`, `ROADMAP.md`, permanent `docs/`, and `what_changed.md` match actual behavior/status.
 2. Confirm [`docs/codebase-reference.md`](codebase-reference.md) documents every tracked file and [`docs/documentation-map.md`](documentation-map.md) reflects current source-of-truth relationships.
-3. Verify `versionCode` and `versionName` in `app/build.gradle.kts`.
+3. Verify `versionCode = 20012` and `versionName = "2.0.12"` in `app/build.gradle.kts` for this release candidate.
 4. Run all fast repository/static checks:
 
 ```bash
@@ -107,13 +111,13 @@ The public/tag workflow may prove that source compiles into an unsigned release 
 After the verified candidate is merged to the protected default branch and all release-blocking automated/manual gates are complete:
 
 ```bash
-git tag -s v1.0.0 -m "SpendCalc 1.0.0"
-git push origin v1.0.0
+git tag -s v2.0.12 -m "SpendCalc 2.0.12"
+git push origin v2.0.12
 ```
 
 Use an unsigned tag only if signed tagging is unavailable and document that limitation.
 
-Do not create `v1.0.0` while required automated checks are pending/queued/failed/cancelled, while a newer unverified commit supersedes the checked SHA, or while documented manual release gates remain incomplete.
+Do not create `v2.0.12` while required automated checks are pending/queued/failed/cancelled, while a newer unverified commit supersedes the checked SHA, or while documented manual release gates remain incomplete.
 
 ## Release artifacts
 
@@ -124,7 +128,7 @@ Before publishing an artifact:
 - record/verify the source commit SHA;
 - verify artifact checksum(s);
 - install the exact artifact on a test device;
-- confirm About shows the expected version;
+- confirm About shows `2.0.12` for this release;
 - verify it does not contain debug-only credentials/endpoints or private test data;
 - confirm privacy/security documentation matches behavior;
 - confirm the artifact corresponds to the tagged commit SHA;
