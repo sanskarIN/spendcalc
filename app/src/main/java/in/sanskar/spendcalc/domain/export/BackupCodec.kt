@@ -317,7 +317,9 @@ class BackupCodec {
 
     private fun text(value: String): String {
         require(value.length <= MAX_FIELD_CHARS)
-        return ENCODER.encodeToString(value.toByteArray(StandardCharsets.UTF_8))
+        val encodedBytes = value.toByteArray(StandardCharsets.UTF_8)
+        require(String(encodedBytes, StandardCharsets.UTF_8) == value)
+        return ENCODER.encodeToString(encodedBytes)
     }
 
     private fun decodedText(value: String): String {
