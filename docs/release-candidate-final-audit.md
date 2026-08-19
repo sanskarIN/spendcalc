@@ -1,12 +1,14 @@
-# SpendCalc 1.0.0 Release-Candidate Final Audit
+# SpendCalc 2.0.12 Release-Candidate Final Audit
 
 Date: 2026-08-19
 
-This file is the final **source-level** audit checklist for the first public release candidate. It complements [`verification.md`](verification.md), [`codebase-reference.md`](codebase-reference.md), and the root work-continuity document. Checked items below mean the implementation/documentation exists and was source-audited; they do not imply pending CI/device/signing/screenshot gates have run successfully.
+This file is the final **source-level** audit checklist for the current `2.0.12` production release candidate. It complements [`verification.md`](verification.md), [`codebase-reference.md`](codebase-reference.md), and the root work-continuity document. Checked items below mean the implementation/documentation exists and was source-audited; they do not imply pending CI/device/signing/screenshot gates have run successfully.
 
 ## Source completeness
 
 - [x] Android app module and release/debug build configuration exist.
+- [x] Application metadata targets `versionName = "2.0.12"` and monotonic Android `versionCode = 20012`.
+- [x] Room database and explicit backup schema compatibility versions remain independent from the app release number; no artificial migration was introduced for the version bump.
 - [x] Kotlin/Compose application entry point exists.
 - [x] Domain finance engine uses `BigDecimal` rather than floating-point arithmetic.
 - [x] Itemized expenses, discount, tax, tip, service charge, manual currency conversion, and split calculation are implemented.
@@ -33,6 +35,7 @@ This file is the final **source-level** audit checklist for the first public rel
 - [x] The shared 120-character saved-name contract is reused by backup validation so normal persisted data cannot later violate backup name limits.
 - [x] Valid accepted history/template names entering restore/replace paths are validated and preserved exactly instead of being silently normalized again.
 - [x] Saved-name truncation never leaves a valid surrogate pair split at the boundary, and malformed surrogate input fails closed.
+- [x] PDF receipt line truncation reuses Unicode-safe truncation so a supplementary code point crossing the ellipsis boundary cannot leave a dangling surrogate.
 - [x] A shared persisted-record policy defines ID, timestamp, canonical-currency, saved-name, history split, saved-result-shape, and batch-identifier rules.
 - [x] History persistence validates records before DAO writes, including direct save/restore callers that bypass ViewModel/UI code.
 - [x] Template persistence validates both structural envelope fields and the exact finance settings it stores through `CalculatorEngine`.
@@ -41,6 +44,8 @@ This file is the final **source-level** audit checklist for the first public rel
 - [x] History/template batch replacement maps and validates every candidate before invoking the DAO, so an invalid record cannot clear valid existing data first.
 - [x] Backup validation reuses shared persisted-record predicates rather than maintaining a separate structural policy.
 - [x] Backup encoding rejects noncanonical in-memory persisted records instead of silently changing their semantics during serialization.
+- [x] Backup decode validates persisted history/template currencies in their exact decoded form and rejects noncanonical forms instead of uppercasing/repairing them.
+- [x] Backup document input uses a strict UTF-8 decoder that reports malformed and unmappable byte sequences rather than silently replacing them.
 - [x] CSV text cells neutralize common spreadsheet-formula prefixes.
 - [x] Export files use app cache + FileProvider rather than broad storage access.
 - [x] Export path containment uses canonical path semantics.
@@ -68,7 +73,10 @@ This file is the final **source-level** audit checklist for the first public rel
 - [x] Shared persisted-record policy tests cover IDs, timestamps, currencies, history split/result bounds, and template envelopes.
 - [x] Backup codec coverage proves a saved label whose emoji crosses the 120-character boundary remains exportable and round-trips exactly after safe normalization.
 - [x] Backup codec persisted-policy tests reject noncanonical template currencies, invalid history identifiers, and negative template timestamps during encode.
+- [x] Backup codec persisted-policy tests reject checksum-valid history/template records whose decoded currency text is noncanonical.
 - [x] Backup codec round-trip, corruption, version, malformed/oversized input, and deterministic fuzz coverage.
+- [x] Strict backup UTF-8 decoder regression rejects malformed byte sequences.
+- [x] PDF line-truncation regression covers a surrogate pair crossing the truncation boundary, normal ASCII budget behavior, and short Unicode preservation.
 - [x] Room round-trip and transactional replace-all instrumentation tests.
 - [x] Compose calculator smoke test.
 - [x] Named-history save dialog Compose regression coverage, including an emoji at the saved-name boundary.
@@ -150,6 +158,6 @@ Automated Android build/lint/test/security/repository checks are authoritative o
 
 This audit can mark source/documentation existence and structural review complete, but it cannot execute a connected Android runtime, perform TalkBack review, externally sign an artifact, capture real screenshots, or verify store distribution. Those remain explicit unchecked gates in `docs/verification.md` until actually performed.
 
-The source branch may remain open while runners are unavailable. `v1.0.0` must not be represented as a fully verified release until the exact-head automated checks and manual Android accessibility/export/backup/device/signing/screenshot checks complete.
+The source branch may remain open while runners are unavailable. `v2.0.12` must not be represented as a fully verified release until the exact-head automated checks and manual Android accessibility/export/backup/device/signing/screenshot checks complete.
 
 Production signing material, store credentials, real personal test data, and fabricated screenshots must remain outside source control.
