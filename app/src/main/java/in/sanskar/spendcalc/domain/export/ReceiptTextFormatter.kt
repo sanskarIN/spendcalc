@@ -1,7 +1,7 @@
-package in.sanskar.spendcalc.domain.export
+package `in`.sanskar.spendcalc.domain.export
 
-import in.sanskar.spendcalc.domain.model.CalculationInput
-import in.sanskar.spendcalc.domain.model.CalculationResult
+import `in`.sanskar.spendcalc.domain.model.CalculationInput
+import `in`.sanskar.spendcalc.domain.model.CalculationResult
 
 class ReceiptTextFormatter : ExportFormatter {
     override val mimeType: String = "text/plain"

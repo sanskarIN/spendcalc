@@ -1,11 +1,12 @@
-package in.sanskar.spendcalc.domain
+package `in`.sanskar.spendcalc.domain
 
-import in.sanskar.spendcalc.domain.model.CalculationError
-import in.sanskar.spendcalc.domain.model.CalculationInput
-import in.sanskar.spendcalc.domain.model.CalculationOutcome
-import in.sanskar.spendcalc.domain.model.CalculationResult
-import in.sanskar.spendcalc.domain.model.RoundingPolicy
+import `in`.sanskar.spendcalc.domain.model.CalculationError
+import `in`.sanskar.spendcalc.domain.model.CalculationInput
+import `in`.sanskar.spendcalc.domain.model.CalculationOutcome
+import `in`.sanskar.spendcalc.domain.model.CalculationResult
+import `in`.sanskar.spendcalc.domain.model.RoundingPolicy
 import java.math.BigDecimal
+import java.util.Locale
 
 /**
  * Precision-safe expense arithmetic.
@@ -57,8 +58,8 @@ class CalculatorEngine(
                     roundingPolicy.moneyScale,
                     roundingPolicy.roundingMode,
                 ),
-                currencyCode = input.currencyCode.trim().uppercase(),
-                convertedCurrencyCode = input.convertedCurrencyCode.trim().uppercase(),
+                currencyCode = normalizeCurrencyCode(input.currencyCode),
+                convertedCurrencyCode = normalizeCurrencyCode(input.convertedCurrencyCode),
                 splitCount = input.splitCount,
             ),
         )
@@ -92,7 +93,10 @@ class CalculatorEngine(
         value >= BigDecimal.ZERO && value <= MAX_PERCENTAGE
 
     private fun validCurrencyCode(value: String): Boolean =
-        CURRENCY_CODE.matches(value.trim().uppercase())
+        CURRENCY_CODE.matches(normalizeCurrencyCode(value))
+
+    private fun normalizeCurrencyCode(value: String): String =
+        value.trim().uppercase(Locale.ROOT)
 
     private companion object {
         val ONE_HUNDRED = BigDecimal("100")

@@ -1,4 +1,4 @@
-package in.sanskar.spendcalc.platform
+package `in`.sanskar.spendcalc.platform
 
 import android.content.Context
 import android.content.Intent

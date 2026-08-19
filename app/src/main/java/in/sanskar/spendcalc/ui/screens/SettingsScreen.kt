@@ -1,4 +1,4 @@
-package in.sanskar.spendcalc.ui.screens
+package `in`.sanskar.spendcalc.ui.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,12 +23,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
-import in.sanskar.spendcalc.R
-import in.sanskar.spendcalc.domain.model.AutoDeleteHistory
-import in.sanskar.spendcalc.domain.model.ThemeMode
-import in.sanskar.spendcalc.domain.model.UserPreferences
-import in.sanskar.spendcalc.ui.components.ScreenHeader
-import in.sanskar.spendcalc.ui.theme.SpendCalcTokens
+import `in`.sanskar.spendcalc.R
+import `in`.sanskar.spendcalc.domain.model.AutoDeleteHistory
+import `in`.sanskar.spendcalc.domain.model.ThemeMode
+import `in`.sanskar.spendcalc.domain.model.UserPreferences
+import `in`.sanskar.spendcalc.ui.components.ScreenHeader
+import `in`.sanskar.spendcalc.ui.theme.SpendCalcTokens
 
 @Composable
 fun SettingsScreen(

@@ -1,6 +1,6 @@
-package in.sanskar.spendcalc.ui
+package `in`.sanskar.spendcalc.ui
 
-import in.sanskar.spendcalc.domain.model.CalculationResult
+import `in`.sanskar.spendcalc.domain.model.CalculationResult
 import java.util.UUID
 
 data class ExpenseItemDraft(

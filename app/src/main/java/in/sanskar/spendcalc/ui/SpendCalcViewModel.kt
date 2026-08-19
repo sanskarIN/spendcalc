@@ -1,22 +1,23 @@
-package in.sanskar.spendcalc.ui
+package `in`.sanskar.spendcalc.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import in.sanskar.spendcalc.AppContainer
-import in.sanskar.spendcalc.data.HistoryRepository
-import in.sanskar.spendcalc.data.SettingsRepository
-import in.sanskar.spendcalc.data.TemplateRepository
-import in.sanskar.spendcalc.domain.CalculatorEngine
-import in.sanskar.spendcalc.domain.model.AutoDeleteHistory
-import in.sanskar.spendcalc.domain.model.CalculationError
-import in.sanskar.spendcalc.domain.model.CalculationInput
-import in.sanskar.spendcalc.domain.model.CalculationOutcome
-import in.sanskar.spendcalc.domain.model.CalculationTemplate
-import in.sanskar.spendcalc.domain.model.ExpenseItem
-import in.sanskar.spendcalc.domain.model.ThemeMode
-import in.sanskar.spendcalc.domain.model.UserPreferences
+import `in`.sanskar.spendcalc.AppContainer
+import `in`.sanskar.spendcalc.data.HistoryRepository
+import `in`.sanskar.spendcalc.data.SettingsRepository
+import `in`.sanskar.spendcalc.data.TemplateRepository
+import `in`.sanskar.spendcalc.domain.CalculatorEngine
+import `in`.sanskar.spendcalc.domain.model.AutoDeleteHistory
+import `in`.sanskar.spendcalc.domain.model.CalculationError
+import `in`.sanskar.spendcalc.domain.model.CalculationInput
+import `in`.sanskar.spendcalc.domain.model.CalculationOutcome
+import `in`.sanskar.spendcalc.domain.model.CalculationTemplate
+import `in`.sanskar.spendcalc.domain.model.ExpenseItem
+import `in`.sanskar.spendcalc.domain.model.ThemeMode
+import `in`.sanskar.spendcalc.domain.model.UserPreferences
 import java.math.BigDecimal
+import java.util.Locale
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -84,10 +85,12 @@ class SpendCalcViewModel(
     fun updateTip(value: String) = updateCalculator { it.copy(tipPercent = value) }
     fun updateServiceCharge(value: String) = updateCalculator { it.copy(serviceChargePercent = value) }
     fun updateSplitCount(value: String) = updateCalculator { it.copy(splitCount = value) }
-    fun updateCurrencyCode(value: String) = updateCalculator { it.copy(currencyCode = value.uppercase()) }
+    fun updateCurrencyCode(value: String) = updateCalculator {
+        it.copy(currencyCode = value.uppercase(Locale.ROOT))
+    }
     fun updateExchangeRate(value: String) = updateCalculator { it.copy(exchangeRate = value) }
     fun updateConvertedCurrencyCode(value: String) = updateCalculator {
-        it.copy(convertedCurrencyCode = value.uppercase())
+        it.copy(convertedCurrencyCode = value.uppercase(Locale.ROOT))
     }
 
     fun resetCalculator() {

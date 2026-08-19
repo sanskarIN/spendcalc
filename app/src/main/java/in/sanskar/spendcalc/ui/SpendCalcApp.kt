@@ -1,4 +1,4 @@
-package in.sanskar.spendcalc.ui
+package `in`.sanskar.spendcalc.ui
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.padding
@@ -21,22 +21,22 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import in.sanskar.spendcalc.R
-import in.sanskar.spendcalc.domain.export.CsvExportFormatter
-import in.sanskar.spendcalc.domain.export.ReceiptTextFormatter
-import in.sanskar.spendcalc.domain.model.CalculationTemplate
-import in.sanskar.spendcalc.domain.model.HistoryRecord
-import in.sanskar.spendcalc.domain.model.UserPreferences
-import in.sanskar.spendcalc.platform.ExportManager
-import in.sanskar.spendcalc.platform.ExternalLinks
-import in.sanskar.spendcalc.platform.PdfReceiptExporter
-import in.sanskar.spendcalc.ui.screens.AboutScreen
-import in.sanskar.spendcalc.ui.screens.CalculatorScreen
-import in.sanskar.spendcalc.ui.screens.HistoryScreen
-import in.sanskar.spendcalc.ui.screens.OnboardingScreen
-import in.sanskar.spendcalc.ui.screens.SettingsScreen
-import in.sanskar.spendcalc.ui.screens.TemplatesScreen
-import in.sanskar.spendcalc.ui.theme.SpendCalcTheme
+import `in`.sanskar.spendcalc.R
+import `in`.sanskar.spendcalc.domain.export.CsvExportFormatter
+import `in`.sanskar.spendcalc.domain.export.ReceiptTextFormatter
+import `in`.sanskar.spendcalc.domain.model.CalculationTemplate
+import `in`.sanskar.spendcalc.domain.model.HistoryRecord
+import `in`.sanskar.spendcalc.domain.model.UserPreferences
+import `in`.sanskar.spendcalc.platform.ExportManager
+import `in`.sanskar.spendcalc.platform.ExternalLinks
+import `in`.sanskar.spendcalc.platform.PdfReceiptExporter
+import `in`.sanskar.spendcalc.ui.screens.AboutScreen
+import `in`.sanskar.spendcalc.ui.screens.CalculatorScreen
+import `in`.sanskar.spendcalc.ui.screens.HistoryScreen
+import `in`.sanskar.spendcalc.ui.screens.OnboardingScreen
+import `in`.sanskar.spendcalc.ui.screens.SettingsScreen
+import `in`.sanskar.spendcalc.ui.screens.TemplatesScreen
+import `in`.sanskar.spendcalc.ui.theme.SpendCalcTheme
 
 private const val ROUTE_CALCULATOR = "calculator"
 private const val ROUTE_HISTORY = "history"

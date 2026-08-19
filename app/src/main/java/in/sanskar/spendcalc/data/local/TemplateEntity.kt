@@ -1,4 +1,4 @@
-package in.sanskar.spendcalc.data.local
+package `in`.sanskar.spendcalc.data.local
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

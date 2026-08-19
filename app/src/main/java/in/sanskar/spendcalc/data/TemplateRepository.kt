@@ -1,10 +1,11 @@
-package in.sanskar.spendcalc.data
+package `in`.sanskar.spendcalc.data
 
-import in.sanskar.spendcalc.data.local.TemplateDao
-import in.sanskar.spendcalc.data.local.TemplateEntity
-import in.sanskar.spendcalc.domain.model.CalculationInput
-import in.sanskar.spendcalc.domain.model.CalculationTemplate
+import `in`.sanskar.spendcalc.data.local.TemplateDao
+import `in`.sanskar.spendcalc.data.local.TemplateEntity
+import `in`.sanskar.spendcalc.domain.model.CalculationInput
+import `in`.sanskar.spendcalc.domain.model.CalculationTemplate
 import java.math.BigDecimal
+import java.util.Locale
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -14,7 +15,7 @@ class TemplateRepository(
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
     fun observeTemplates(): Flow<List<CalculationTemplate>> =
-        dao.observeAll().map { templates -> templates.map(TemplateEntity::toDomain) }
+        dao.observeAll().map { templates -> templates.map { it.toDomain() } }
 
     suspend fun save(name: String, input: CalculationInput): String {
         val id = UUID.randomUUID().toString()
@@ -28,9 +29,9 @@ class TemplateRepository(
                 tipPercent = input.tipPercent.toPlainString(),
                 serviceChargePercent = input.serviceChargePercent.toPlainString(),
                 splitCount = input.splitCount,
-                currencyCode = input.currencyCode.trim().uppercase(),
+                currencyCode = input.currencyCode.trim().uppercase(Locale.ROOT),
                 exchangeRate = input.exchangeRate.toPlainString(),
-                convertedCurrencyCode = input.convertedCurrencyCode.trim().uppercase(),
+                convertedCurrencyCode = input.convertedCurrencyCode.trim().uppercase(Locale.ROOT),
             ),
         )
         return id

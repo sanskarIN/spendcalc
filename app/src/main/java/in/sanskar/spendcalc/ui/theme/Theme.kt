@@ -1,14 +1,18 @@
-package in.sanskar.spendcalc.ui.theme
+package `in`.sanskar.spendcalc.ui.theme
 
+import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
-import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.sp
-import in.sanskar.spendcalc.domain.model.ThemeMode
+import androidx.core.view.WindowCompat
+import `in`.sanskar.spendcalc.domain.model.ThemeMode
 
 private val LightColors = lightColorScheme(
     primary = Color(0xFF5B3FD3),
@@ -49,6 +53,17 @@ fun SpendCalcTheme(
         ThemeMode.LIGHT -> false
         ThemeMode.DARK -> true
     }
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val activity = view.context as? Activity ?: return@SideEffect
+            WindowCompat.getInsetsController(activity.window, view).apply {
+                isAppearanceLightStatusBars = !dark
+                isAppearanceLightNavigationBars = !dark
+            }
+        }
+    }
+
     val base = Typography()
     val typography = if (largeText) {
         base.copy(

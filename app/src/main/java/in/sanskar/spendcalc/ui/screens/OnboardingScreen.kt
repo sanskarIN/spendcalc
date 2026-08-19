@@ -1,4 +1,4 @@
-package in.sanskar.spendcalc.ui.screens
+package `in`.sanskar.spendcalc.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -17,8 +17,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import in.sanskar.spendcalc.R
-import in.sanskar.spendcalc.ui.theme.SpendCalcTokens
+import `in`.sanskar.spendcalc.R
+import `in`.sanskar.spendcalc.ui.theme.SpendCalcTokens
 
 @Composable
 fun OnboardingScreen(

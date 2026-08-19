@@ -43,6 +43,9 @@ jobs:
       - name: Check formatting
         run: python3 scripts/check_format.py
 
+      - name: Check Kotlin namespace declarations
+        run: python3 scripts/check_kotlin_namespace.py
+
       - name: Scan repository for common secret patterns
         run: python3 scripts/scan_secrets.py
 

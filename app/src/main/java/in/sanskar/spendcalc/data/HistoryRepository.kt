@@ -1,9 +1,9 @@
-package in.sanskar.spendcalc.data
+package `in`.sanskar.spendcalc.data
 
-import in.sanskar.spendcalc.data.local.HistoryDao
-import in.sanskar.spendcalc.data.local.HistoryEntity
-import in.sanskar.spendcalc.domain.model.CalculationResult
-import in.sanskar.spendcalc.domain.model.HistoryRecord
+import `in`.sanskar.spendcalc.data.local.HistoryDao
+import `in`.sanskar.spendcalc.data.local.HistoryEntity
+import `in`.sanskar.spendcalc.domain.model.CalculationResult
+import `in`.sanskar.spendcalc.domain.model.HistoryRecord
 import java.math.BigDecimal
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
@@ -14,7 +14,7 @@ class HistoryRepository(
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
     fun observeHistory(): Flow<List<HistoryRecord>> =
-        dao.observeAll().map { entries -> entries.map(HistoryEntity::toDomain) }
+        dao.observeAll().map { entries -> entries.map { it.toDomain() } }
 
     suspend fun save(result: CalculationResult, label: String = "Calculation"): String {
         val id = UUID.randomUUID().toString()

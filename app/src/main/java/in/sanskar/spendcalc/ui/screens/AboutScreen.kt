@@ -1,4 +1,4 @@
-package in.sanskar.spendcalc.ui.screens
+package `in`.sanskar.spendcalc.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -15,10 +15,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import in.sanskar.spendcalc.BuildConfig
-import in.sanskar.spendcalc.R
-import in.sanskar.spendcalc.ui.components.ScreenHeader
-import in.sanskar.spendcalc.ui.theme.SpendCalcTokens
+import `in`.sanskar.spendcalc.BuildConfig
+import `in`.sanskar.spendcalc.R
+import `in`.sanskar.spendcalc.ui.components.ScreenHeader
+import `in`.sanskar.spendcalc.ui.theme.SpendCalcTokens
 
 @Composable
 fun AboutScreen(
@@ -48,7 +48,7 @@ fun AboutScreen(
                 verticalArrangement = Arrangement.spacedBy(SpendCalcTokens.SpaceSm),
             ) {
                 Text(
-                    text = "SpendCalc",
+                    text = stringResource(R.string.app_name),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                 )
