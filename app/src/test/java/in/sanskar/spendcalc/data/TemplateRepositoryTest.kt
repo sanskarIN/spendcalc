@@ -4,6 +4,7 @@ import `in`.sanskar.spendcalc.data.local.TemplateDao
 import `in`.sanskar.spendcalc.data.local.TemplateEntity
 import `in`.sanskar.spendcalc.domain.model.CalculationInput
 import `in`.sanskar.spendcalc.domain.model.CalculationTemplate
+import `in`.sanskar.spendcalc.domain.model.MAX_SAVED_NAME_CHARS
 import java.math.BigDecimal
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,6 +41,27 @@ class TemplateRepositoryTest {
         assertEquals("INR", template.currencyCode)
         assertEquals("USD", template.convertedCurrencyCode)
         assertEquals(BigDecimal("0.0119"), template.exchangeRate)
+    }
+
+    @Test
+    fun `normalizes and bounds saved template names`() = runTest {
+        val dao = FakeTemplateDao()
+        val repository = TemplateRepository(dao)
+        val oversized = "  ${"t".repeat(MAX_SAVED_NAME_CHARS + 25)}  "
+
+        repository.save(oversized, CalculationInput(items = emptyList()))
+
+        assertEquals("t".repeat(MAX_SAVED_NAME_CHARS), repository.observeTemplates().first().single().name)
+    }
+
+    @Test
+    fun `blank template names use a stable fallback`() = runTest {
+        val dao = FakeTemplateDao()
+        val repository = TemplateRepository(dao)
+
+        repository.save("   ", CalculationInput(items = emptyList()))
+
+        assertEquals("Template", repository.observeTemplates().first().single().name)
     }
 
     @Test
