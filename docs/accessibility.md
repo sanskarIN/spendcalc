@@ -6,6 +6,7 @@ SpendCalc aims for practical WCAG-oriented mobile accessibility rather than trea
 
 - Material text fields expose visible labels.
 - Major actions use text labels rather than icon-only meaning.
+- The named-history save dialog uses a visible dialog title, labeled text input, explicit supporting guidance, a concise `Save` action, and a separate cancel path.
 - Primary navigation uses vector icons together with persistent text labels; decorative icon content descriptions are suppressed so screen readers do not announce the same destination twice.
 - Radio choices use semantic radio-button roles.
 - Switches include nearby explanatory text.
@@ -30,20 +31,21 @@ Verify the following in logical order:
 3. Add/remove item controls and the item-limit state.
 4. Percentage, split, currency, and exchange-rate fields.
 5. Save/reset/export actions.
-6. Receipt labels and values.
-7. Bottom navigation destinations are announced once with clear names.
-8. History/template action buttons and Undo feedback.
-9. Settings radio controls/switches.
-10. Backup progress text, disabled backup actions, and restore confirmation dialog.
-11. About contact/funding actions.
+6. After choosing **Save result**, verify the save-calculation dialog title, optional history-label field, 120-character guidance, `Save`, and `Cancel` are announced in a logical order.
+7. Receipt labels and values.
+8. Bottom navigation destinations are announced once with clear names.
+9. History/template action buttons and Undo feedback.
+10. Settings radio controls/switches.
+11. Backup progress text, disabled backup actions, and restore confirmation dialog.
+12. About contact/funding actions.
 
 ### Font scaling
 
-Test at system font scales including at least 1.0×, 1.3×, and a large accessibility setting. Content must remain scrollable without hiding critical controls.
+Test at system font scales including at least 1.0×, 1.3×, and a large accessibility setting. Content must remain scrollable without hiding critical controls. Include the named-history save dialog in the large-font review and confirm its input/supporting text/actions remain readable and reachable.
 
 ### Orientation and screen size
 
-Test a small phone and a tablet/wide emulator. Ensure the receipt remains reachable and forms do not clip.
+Test a small phone and a tablet/wide emulator. Ensure the receipt remains reachable and forms do not clip. Open the named-history save dialog in both size classes and confirm it remains usable.
 
 ### Contrast
 
