@@ -3,6 +3,8 @@ package `in`.sanskar.spendcalc.ui
 import `in`.sanskar.spendcalc.domain.model.CalculationResult
 import java.util.UUID
 
+const val MAX_EXPENSE_ITEMS = 100
+
 data class ExpenseItemDraft(
     val id: String = UUID.randomUUID().toString(),
     val name: String = "",
