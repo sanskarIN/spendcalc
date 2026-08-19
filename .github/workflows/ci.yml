@@ -46,6 +46,9 @@ jobs:
       - name: Check Kotlin namespace declarations
         run: python3 scripts/check_kotlin_namespace.py
 
+      - name: Audit repository metadata and local links
+        run: python3 scripts/check_repository.py
+
       - name: Scan repository for common secret patterns
         run: python3 scripts/scan_secrets.py
 
