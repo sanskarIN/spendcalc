@@ -37,6 +37,10 @@ class TemplateRepository(
         return id
     }
 
+    suspend fun restore(template: CalculationTemplate) {
+        dao.upsert(template.toEntity())
+    }
+
     suspend fun delete(id: String) = dao.deleteById(id)
 
     suspend fun replaceAll(templates: List<CalculationTemplate>) {
