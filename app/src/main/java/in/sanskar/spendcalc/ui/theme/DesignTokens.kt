@@ -1,4 +1,4 @@
-package in.sanskar.spendcalc.ui.theme
+package `in`.sanskar.spendcalc.ui.theme
 
 import androidx.compose.ui.unit.dp
 
