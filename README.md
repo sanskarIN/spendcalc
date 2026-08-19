@@ -140,7 +140,7 @@ Architecture decisions:
 - [`ADR 0001 — BigDecimal finance arithmetic`](docs/adr/0001-use-bigdecimal-for-finance.md)
 - [`ADR 0002 — Local-first core`](docs/adr/0002-local-first-core.md)
 - [`ADR 0003 — Room and DataStore`](docs/adr/0003-room-and-datastore.md)
-- [`ADR 0004 — Versioned bounded backup format`](docs/adr/0004-versioned-bounded-backup-format.md)
+- [`ADR 0004 — Versioned bounded backup format`](docs/adr/0004-versioned-local-backup.md)
 
 ## Calculation rule
 
