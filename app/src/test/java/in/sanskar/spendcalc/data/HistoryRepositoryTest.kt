@@ -37,6 +37,17 @@ class HistoryRepositoryTest {
     }
 
     @Test
+    fun `snapshot returns a stable mapped history list`() = runTest {
+        val dao = FakeHistoryDao()
+        dao.upsertAll(listOf(sampleEntity("older", 100L), sampleEntity("newer", 200L)))
+        val repository = HistoryRepository(dao)
+
+        val snapshot = repository.snapshot()
+
+        assertEquals(listOf("newer", "older"), snapshot.map { it.id })
+    }
+
+    @Test
     fun `purges entries older than cutoff`() = runTest {
         val dao = FakeHistoryDao()
         dao.upsert(sampleEntity("old", 100L))
@@ -115,8 +126,16 @@ class HistoryRepositoryTest {
 
         override fun observeAll(): Flow<List<HistoryEntity>> = entries
 
+        override suspend fun snapshotAll(): List<HistoryEntity> = entries.value
+
         override suspend fun upsert(entry: HistoryEntity) {
             entries.value = (entries.value.filterNot { it.id == entry.id } + entry)
+                .sortedByDescending { it.createdAtEpochMillis }
+        }
+
+        override suspend fun upsertAll(entries: List<HistoryEntity>) {
+            val ids = entries.mapTo(mutableSetOf()) { it.id }
+            this.entries.value = (this.entries.value.filterNot { it.id in ids } + entries)
                 .sortedByDescending { it.createdAtEpochMillis }
         }
 
