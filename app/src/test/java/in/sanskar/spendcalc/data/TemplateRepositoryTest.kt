@@ -43,6 +43,18 @@ class TemplateRepositoryTest {
     }
 
     @Test
+    fun `snapshot returns a stable mapped template list`() = runTest {
+        val dao = FakeTemplateDao()
+        val repository = TemplateRepository(dao)
+        repository.restore(template("b", "Beta", 20L))
+        repository.restore(template("a", "Alpha", 10L))
+
+        val snapshot = repository.snapshot()
+
+        assertEquals(listOf("Alpha", "Beta"), snapshot.map { it.name })
+    }
+
+    @Test
     fun `delete removes template`() = runTest {
         val dao = FakeTemplateDao()
         val repository = TemplateRepository(dao)
@@ -100,8 +112,16 @@ class TemplateRepositoryTest {
 
         override fun observeAll(): Flow<List<TemplateEntity>> = templates
 
+        override suspend fun snapshotAll(): List<TemplateEntity> = templates.value
+
         override suspend fun upsert(template: TemplateEntity) {
             templates.value = (templates.value.filterNot { it.id == template.id } + template)
+                .sortedBy { it.name.lowercase() }
+        }
+
+        override suspend fun upsertAll(templates: List<TemplateEntity>) {
+            val ids = templates.mapTo(mutableSetOf()) { it.id }
+            this.templates.value = (this.templates.value.filterNot { it.id in ids } + templates)
                 .sortedBy { it.name.lowercase() }
         }
 
