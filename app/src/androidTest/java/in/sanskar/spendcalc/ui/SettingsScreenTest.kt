@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performScrollTo
+import `in`.sanskar.spendcalc.domain.model.ThemeMode
 import `in`.sanskar.spendcalc.domain.model.UserPreferences
 import `in`.sanskar.spendcalc.ui.screens.SettingsScreen
 import `in`.sanskar.spendcalc.ui.theme.SpendCalcTheme
@@ -18,7 +19,7 @@ class SettingsScreenTest {
     @Test
     fun backupBusyStateIsVisibleAndDisablesBackupActions() {
         composeRule.setContent {
-            SpendCalcTheme {
+            SpendCalcTheme(themeMode = ThemeMode.LIGHT, largeText = false) {
                 SettingsScreen(
                     preferences = UserPreferences(onboardingCompleted = true),
                     onThemeModeChange = {},
