@@ -35,12 +35,14 @@ When changing calculation behavior:
 
 - Keep strings under `app/src/main/res/values/`.
 - Use `SpendCalcTokens` for common spacing/radius/touch-target decisions where applicable.
+- Keep the editable calculator within `MAX_EXPENSE_ITEMS`; use a virtualized design if a future requirement genuinely needs substantially larger editable bills.
 - Check both phone and wide/tablet layouts.
-- Test light, dark, system, and large-text modes.
-- Do not hide required meaning behind color alone.
+- Test light, dark, system, large-text, and reduced-motion modes.
+- Do not hide required meaning behind color or an icon alone.
 - Prefer existing Material components and semantic roles.
+- For visible navigation labels, keep decorative icon descriptions null so screen readers do not announce duplicate destination names.
 
-## Persistence changes
+## Persistence and backup changes
 
 Room database version begins at 1. For any schema change after release:
 
@@ -52,11 +54,13 @@ Room database version begins at 1. For any schema change after release:
 
 Do not enable destructive migration as a shortcut for production schema evolution.
 
+Changes to explicit backup/restore must preserve versioned decoding, bounded input handling, validation, rollback behavior, and regression coverage.
+
 ## Export changes
 
 Platform-independent export serialization implements `ExportFormatter`. Android-only file/PDF/share work stays in `platform/`.
 
-CSV changes must continue to escape quotes and defend text cells against spreadsheet formula interpretation.
+CSV changes must continue to escape quotes and defend text cells against spreadsheet formula interpretation. Blocking file/PDF/document work must stay off the main thread.
 
 ## Dependencies
 
@@ -66,20 +70,20 @@ Dependency updates should be isolated when practical and verified with build, te
 
 ## Logging
 
-The current app does not require verbose persistent logging. If structured logging is introduced:
-
-- never log secrets, authentication headers, signing data, or raw sensitive user content;
-- redact calculation labels/content by default;
-- keep release logging minimal;
-- document each log category and retention behavior.
+Use `SafeLogger` for structured event metadata when logging is justified. Never log secrets, authentication headers, signing data, backup payloads, receipt contents, or raw sensitive user content. Keep release logging minimal and update redaction tests when new sensitive categories are introduced.
 
 ## Quality commands
 
 ```bash
 gradle testDebugUnitTest
-gradle lintDebug
+gradle assembleDebugAndroidTest
+gradle lint
 gradle assembleDebug
 gradle assembleRelease
+python3 scripts/check_format.py
+python3 scripts/check_kotlin_namespace.py
+python3 scripts/check_repository.py
+python3 scripts/scan_secrets.py
 ```
 
 With an emulator/device:
