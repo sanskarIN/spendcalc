@@ -1,4 +1,4 @@
-package in.sanskar.spendcalc.domain.model
+package `in`.sanskar.spendcalc.domain.model
 
 import java.math.BigDecimal
 import java.math.RoundingMode
