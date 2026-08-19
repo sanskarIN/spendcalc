@@ -5,6 +5,7 @@ import `in`.sanskar.spendcalc.data.local.HistoryEntity
 import `in`.sanskar.spendcalc.domain.model.CalculationResult
 import `in`.sanskar.spendcalc.domain.model.HistoryRecord
 import `in`.sanskar.spendcalc.domain.model.normalizeSavedName
+import `in`.sanskar.spendcalc.domain.model.requireUniqueSavedIds
 import `in`.sanskar.spendcalc.domain.model.requireValidHistoryRecord
 import java.math.BigDecimal
 import java.util.Locale
@@ -58,7 +59,9 @@ class HistoryRepository(
         dao.deleteOlderThan(cutoffEpochMillis)
 
     suspend fun replaceAll(records: List<HistoryRecord>) {
-        dao.replaceAll(records.map { it.toEntity() })
+        requireUniqueSavedIds(records.map { it.id }, "history")
+        val entities = records.map { it.toEntity() }
+        dao.replaceAll(entities)
     }
 
     private fun HistoryRecord.toEntity(): HistoryEntity {
