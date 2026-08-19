@@ -18,7 +18,7 @@ Coverage includes:
 - rejection of scientific-notation shapes that could expand dramatically when converted to plain decimal text;
 - locale-independent currency normalization;
 - history repository save/delete/restore/clear/retention behavior;
-- template repository save/delete/replace behavior;
+- template repository save/delete/exact-restore/replace behavior;
 - CSV quoting, embedded quotes, and spreadsheet-formula neutralization;
 - text receipt output;
 - versioned backup round trips, Unicode text, corruption detection, unsupported schemas, duplicate identifiers, structural limits, checksum validation, and exponent-expansion rejection;
@@ -58,6 +58,7 @@ Android coverage includes:
 - Room template round trip;
 - backup replacement across persisted Room records;
 - Compose calculator/receipt smoke rendering;
+- Settings backup busy/progress state and disabled duplicate backup actions;
 - a real-activity journey that completes onboarding when needed, enters an amount, verifies the calculated result, saves it, navigates to History, and verifies the saved amount.
 
 CI compiles the instrumentation suite on every pull request so Android tests cannot silently stop compiling. Actual emulator/device execution remains a documented release gate.
@@ -72,7 +73,7 @@ Examples:
 - backup parser or integrity defect -> codec unit test;
 - Room replacement/migration defect -> Android database test;
 - path containment/logging defect -> pure JVM platform helper test where possible;
-- rendering/semantics defect -> Compose or activity test.
+- rendering/semantics/busy-state defect -> Compose or activity test.
 
 ## Database migrations
 
@@ -80,7 +81,7 @@ Database version 1 has no prior production schema to migrate from. When version 
 
 ## CI expectations
 
-The main CI workflow checks formatting, Kotlin package syntax, repository metadata/Markdown links, common secret patterns, JVM unit tests, instrumentation-test compilation, Android lint, debug compilation, and release compilation. Separate workflows run CodeQL, dependency review, and a lightweight repository audit.
+The main CI workflow checks formatting, Kotlin package syntax, repository metadata/Markdown links, common secret patterns, JVM unit tests, instrumentation-test compilation, full Android lint, debug compilation, and release compilation. Separate workflows run CodeQL, dependency review, and a lightweight repository audit.
 
 A release candidate should not proceed unless the checks associated with the exact commit being released complete successfully or a documented exception has been explicitly reviewed.
 
@@ -93,10 +94,12 @@ Before a production release:
 3. review light, dark, and system theme behavior;
 4. enable large system font scale and the app large-text preference;
 5. enable reduced motion and verify navigation motion is removed;
-6. use TalkBack for major controls, dialogs, lists, and navigation;
+6. use TalkBack for major controls, dialogs, lists, primary navigation, and progress messaging;
 7. create, search, delete, undo, clear, and auto-delete history with controlled test data;
-8. create/load/delete templates;
-9. share text, CSV, and PDF exports;
-10. export a backup, restore it after confirmation, and verify history/templates/preferences;
-11. open GitHub/BMC/email actions from About;
-12. verify core workflows in airplane/offline mode.
+8. create/load/delete/undo templates;
+9. verify the 100-item calculator limit is visible and the Add item action becomes disabled at the limit;
+10. share text, CSV, and PDF exports;
+11. export a backup, confirm the busy state, restore it after confirmation, and verify history/templates/preferences;
+12. open GitHub/BMC/email actions from About;
+13. verify the AndroidX branded launch splash on supported OS versions;
+14. verify core workflows in airplane/offline mode.
