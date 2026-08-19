@@ -2,7 +2,10 @@ package `in`.sanskar.spendcalc.ui
 
 import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNode
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -89,7 +92,10 @@ class CalculatorScreenTest {
 
         composeRule.onNodeWithText("Save result").performScrollTo().performClick()
         composeRule.onNodeWithText("Save calculation").assertIsDisplayed()
-        composeRule.onNodeWithText("History label (optional)").performTextInput("Grocery run")
+        composeRule.onNode(
+            hasSetTextAction() and hasText("History label (optional)", substring = true),
+            useUnmergedTree = true,
+        ).performTextInput("Grocery run")
         composeRule.onNodeWithText("Save").performClick()
 
         composeRule.runOnIdle {
