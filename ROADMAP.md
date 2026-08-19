@@ -55,7 +55,7 @@ The roadmap prioritizes correctness, privacy, accessibility, maintainability, an
 - [x] Named-history and template save dialogs expose the 120-character/Unicode-safe naming contract and unambiguous Save/Cancel actions.
 - [ ] Add real release screenshots from verified builds using fictional data.
 - [ ] Profile very large history/template collections if real-device measurements identify a need.
-- [ ] Optional receipt notes/categories remain a post-1.0 enhancement, not a release blocker.
+- [ ] Optional receipt notes/categories remain a post-2.0.12 enhancement, not a release blocker.
 
 ## Phase 4 — Verification depth
 
@@ -83,11 +83,13 @@ The roadmap prioritizes correctness, privacy, accessibility, maintainability, an
 - [x] Tag-triggered unsigned release-artifact workflow is defined.
 - [x] Production signing material is kept outside source control.
 - [x] Release procedure separates source completeness, exact-head automation, manual Android verification, and distribution/signing/screenshot evidence.
+- [x] Android application metadata is set to `2.0.12` with monotonic `versionCode` `20012`.
+- [x] Room database and explicit backup schema compatibility versions remain independent from the app release number.
 - [ ] Confirm all current pull-request checks are green on the exact final commit.
 - [ ] Produce the signed production artifact with external signing credentials.
 - [ ] Capture final screenshots from the verified build using fictional data.
-- [ ] Finalize the published 1.0.0 release entry.
-- [ ] Tag `v1.0.0` only after automated and manual release gates pass.
+- [ ] Finalize the published 2.0.12 release entry.
+- [ ] Tag `v2.0.12` only after automated and manual release gates pass.
 
 ## Phase 6 — Final source/documentation audit
 
