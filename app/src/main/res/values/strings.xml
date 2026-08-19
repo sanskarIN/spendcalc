@@ -25,6 +25,7 @@
     <string name="exchange_rate_hint">Use 1 for no conversion</string>
     <string name="save_to_history">Save result</string>
     <string name="save_template">Save template</string>
+    <string name="save_template_confirm">Save</string>
     <string name="reset">Reset</string>
     <string name="share_receipt">Share receipt</string>
     <string name="share_csv">Share CSV</string>
