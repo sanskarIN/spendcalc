@@ -40,7 +40,8 @@ All notable changes to SpendCalc are documented here. The project follows a sema
 - Compose regression coverage proving History filtering finds saved labels and removes non-matching entries.
 - Compose regression coverage for template naming guidance, confirm semantics, and Unicode boundary truncation.
 - UTF-16-safe saved-name policy tests plus backup round-trip coverage at an emoji boundary.
-- Persisted-record policy tests covering invalid history/template envelopes and backup encode rejection.
+- Persisted-record policy tests covering invalid history/template envelopes, strict decoded currency forms, and backup encode rejection.
+- Platform regression coverage for malformed UTF-8 backup bytes and surrogate-safe PDF line truncation.
 - Settings UI coverage for the backup busy state.
 - CI compilation of instrumentation tests in addition to JVM tests, full Android lint, debug build, and release compilation.
 - Android manifest/FileProvider local-first policy guard in CI.
@@ -68,13 +69,14 @@ All notable changes to SpendCalc are documented here. The project follows a sema
 - Template persistence now validates finance settings at the repository boundary rather than assuming every caller has already passed through the ViewModel.
 - History and template repositories now validate persisted record envelopes before writing, so direct save/restore/replace calls cannot manufacture data that explicit backup validation later rejects.
 - Restore/replace operations validate every mapped record and duplicate identifier before invoking DAO replacement, preserving existing data when supplied records are invalid.
-- Backup validation reuses the same persisted-record policy as repositories, including canonical template/history currency forms.
+- Backup validation reuses the same persisted-record policy as repositories, including canonical template/history currency forms; decode no longer normalizes invalid noncanonical forms before validation.
 - The production container shares one `CalculatorEngine` validator instance with template persistence.
 - Backup document I/O runs on `Dispatchers.IO`, while bounded backup encoding/decoding runs on `Dispatchers.Default` instead of the UI thread.
 - Room history/templates are captured in one transaction for backups and restored with batch DAO inserts.
 - Backup result decimals accept the full bounded magnitude that `CalculatorEngine` can legitimately produce, including converted totals up to 34 integer digits.
 - Returning users remain on the splash screen until stored preferences load, avoiding a false onboarding flash.
 - Corrupted Preferences DataStore files recover to safe default preferences without deleting Room history/templates.
+- PDF receipt line truncation now reuses the Unicode-safe truncation policy so long valid names cannot be cut between UTF-16 surrogate units.
 - Bottom-navigation icon graphics are decorative when a visible text label already provides the accessible name, avoiding duplicate screen-reader announcements.
 - GitHub Actions use maintained major action versions and concurrency cancellation for superseded pull-request runs.
 - CI runs Android lint across configured variants rather than only the debug variant.
@@ -90,7 +92,8 @@ All notable changes to SpendCalc are documented here. The project follows a sema
 - Export sharing uses app-private `cache/exports` files and temporary URI read permission; CI verifies the FileProvider remains non-exported and exposes only `cache/exports/`.
 - Export path containment uses canonical path semantics rather than vulnerable string-prefix matching.
 - CSV text values are protected from common spreadsheet formula injection prefixes.
-- Backup parser rejects oversized payloads, excessive line counts, malformed checksum fields, exponent-expansion decimal shapes, duplicate identifiers, invalid timestamps, invalid currencies, unsupported schema versions, oversized saved names, malformed UTF-8 input, and out-of-contract result magnitudes.
+- Backup document reading uses a strict UTF-8 decoder that reports malformed/unmappable byte sequences instead of silently replacing them before parser validation.
+- Backup parser rejects oversized payloads, excessive line counts, malformed checksum fields, exponent-expansion decimal shapes, duplicate identifiers, invalid timestamps, invalid or noncanonical currencies, unsupported schema versions, oversized saved names, malformed UTF-8 input, and out-of-contract result magnitudes.
 - Backup export rejects malformed Unicode instead of silently replacing invalid surrogate data.
 - Saved-name input hardening prevents normal UI truncation from manufacturing malformed trailing surrogate data.
 - Repository persistence rejects invalid history/template IDs, timestamps, result shapes, split counts, finance settings, and duplicate batch identifiers before DAO writes/replacement, reducing the risk of locally stored data becoming un-exportable.
