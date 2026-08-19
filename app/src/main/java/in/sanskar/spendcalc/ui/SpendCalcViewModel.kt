@@ -22,6 +22,7 @@ import `in`.sanskar.spendcalc.domain.model.ThemeMode
 import `in`.sanskar.spendcalc.domain.model.UserPreferences
 import java.math.BigDecimal
 import java.util.Locale
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -210,10 +211,16 @@ class SpendCalcViewModel(
 
     suspend fun restoreBackupPayload(payload: String): Boolean = when (val decoded = backupCodec.decode(payload)) {
         is BackupDecodeResult.Success -> {
-            runCatching { backupRepository.restore(decoded.backup) }
-                .onSuccess { showFeedback(ActionFeedback.BACKUP_RESTORED) }
-                .onFailure { showFeedback(ActionFeedback.BACKUP_FAILED) }
-                .isSuccess
+            try {
+                backupRepository.restore(decoded.backup)
+                showFeedback(ActionFeedback.BACKUP_RESTORED)
+                true
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                showFeedback(ActionFeedback.BACKUP_FAILED)
+                false
+            }
         }
         is BackupDecodeResult.Failure -> {
             showFeedback(ActionFeedback.BACKUP_FAILED)
