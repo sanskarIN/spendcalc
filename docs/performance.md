@@ -1,56 +1,46 @@
-# Performance
+# Performance and Resource Use
 
-## Performance goals
+SpendCalc is intentionally local-first and small. The current architecture favors deterministic correctness and bounded work over speculative optimization.
 
-SpendCalc is a local calculator, so common interactions should feel immediate without network dependencies or artificial delays.
+## Current design
 
-Initial qualitative budgets:
+- Financial calculation runs in memory with `BigDecimal` and a bounded item count.
+- Calculator names, numeric text, currency codes, split counts, precision, and scale are bounded before expensive rendering/persistence paths.
+- History and templates are observed through Room `Flow`s.
+- History search is local and currently filters the already-observed history list in memory.
+- Settings are small DataStore preferences.
+- Backup decoding has hard payload, line, record, field, decimal, and split limits.
+- Backup document reads/writes, CSV file creation, and PDF generation run on `Dispatchers.IO` rather than the UI thread.
+- FileProvider shares only app-private cache exports.
+- Reduced-motion mode removes navigation transitions; otherwise navigation uses short fades.
 
-- calculation recomputation should be effectively instantaneous for ordinary bills;
-- typing in calculator fields should not trigger blocking disk I/O;
-- database work must remain off the main thread through Room suspend/Flow APIs;
-- launch should avoid network initialization;
-- exports should be generated only after explicit user action;
-- lists should remain responsive for typical local history/template sizes.
+## Deliberate limits
 
-## Current hot paths
+The calculator accepts at most 500 line items through the current UI state. Split counts are limited to 1,000,000. Numeric inputs and persisted backup decimal shapes are bounded so scientific notation cannot create unexpectedly huge plain strings or pathological arithmetic/rendering work.
 
-### Calculation
+The explicit backup format accepts at most 10,000 combined history/template records and approximately 5 million characters, with an additional pre-split newline bound.
 
-`CalculatorEngine` performs a small number of `BigDecimal` operations per item and charge. Correct decimal behavior is more important than replacing these operations with floating-point math.
+These limits are defensive implementation boundaries rather than financial advice or business rules.
 
-### Compose recomposition
+## History search
 
-Calculator state is centralized in a `StateFlow`. Input changes recompute the result in memory. The calculation is small enough for normal bills; if profiling shows unusually large item lists cause frame pressure, move heavy parsing/calculation to a dedicated dispatcher only after measurement.
+The current History screen performs case-insensitive substring matching against label, currency codes, subtotal/total, converted total, and per-person values. This is simple and responsive for ordinary local histories. If real profiling shows large histories causing UI latency or memory pressure, move search/filtering into Room queries and expose paged results rather than increasing in-memory work blindly.
 
-### Room
+## Export behavior
 
-History and template reads use `Flow`; writes use suspend DAO methods. Current queries are simple full-list reads ordered by timestamp/name. If history grows enough to create measurable load, introduce paging/search and indexes based on measured queries.
+Text receipt sharing is generated in memory and handed to Android's share intent. CSV/PDF file creation occurs in the private cache export directory. Disk/PDF work is dispatched away from the main thread, then the already-created file is shared on the UI thread.
 
-### Export
+Android owns cache eviction. A future measured cache-growth problem may justify explicit stale-export cleanup, but it should be added from profiling evidence rather than by deleting files aggressively during active share flows.
 
-CSV/text export is linear in item count. PDF generation is also linear and paginates vertically. Export work is user-triggered and currently synchronous at the call site; profiling should determine whether large receipts require background dispatch before adding complexity.
+## Benchmark policy
 
-## Measurement plan
+A macrobenchmark/profile module is not required for the first release unless measurements identify a performance regression. Before adding one, collect representative measurements for:
 
-Before optimizing a release:
+- first screen render after process start;
+- calculator recomposition while editing amounts;
+- 100/500-item calculation updates;
+- History screen with realistic and stress-test record counts;
+- backup encode/decode near supported limits;
+- PDF generation for large valid item lists.
 
-1. profile launch with Android Studio;
-2. test calculator typing with 1, 20, 100, and 1,000 synthetic items;
-3. profile history rendering with a large fictional dataset;
-4. measure CSV/PDF generation at large item counts;
-5. inspect allocations around repeated decimal parsing;
-6. verify no database calls execute on the UI thread.
-
-## Future benchmark triggers
-
-Add a benchmark/macrobenchmark module when any of these become true:
-
-- startup regresses noticeably after a dependency/feature change;
-- calculation workloads expand beyond small local bills;
-- history grows to thousands of records in typical use;
-- performance work needs a regression guard in CI.
-
-## Optimization constraints
-
-Do not trade away correctness, privacy, or readability for unmeasured micro-optimizations. In particular, do not replace `BigDecimal` money math with `Double` or cache sensitive user content without a clear invalidation/privacy model.
+Performance changes should preserve finance correctness, validation bounds, accessibility semantics, and local-first privacy.
