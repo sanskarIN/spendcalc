@@ -1,4 +1,4 @@
-package in.sanskar.spendcalc.ui.theme
+package `in`.sanskar.spendcalc.ui.theme
 
 import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -12,7 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
-import in.sanskar.spendcalc.domain.model.ThemeMode
+import `in`.sanskar.spendcalc.domain.model.ThemeMode
 
 private val LightColors = lightColorScheme(
     primary = Color(0xFF5B3FD3),
