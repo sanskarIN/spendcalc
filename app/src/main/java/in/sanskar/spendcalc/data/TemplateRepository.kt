@@ -40,7 +40,7 @@ class TemplateRepository(
     suspend fun delete(id: String) = dao.deleteById(id)
 
     suspend fun replaceAll(templates: List<CalculationTemplate>) {
-        dao.replaceAll(templates.map(CalculationTemplate::toEntity))
+        dao.replaceAll(templates.map { it.toEntity() })
     }
 
     private fun CalculationTemplate.toEntity(): TemplateEntity =
