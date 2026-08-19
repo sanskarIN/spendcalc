@@ -5,7 +5,7 @@ import `in`.sanskar.spendcalc.data.local.HistoryEntity
 import `in`.sanskar.spendcalc.domain.model.CalculationResult
 import `in`.sanskar.spendcalc.domain.model.HistoryRecord
 import `in`.sanskar.spendcalc.domain.model.normalizeSavedName
-import `in`.sanskar.spendcalc.domain.model.requireValidSavedName
+import `in`.sanskar.spendcalc.domain.model.requireValidHistoryRecord
 import java.math.BigDecimal
 import java.util.Locale
 import java.util.UUID
@@ -61,24 +61,30 @@ class HistoryRepository(
         dao.replaceAll(records.map { it.toEntity() })
     }
 
-    private fun HistoryRecord.toEntity(): HistoryEntity =
-        HistoryEntity(
-            id = id,
-            createdAtEpochMillis = createdAtEpochMillis,
-            label = requireValidSavedName(label),
+    private fun HistoryRecord.toEntity(): HistoryEntity {
+        val normalized = copy(
             currencyCode = currencyCode.trim().uppercase(Locale.ROOT),
             convertedCurrencyCode = convertedCurrencyCode.trim().uppercase(Locale.ROOT),
-            subtotal = subtotal.toPlainString(),
-            discountAmount = discountAmount.toPlainString(),
-            taxAmount = taxAmount.toPlainString(),
-            tipAmount = tipAmount.toPlainString(),
-            serviceChargeAmount = serviceChargeAmount.toPlainString(),
-            total = total.toPlainString(),
-            convertedTotal = convertedTotal.toPlainString(),
-            perPerson = perPerson.toPlainString(),
-            convertedPerPerson = convertedPerPerson.toPlainString(),
-            splitCount = splitCount,
         )
+        requireValidHistoryRecord(normalized)
+        return HistoryEntity(
+            id = normalized.id,
+            createdAtEpochMillis = normalized.createdAtEpochMillis,
+            label = normalized.label,
+            currencyCode = normalized.currencyCode,
+            convertedCurrencyCode = normalized.convertedCurrencyCode,
+            subtotal = normalized.subtotal.toPlainString(),
+            discountAmount = normalized.discountAmount.toPlainString(),
+            taxAmount = normalized.taxAmount.toPlainString(),
+            tipAmount = normalized.tipAmount.toPlainString(),
+            serviceChargeAmount = normalized.serviceChargeAmount.toPlainString(),
+            total = normalized.total.toPlainString(),
+            convertedTotal = normalized.convertedTotal.toPlainString(),
+            perPerson = normalized.perPerson.toPlainString(),
+            convertedPerPerson = normalized.convertedPerPerson.toPlainString(),
+            splitCount = normalized.splitCount,
+        )
+    }
 
     private fun HistoryEntity.toDomain(): HistoryRecord =
         HistoryRecord(
