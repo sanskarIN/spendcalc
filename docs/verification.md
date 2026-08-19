@@ -6,16 +6,18 @@ This checklist is the source of truth for deciding whether an exact SpendCalc co
 
 - [ ] Formatting guard passes.
 - [ ] Kotlin namespace/package guard passes.
+- [ ] Android default string-resource reference/duplicate-name audit passes.
+- [ ] Android local-first manifest/FileProvider security audit passes.
 - [ ] Repository metadata and local Markdown-link audit passes.
 - [ ] Common secret-pattern scan passes.
-- [ ] JVM unit and deterministic fuzz/regression tests pass.
+- [ ] JVM unit and deterministic fuzz/regression tests pass, including UTF-16 saved-name boundary coverage.
 - [ ] Debug instrumentation tests compile with `assembleDebugAndroidTest`.
 - [ ] Full Android lint passes.
 - [ ] Debug APK compiles.
 - [ ] Release APK compiles with the repository's current release configuration.
 - [ ] CodeQL Java/Kotlin analysis completes without a release-blocking finding.
 - [ ] Dependency review completes without a release-blocking finding.
-- [ ] Repository Audit workflow passes.
+- [ ] Repository Audit workflow passes, including the Android string-resource guard.
 
 ## Android device/emulator checks
 
@@ -23,18 +25,20 @@ These require a connected Android runtime and are intentionally not claimed by a
 
 - [ ] `connectedDebugAndroidTest` passes.
 - [ ] Room history/template/backup integration tests pass.
-- [ ] Compose calculator, named-history-save dialog, and Settings busy-state tests pass.
+- [ ] Compose calculator, named-history-save/Unicode-boundary dialog, History label-filter, and Settings busy-state tests pass.
 - [ ] Real-activity calculate -> named save -> History journey passes and verifies both the saved label and amount.
 - [ ] Fresh install shows the branded SpendCalc launch splash and then onboarding.
 - [ ] Calculator, History, Templates, Settings, and About navigation work.
 - [ ] Saving with a meaningful history label stores that label and History search finds the entry by it; blank labels fall back to `Calculation`.
+- [ ] Pasting a Unicode-heavy saved name near the 120-character boundary does not leave malformed text, and the resulting record can be backed up and restored successfully.
 - [ ] History search, individual delete + Undo, clear-all confirmation, and retention settings work.
-- [ ] Template save/load/delete + Undo work.
+- [ ] History search stops at the documented 120-character limit without splitting a valid surrogate pair.
+- [ ] Template save/load/delete + Undo work, including a Unicode-heavy template name near the saved-name boundary.
 - [ ] Calculator stops at 100 editable line items, disables Add item, and explains the limit.
 - [ ] Text, CSV, and PDF exports open the expected Android share flow.
 - [ ] Backup export opens the document creator; backup restore opens the document picker and requires confirmation before replacement.
 - [ ] Backup progress is visible during real work and duplicate backup actions remain disabled until completion.
-- [ ] Restored history, including history labels, templates, theme/accessibility preferences, and retention preference match the selected backup.
+- [ ] Restored history, including exact accepted history labels, templates, theme/accessibility preferences, and retention preference match the selected backup.
 - [ ] Core calculation/history/template behavior works with network disabled.
 
 ## Accessibility and responsive-layout checks
@@ -60,7 +64,9 @@ These require a connected Android runtime and are intentionally not claimed by a
 - [ ] FileProvider remains non-exported and limited to the private export cache path.
 - [ ] CSV formula-neutralization regression tests pass.
 - [ ] Backup size/line/record/decimal/schema/checksum validation tests pass.
-- [ ] Saved history/template names produced through repository operations stay within the same 120-character contract accepted by backup validation.
+- [ ] Saved history/template names produced through normal save operations stay within the shared 120-character contract and remain well-formed UTF-16.
+- [ ] Valid accepted history/template names entering restore/replace paths are preserved exactly rather than silently trimmed or rewritten.
+- [ ] Malformed Unicode saved names fail closed, while a valid emoji crossing the saved-name boundary is truncated safely and still round-trips through backup encoding/decoding.
 - [ ] SafeLogger redaction tests pass.
 - [ ] Android system-managed backup/device-transfer behavior matches `PRIVACY.md`.
 
