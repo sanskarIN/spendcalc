@@ -26,6 +26,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -130,6 +131,7 @@ fun CalculatorScreen(
                         templateName = truncateUtf16Safely(it, MAX_SAVED_NAME_CHARS)
                     },
                     label = { Text(stringResource(R.string.template_name)) },
+                    supportingText = { Text(stringResource(R.string.template_name_hint)) },
                     singleLine = true,
                 )
             },
