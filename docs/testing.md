@@ -1,8 +1,8 @@
 # Testing Strategy
 
-SpendCalc treats calculation correctness as the highest-risk behavior and keeps tests close to the layer they verify.
+SpendCalc treats financial correctness, restore integrity, privacy boundaries, and user-controlled data handling as high-risk behavior. Tests stay as close as practical to the layer they verify.
 
-## Unit tests
+## JVM unit tests
 
 Run:
 
@@ -10,30 +10,57 @@ Run:
 gradle testDebugUnitTest
 ```
 
-Current unit coverage includes:
+Coverage includes:
 
 - subtotal, discount, tax, tip, service charge, conversion, and split arithmetic;
-- decimal precision such as `0.10 + 0.20`;
-- half-up money rounding;
-- validation for negative amounts, malformed currency codes, exchange rates, and split counts;
-- history repository persistence mapping and retention purge logic;
-- template repository mapping;
-- CSV quote escaping and spreadsheet-formula neutralization;
-- text receipt output.
+- decimal precision such as `0.10 + 0.20` and half-up money rounding;
+- discount <= 100%, bounded charge percentages, non-negative amounts, three-letter currency codes, positive exchange rates, bounded decimal precision/scale, and split counts from 1 through 1,000,000;
+- rejection of scientific-notation shapes that could expand dramatically when converted to plain decimal text;
+- locale-independent currency normalization;
+- history repository save/delete/restore/clear/retention behavior;
+- template repository save/delete/replace behavior;
+- CSV quoting, embedded quotes, and spreadsheet-formula neutralization;
+- text receipt output;
+- versioned backup round trips, Unicode text, corruption detection, unsupported schemas, duplicate identifiers, structural limits, checksum validation, and exponent-expansion rejection;
+- safe log redaction, including Turkish-locale regression coverage;
+- canonical export path containment, including sibling-prefix bypass prevention.
 
-## Android integration tests
+## Deterministic fuzz/regression tests
 
-Run on an emulator or connected device:
+The repository includes seed-based JVM fuzz loops so failures are reproducible.
+
+Current invariants include:
+
+- valid generated finance input remains deterministic and produces non-negative rounded totals;
+- generated negative item amounts fail validation rather than throwing;
+- generated Unicode backup labels/names round trip exactly;
+- deterministic mutations of a checksummed backup body fail integrity verification.
+
+These are regression-fuzz tests rather than an external randomized test service, so CI receives the same cases on every run.
+
+## Android integration and UI tests
+
+Compile the instrumentation suite without an emulator:
+
+```bash
+gradle assembleDebugAndroidTest
+```
+
+Run it on a connected emulator/device:
 
 ```bash
 gradle connectedDebugAndroidTest
 ```
 
-Current Android tests cover:
+Android coverage includes:
 
 - Room history round trip;
 - Room template round trip;
-- Compose calculator/receipt smoke rendering.
+- backup replacement across persisted Room records;
+- Compose calculator/receipt smoke rendering;
+- a real-activity journey that completes onboarding when needed, enters an amount, verifies the calculated result, saves it, navigates to History, and verifies the saved amount.
+
+CI compiles the instrumentation suite on every pull request so Android tests cannot silently stop compiling. Actual emulator/device execution remains a documented release gate.
 
 ## Regression policy
 
@@ -41,56 +68,35 @@ Every confirmed bug should receive a regression test at the lowest practical lay
 
 Examples:
 
-- finance formula defect -> pure JVM unit test;
-- Room mapping/migration defect -> Android database test;
-- state interaction defect -> ViewModel test;
-- rendering/semantics defect -> Compose test.
-
-## Rounding cases to preserve
-
-Tests should include:
-
-- amounts ending near half-cent boundaries;
-- split counts that produce repeating decimals;
-- very small manual exchange rates;
-- large but valid percentages;
-- zero subtotal and empty item list;
-- multiple line items whose decimal representation would be unsafe with binary floating point.
-
-## Future property/fuzz testing
-
-Property-based testing is planned for parser/export edge cases. Useful invariants include:
-
-- non-negative valid input never produces a negative subtotal;
-- total equals discounted base plus all configured charges at intermediate precision;
-- converted total equals total multiplied by positive exchange rate under the rounding policy;
-- CSV output remains structurally quoted for arbitrary Unicode names;
-- parser failures never crash calculation flow.
+- finance formula or validation defect -> pure JVM test/fuzz invariant;
+- backup parser or integrity defect -> codec unit test;
+- Room replacement/migration defect -> Android database test;
+- path containment/logging defect -> pure JVM platform helper test where possible;
+- rendering/semantics defect -> Compose or activity test.
 
 ## Database migrations
 
-Database version 1 has no prior production schema to migrate from. When version 2 is introduced, add a migration test that creates the prior schema, migrates it, validates data, and verifies Room's schema expectations.
+Database version 1 has no prior production schema to migrate from. When version 2 is introduced, the schema version must be incremented deliberately and a migration test must create the prior schema, execute the migration, validate preserved data, and verify Room's schema expectations. Destructive fallback is not the default migration strategy.
 
 ## CI expectations
 
-A release candidate should not proceed unless:
+The main CI workflow checks formatting, Kotlin package syntax, repository metadata/Markdown links, common secret patterns, JVM unit tests, instrumentation-test compilation, Android lint, debug compilation, and release compilation. Separate workflows run CodeQL, dependency review, and a lightweight repository audit.
 
-- unit tests pass;
-- lint passes;
-- debug and release compilation pass;
-- instrumentation tests are executed when an emulator runner is available;
-- dependency/static-security checks pass or have a documented, reviewed exception.
+A release candidate should not proceed unless the checks associated with the exact commit being released complete successfully or a documented exception has been explicitly reviewed.
 
-## Manual checks
+## Manual release checks
 
-Before a release:
+Before a production release:
 
-1. test phone and tablet/wide layouts;
-2. enable dark mode;
-3. enable large text/font scaling;
-4. use TalkBack for major controls;
-5. create/delete history and templates;
-6. test 30/90-day retention behavior with controlled test data;
-7. share text, CSV, and PDF exports;
-8. open GitHub/BMC/email actions from About;
-9. verify airplane/offline use for core workflows.
+1. run `connectedDebugAndroidTest` on a representative emulator/device;
+2. review phone and tablet/wide layouts;
+3. review light, dark, and system theme behavior;
+4. enable large system font scale and the app large-text preference;
+5. enable reduced motion and verify navigation motion is removed;
+6. use TalkBack for major controls, dialogs, lists, and navigation;
+7. create, search, delete, undo, clear, and auto-delete history with controlled test data;
+8. create/load/delete templates;
+9. share text, CSV, and PDF exports;
+10. export a backup, restore it after confirmation, and verify history/templates/preferences;
+11. open GitHub/BMC/email actions from About;
+12. verify core workflows in airplane/offline mode.
