@@ -5,6 +5,7 @@ import in.sanskar.spendcalc.data.local.TemplateEntity
 import in.sanskar.spendcalc.domain.model.CalculationInput
 import in.sanskar.spendcalc.domain.model.CalculationTemplate
 import java.math.BigDecimal
+import java.util.Locale
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -28,9 +29,9 @@ class TemplateRepository(
                 tipPercent = input.tipPercent.toPlainString(),
                 serviceChargePercent = input.serviceChargePercent.toPlainString(),
                 splitCount = input.splitCount,
-                currencyCode = input.currencyCode.trim().uppercase(),
+                currencyCode = input.currencyCode.trim().uppercase(Locale.ROOT),
                 exchangeRate = input.exchangeRate.toPlainString(),
-                convertedCurrencyCode = input.convertedCurrencyCode.trim().uppercase(),
+                convertedCurrencyCode = input.convertedCurrencyCode.trim().uppercase(Locale.ROOT),
             ),
         )
         return id
