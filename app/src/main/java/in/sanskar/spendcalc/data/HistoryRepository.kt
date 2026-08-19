@@ -4,7 +4,8 @@ import `in`.sanskar.spendcalc.data.local.HistoryDao
 import `in`.sanskar.spendcalc.data.local.HistoryEntity
 import `in`.sanskar.spendcalc.domain.model.CalculationResult
 import `in`.sanskar.spendcalc.domain.model.HistoryRecord
-import `in`.sanskar.spendcalc.domain.model.MAX_SAVED_NAME_CHARS
+import `in`.sanskar.spendcalc.domain.model.normalizeSavedName
+import `in`.sanskar.spendcalc.domain.model.requireValidSavedName
 import java.math.BigDecimal
 import java.util.Locale
 import java.util.UUID
@@ -97,15 +98,6 @@ class HistoryRepository(
             convertedPerPerson = BigDecimal(convertedPerPerson),
             splitCount = splitCount,
         )
-
-    private fun normalizeSavedName(value: String, fallback: String): String =
-        value.trim().take(MAX_SAVED_NAME_CHARS).ifBlank { fallback }
-
-    private fun requireValidSavedName(value: String): String {
-        require(value.isNotBlank()) { "History label must not be blank" }
-        require(value.length <= MAX_SAVED_NAME_CHARS) { "History label is too long" }
-        return value
-    }
 
     private companion object {
         const val DEFAULT_HISTORY_LABEL = "Calculation"
