@@ -27,6 +27,9 @@ enum class ActionFeedback {
     TEMPLATE_SAVED,
     DELETED,
     HISTORY_CLEARED,
+    BACKUP_EXPORTED,
+    BACKUP_RESTORED,
+    BACKUP_FAILED,
 }
 
 data class CalculatorUiState(
