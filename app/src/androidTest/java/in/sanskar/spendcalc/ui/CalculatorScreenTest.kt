@@ -72,13 +72,59 @@ class CalculatorScreenTest {
         }
     }
 
+    @Test
+    fun templateDialogReturnsNameAndShowsLengthGuidance() {
+        var savedTemplate: String? = null
+        setCalculatorContent(
+            state = CalculatorUiState(result = zeroResult()),
+            onSaveTemplate = { savedTemplate = it },
+        )
+
+        openTemplateDialog()
+        composeRule.onNodeWithText("Give this template a short name. Up to 120 characters.").assertIsDisplayed()
+        templateNameField().performTextInput("Dinner preset")
+        composeRule.onNodeWithText("Save template").performClick()
+
+        composeRule.runOnIdle {
+            assertEquals("Dinner preset", savedTemplate)
+        }
+    }
+
+    @Test
+    fun templateDialogDoesNotSplitEmojiAtBoundary() {
+        var savedTemplate: String? = null
+        val prefix = "t".repeat(MAX_SAVED_NAME_CHARS - 1)
+        setCalculatorContent(
+            state = CalculatorUiState(result = zeroResult()),
+            onSaveTemplate = { savedTemplate = it },
+        )
+
+        openTemplateDialog()
+        templateNameField().performTextInput(prefix + "😀")
+        composeRule.onNodeWithText("Save template").performClick()
+
+        composeRule.runOnIdle {
+            assertEquals(prefix, savedTemplate)
+        }
+    }
+
     private fun openHistoryDialog() {
         composeRule.onNodeWithText("Save result").performScrollTo().performClick()
         composeRule.onNodeWithText("Save calculation").assertIsDisplayed()
     }
 
+    private fun openTemplateDialog() {
+        composeRule.onNodeWithText("Save template").performScrollTo().performClick()
+        composeRule.onNodeWithText("Template name").assertIsDisplayed()
+    }
+
     private fun historyLabelField() = composeRule.onNode(
         hasSetTextAction() and hasText("History label (optional)", substring = true),
+        useUnmergedTree = true,
+    )
+
+    private fun templateNameField() = composeRule.onNode(
+        hasSetTextAction() and hasText("Template name", substring = true),
         useUnmergedTree = true,
     )
 
@@ -90,6 +136,7 @@ class CalculatorScreenTest {
     private fun setCalculatorContent(
         state: CalculatorUiState,
         onSaveHistory: (String) -> Unit = {},
+        onSaveTemplate: (String) -> Unit = {},
     ) {
         composeRule.setContent {
             SpendCalcTheme(themeMode = ThemeMode.LIGHT, largeText = false) {
@@ -108,7 +155,7 @@ class CalculatorScreenTest {
                     onExchangeRateChange = {},
                     onConvertedCurrencyChange = {},
                     onSaveHistory = onSaveHistory,
-                    onSaveTemplate = {},
+                    onSaveTemplate = onSaveTemplate,
                     onReset = {},
                     onShareReceipt = {},
                     onShareCsv = {},
