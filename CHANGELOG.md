@@ -13,6 +13,7 @@ All notable changes to SpendCalc are documented here. The project follows a sema
 - Manual exchange-rate conversion with configurable three-letter currency codes.
 - Receipt-style result presentation.
 - Room-backed calculation history with individual deletion, clear-all confirmation, search/filter, and undo after individual deletion.
+- Optional user-provided labels when saving calculations so history search can find meaningful names; blank labels retain the safe `Calculation` fallback.
 - Optional 30-day and 90-day automatic history retention.
 - Room-backed reusable calculation templates with undo after individual deletion.
 - DataStore preferences for theme, large text, reduced motion, retention, and onboarding.
@@ -34,6 +35,7 @@ All notable changes to SpendCalc are documented here. The project follows a sema
 - Unit tests for calculation arithmetic, validation, repositories, backup codec, exports, path containment, safe logging, and UI-state feedback sequencing.
 - Deterministic seeded fuzz/regression coverage for finance arithmetic and backup serialization/corruption handling.
 - Android integration tests for Room persistence and backup replacement, plus Compose and real-activity journey smoke tests.
+- Compose regression coverage for the named-history save dialog and callback wiring.
 - Settings UI coverage for the backup busy state.
 - CI compilation of instrumentation tests in addition to JVM tests, full Android lint, debug build, and release compilation.
 - Android manifest/FileProvider local-first policy guard in CI.
@@ -47,6 +49,8 @@ All notable changes to SpendCalc are documented here. The project follows a sema
 - Split counts are bounded to 1 through 1,000,000.
 - Editable expense items are capped at 100 with a visible UI limit state to bound eager Compose work.
 - Calculator item/name/input counts are bounded before expensive conversion or rendering work.
+- Saved history labels and template names now share one 120-character domain limit; persistence normalizes the value before storage so valid local data cannot later violate backup validation.
+- Saved-name normalization now occurs at the repository boundary instead of being partially duplicated in the ViewModel.
 - Backup document I/O runs on `Dispatchers.IO`, while bounded backup encoding/decoding runs on `Dispatchers.Default` instead of the UI thread.
 - Room history/templates are captured in one transaction for backups and restored with batch DAO inserts.
 - Backup result decimals accept the full bounded magnitude that `CalculatorEngine` can legitimately produce, including converted totals up to 34 integer digits.
