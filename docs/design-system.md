@@ -40,9 +40,15 @@ Custom light and dark color schemes use the same semantic Material color roles. 
 
 Validation does not rely on color alone: invalid fields also display supporting error text.
 
-## Motion
+The launch splash uses a dedicated light brand background and the editable SpendCalc icon, then hands off to the normal Compose theme.
 
-SpendCalc avoids decorative animation and fake loading delays. The current UI therefore already satisfies the reduced-motion preference for core journeys. If animation is introduced later, it must:
+## Motion and progress
+
+Normal primary navigation uses short fade transitions. **Reduced motion** replaces them with no transition. SpendCalc does not use fake loading delays.
+
+Backup operations display an indeterminate Material progress indicator plus explanatory text only while real backup read/write/restore work is active. Backup actions are disabled during that work to prevent duplicate operations.
+
+Future animations must:
 
 - be non-essential;
 - respect the reduced-motion preference;
@@ -51,16 +57,21 @@ SpendCalc avoids decorative animation and fake loading delays. The current UI th
 
 ## Icons and labels
 
-Primary navigation and actions must always include a clear text label/semantic meaning. Decorative visuals must not replace accessible labels. New graphical icons should use platform-consistent vector assets or Compose Material icons and must not be the only way a state is communicated.
+Primary navigation uses repository-owned 24 dp vector assets for Calculator, History, Templates, and Settings. Each destination also keeps a persistent text label. The vector itself is decorative in accessibility semantics because the text label supplies the destination name, preventing duplicate screen-reader announcements.
+
+New graphical icons should use platform-consistent vector assets or maintained Compose icon libraries and must not be the only way a state is communicated.
 
 ## Responsive behavior
 
 The calculator uses a single scrolling column on phones and a two-column calculator/receipt arrangement on wide screens. Maximum content/form widths prevent controls from stretching excessively on tablets.
 
-## Empty, validation, and destructive states
+The current calculator editor eagerly composes its editable line-item cards, so it has a deliberate 100-item UI budget. At the limit, the Add item action is disabled and explanatory text is shown. A future higher-volume editor should use virtualization instead of merely raising the limit.
+
+## Empty, validation, destructive, and recovery states
 
 - Empty history/templates use dedicated explanatory states.
 - Search has a distinct no-match state.
 - Invalid calculations suppress result output and show field-level guidance.
-- Clear-history and backup restore require confirmation because they replace/delete stored data.
+- Individual history and template deletion provide Snackbar Undo.
+- Clear-history and backup restore require confirmation because they replace/delete stored data at larger scope.
 - Routine non-destructive actions do not add unnecessary confirmation dialogs.
