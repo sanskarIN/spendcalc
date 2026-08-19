@@ -54,7 +54,7 @@ class TemplateRepository(
     private fun CalculationTemplate.toEntity(): TemplateEntity =
         TemplateEntity(
             id = id,
-            name = normalizeSavedName(name, DEFAULT_TEMPLATE_NAME),
+            name = requireValidSavedName(name),
             createdAtEpochMillis = createdAtEpochMillis,
             discountPercent = discountPercent.toPlainString(),
             taxPercent = taxPercent.toPlainString(),
@@ -83,6 +83,12 @@ class TemplateRepository(
 
     private fun normalizeSavedName(value: String, fallback: String): String =
         value.trim().take(MAX_SAVED_NAME_CHARS).ifBlank { fallback }
+
+    private fun requireValidSavedName(value: String): String {
+        require(value.isNotBlank()) { "Template name must not be blank" }
+        require(value.length <= MAX_SAVED_NAME_CHARS) { "Template name is too long" }
+        return value
+    }
 
     private companion object {
         const val DEFAULT_TEMPLATE_NAME = "Template"
