@@ -1,7 +1,11 @@
 package `in`.sanskar.spendcalc.domain.export
 
+import `in`.sanskar.spendcalc.domain.CalculatorEngine
 import `in`.sanskar.spendcalc.domain.model.AutoDeleteHistory
+import `in`.sanskar.spendcalc.domain.model.CalculationInput
+import `in`.sanskar.spendcalc.domain.model.CalculationOutcome
 import `in`.sanskar.spendcalc.domain.model.CalculationTemplate
+import `in`.sanskar.spendcalc.domain.model.ExpenseItem
 import `in`.sanskar.spendcalc.domain.model.HistoryRecord
 import `in`.sanskar.spendcalc.domain.model.SpendCalcBackup
 import `in`.sanskar.spendcalc.domain.model.ThemeMode
@@ -34,6 +38,51 @@ class BackupCodecTest {
         val decoded = codec.decode(codec.encode(backup))
 
         assertTrue(decoded is BackupDecodeResult.Success)
+        assertEquals(backup, (decoded as BackupDecodeResult.Success).backup)
+    }
+
+    @Test
+    fun `round trips maximum range result produced by the calculator`() {
+        val outcome = CalculatorEngine().calculate(
+            CalculationInput(
+                items = List(100) { index ->
+                    ExpenseItem(
+                        id = "item-$index",
+                        name = "Item $index",
+                        amount = BigDecimal("999999999999999"),
+                    )
+                },
+                taxPercent = BigDecimal("1000"),
+                tipPercent = BigDecimal("1000"),
+                serviceChargePercent = BigDecimal("1000"),
+                exchangeRate = BigDecimal("999999999999999"),
+                currencyCode = "INR",
+                convertedCurrencyCode = "USD",
+            ),
+        )
+        val result = (outcome as CalculationOutcome.Success).result
+        assertTrue(result.convertedTotal.precision() - result.convertedTotal.scale() > 15)
+        val record = HistoryRecord(
+            id = "large-valid-result",
+            createdAtEpochMillis = 10L,
+            label = "Maximum valid calculation",
+            currencyCode = result.currencyCode,
+            convertedCurrencyCode = result.convertedCurrencyCode,
+            subtotal = result.subtotal,
+            discountAmount = result.discountAmount,
+            taxAmount = result.taxAmount,
+            tipAmount = result.tipAmount,
+            serviceChargeAmount = result.serviceChargeAmount,
+            total = result.total,
+            convertedTotal = result.convertedTotal,
+            perPerson = result.perPerson,
+            convertedPerPerson = result.convertedPerPerson,
+            splitCount = result.splitCount,
+        )
+        val backup = emptyBackup().copy(history = listOf(record))
+
+        val decoded = codec.decode(codec.encode(backup))
+
         assertEquals(backup, (decoded as BackupDecodeResult.Success).backup)
     }
 
