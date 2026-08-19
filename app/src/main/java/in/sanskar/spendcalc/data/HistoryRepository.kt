@@ -14,7 +14,7 @@ class HistoryRepository(
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
     fun observeHistory(): Flow<List<HistoryRecord>> =
-        dao.observeAll().map { entries -> entries.map(HistoryEntity::toDomain) }
+        dao.observeAll().map { entries -> entries.map { it.toDomain() } }
 
     suspend fun save(result: CalculationResult, label: String = "Calculation"): String {
         val id = UUID.randomUUID().toString()
