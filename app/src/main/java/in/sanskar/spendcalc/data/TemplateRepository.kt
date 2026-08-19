@@ -14,7 +14,7 @@ class TemplateRepository(
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
     fun observeTemplates(): Flow<List<CalculationTemplate>> =
-        dao.observeAll().map { templates -> templates.map(TemplateEntity::toDomain) }
+        dao.observeAll().map { templates -> templates.map { it.toDomain() } }
 
     suspend fun save(name: String, input: CalculationInput): String {
         val id = UUID.randomUUID().toString()
