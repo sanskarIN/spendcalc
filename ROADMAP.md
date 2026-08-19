@@ -1,13 +1,14 @@
 # SpendCalc Roadmap
 
-The roadmap prioritizes correctness, privacy, accessibility, and maintainability over feature count.
+The roadmap prioritizes correctness, privacy, accessibility, maintainability, and verifiable documentation over feature count.
 
 ## Phase 0 — Repository foundation
 
 - [x] Android/Kotlin/Compose build configuration.
 - [x] Repository standards and policy files.
 - [x] Architecture, privacy, security, and support direction.
-- [x] Pull-request CI, CodeQL, dependency review, repository audit, namespace check, formatting check, Android resource/security checks, and secret-pattern scan are configured.
+- [x] Pull-request CI, CodeQL, dependency review, repository audit, namespace check, formatting check, Android resource/security checks, documentation coverage, and secret-pattern scan are configured.
+- [x] Exhaustive tracked-file reference and documentation source-of-truth map are maintained as required repository artifacts.
 - [ ] Current release-candidate workflow results are green on the final PR head.
 
 ## Phase 1 — Core calculator MVP
@@ -71,32 +72,44 @@ The roadmap prioritizes correctness, privacy, accessibility, and maintainability
 - [x] Settings backup-busy UI regression coverage.
 - [x] Real-activity calculate/named-save/history journey smoke test.
 - [x] Instrumentation-test compilation in CI.
+- [x] Fast guard rejects any tracked file omitted/stale/duplicated in exhaustive codebase documentation.
 - [ ] Execute the Android instrumentation suite on a connected emulator/device for the final release candidate.
 - [ ] Add database migration tests when schema version 2 exists.
 - [ ] Add a macrobenchmark/profile module only if measured performance warrants it.
 
 ## Phase 5 — Release engineering
 
-- [x] Debug/release build, full Android lint, unit-test, static-security, dependency-review, and repository-audit workflows are defined.
+- [x] Debug/release build, full Android lint, unit-test, static-security, documentation-coverage, dependency-review, and repository-audit workflows are defined.
 - [x] Tag-triggered unsigned release-artifact workflow is defined.
 - [x] Production signing material is kept outside source control.
+- [x] Release procedure separates source completeness, exact-head automation, manual Android verification, and distribution/signing/screenshot evidence.
 - [ ] Confirm all current pull-request checks are green on the exact final commit.
 - [ ] Produce the signed production artifact with external signing credentials.
-- [ ] Capture final screenshots.
+- [ ] Capture final screenshots from the verified build using fictional data.
 - [ ] Finalize the published 1.0.0 release entry.
 - [ ] Tag `v1.0.0` only after automated and manual release gates pass.
 
-## Phase 6 — Final audit
+## Phase 6 — Final source/documentation audit
 
 - [x] Source-level architecture, persistence, privacy, backup, export, input-boundary, logging, accessibility-semantics, and performance-budget audits completed.
 - [x] Dedicated persistence-invariant documentation is required by the repository audit.
+- [x] Every tracked root/configuration/GitHub/build/source/test/resource/script/policy/documentation file is described individually in `docs/codebase-reference.md`.
+- [x] `docs/documentation-map.md` defines documentation authority, update triggers, and anti-drift rules.
+- [x] `scripts/check_documentation_coverage.py` mechanically compares exhaustive documentation to `git ls-files`.
+- [x] Main CI and lightweight Repository Audit both enforce tracked-file documentation coverage.
+- [x] Repository required-file audit requires the codebase reference, documentation map, and coverage guard.
+- [x] Contributor/development/setup/testing/release/verification/final-audit documentation explains how to maintain complete file coverage.
+- [x] Intentional absence of a committed Gradle wrapper is documented rather than mistaken for an omitted project file.
+- [x] Future tracked Room schema files are identified as migration/release artifacts that must be individually documented.
 - [x] Repository documentation reconciled with implemented behavior for the release-candidate branch.
-- [x] Secret-pattern, Android resource/security, and repository-link checks are part of CI.
-- [ ] Clean setup using `docs/setup.md` is confirmed by the final CI run.
-- [ ] Final PR unit tests, instrumentation compilation, lint, debug build, release build, CodeQL, dependency review, and repository audit are green.
+- [x] Secret-pattern, documentation, Android resource/security, and repository-link checks are part of CI.
+- [ ] Clean setup using `docs/setup.md` is confirmed by the final exact-head CI run.
+- [ ] Final PR documentation guard, unit tests, instrumentation compilation, lint, debug build, release build, CodeQL, dependency review, and Repository Audit are green.
 - [ ] Accessibility manual pass with TalkBack and large system font scale is completed on a device/emulator.
 - [ ] Phone and tablet/wide layouts are manually reviewed on the final build.
 - [ ] Text, CSV, PDF, backup export, and backup restore are manually exercised through Android system pickers/share sheets.
-- [ ] `README.md`, `CHANGELOG.md`, `ROADMAP.md`, `docs/`, and `what_changed.md` match the merged release candidate.
+- [ ] Real release screenshots are captured from the verified build.
+- [ ] Protected external signing and signed-artifact verification are completed.
+- [ ] `README.md`, `CHANGELOG.md`, `ROADMAP.md`, permanent `docs/`, and `what_changed.md` match the merged/tagged release candidate.
 
-Future work should move into a tagged release only after the exact commit being released passes both automated checks and the documented manual device gates.
+Future work should move into a tagged release only after the exact commit being released passes both automated checks and the documented manual Android/accessibility/export/backup/signing/screenshot gates.
