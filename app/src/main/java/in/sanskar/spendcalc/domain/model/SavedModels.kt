@@ -53,3 +53,15 @@ data class UserPreferences(
     val autoDeleteHistory: AutoDeleteHistory = AutoDeleteHistory.NEVER,
     val onboardingCompleted: Boolean = false,
 )
+
+data class SpendCalcBackup(
+    val schemaVersion: Int = CURRENT_SCHEMA_VERSION,
+    val exportedAtEpochMillis: Long,
+    val history: List<HistoryRecord>,
+    val templates: List<CalculationTemplate>,
+    val preferences: UserPreferences,
+) {
+    companion object {
+        const val CURRENT_SCHEMA_VERSION = 1
+    }
+}
