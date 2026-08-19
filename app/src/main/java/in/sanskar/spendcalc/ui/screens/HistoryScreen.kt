@@ -35,6 +35,8 @@ import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
 
+private const val MAX_HISTORY_SEARCH_CHARS = 120
+
 @Composable
 fun HistoryScreen(
     history: List<HistoryRecord>,
@@ -93,7 +95,7 @@ fun HistoryScreen(
             item {
                 OutlinedTextField(
                     value = searchQuery,
-                    onValueChange = { searchQuery = it },
+                    onValueChange = { searchQuery = it.take(MAX_HISTORY_SEARCH_CHARS) },
                     label = { Text(stringResource(R.string.history_search_label)) },
                     supportingText = { Text(stringResource(R.string.history_search_supporting)) },
                     singleLine = true,
