@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="history_saved">Calculation saved to history.</string>
+    <string name="template_saved">Template saved.</string>
+    <string name="entry_deleted">Deleted.</string>
+    <string name="history_cleared">History cleared.</string>
+</resources>
