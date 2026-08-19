@@ -48,4 +48,5 @@ data class CalculatorUiState(
     val result: CalculationResult? = null,
     val issues: Set<FormIssue> = emptySet(),
     val feedback: ActionFeedback = ActionFeedback.NONE,
+    val feedbackSequence: Long = 0L,
 )
