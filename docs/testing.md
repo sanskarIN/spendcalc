@@ -18,7 +18,9 @@ Coverage includes:
 - rejection of scientific-notation shapes that could expand dramatically when converted to plain decimal text;
 - locale-independent currency normalization;
 - history repository save/delete/restore/clear/retention behavior;
+- history-label trimming, blank fallback, and the shared 120-character persistence bound;
 - template repository save/delete/exact-restore/replace behavior;
+- template-name trimming, blank fallback, and the shared 120-character persistence bound;
 - CSV quoting, embedded quotes, and spreadsheet-formula neutralization;
 - text receipt output;
 - versioned backup round trips, Unicode text, corruption detection, unsupported schemas, duplicate identifiers, structural limits, checksum validation, and exponent-expansion rejection;
@@ -58,6 +60,7 @@ Android coverage includes:
 - Room template round trip;
 - backup replacement across persisted Room records;
 - Compose calculator/receipt smoke rendering;
+- Compose named-history save dialog rendering, text entry, and callback wiring;
 - Settings backup busy/progress state and disabled duplicate backup actions;
 - a real-activity journey that completes onboarding when needed, enters an amount, verifies the calculated result, saves it, navigates to History, and verifies the saved amount.
 
@@ -71,6 +74,7 @@ Examples:
 
 - finance formula or validation defect -> pure JVM test/fuzz invariant;
 - backup parser or integrity defect -> codec unit test;
+- saved-name normalization defect -> repository unit test plus UI test when the user flow changes;
 - Room replacement/migration defect -> Android database test;
 - path containment/logging defect -> pure JVM platform helper test where possible;
 - rendering/semantics/busy-state defect -> Compose or activity test.
@@ -95,7 +99,7 @@ Before a production release:
 4. enable large system font scale and the app large-text preference;
 5. enable reduced motion and verify navigation motion is removed;
 6. use TalkBack for major controls, dialogs, lists, primary navigation, and progress messaging;
-7. create, search, delete, undo, clear, and auto-delete history with controlled test data;
+7. save a calculation with a meaningful history label, verify it is searchable by that label, then create/search/delete/undo/clear/auto-delete history with controlled test data;
 8. create/load/delete/undo templates;
 9. verify the 100-item calculator limit is visible and the Add item action becomes disabled at the limit;
 10. share text, CSV, and PDF exports;
