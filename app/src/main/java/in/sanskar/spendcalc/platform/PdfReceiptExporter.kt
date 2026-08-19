@@ -40,7 +40,7 @@ class PdfReceiptExporter {
         fun line(text: String, bold: Boolean = false, spacingAfter: Float = LINE_HEIGHT) {
             if (page == null || y > PAGE_HEIGHT - BOTTOM_MARGIN) startPage()
             paint.typeface = if (bold) Typeface.create(Typeface.DEFAULT, Typeface.BOLD) else Typeface.DEFAULT
-            page!!.canvas.drawText(text.ellipsizeForPdf(), LEFT_MARGIN, y, paint)
+            page!!.canvas.drawText(ellipsizePdfLine(text), LEFT_MARGIN, y, paint)
             y += spacingAfter
         }
 
@@ -89,13 +89,6 @@ class PdfReceiptExporter {
         return file
     }
 
-    private fun String.ellipsizeForPdf(maxCharacters: Int = 78): String =
-        if (length <= maxCharacters) {
-            this
-        } else {
-            truncateUtf16Safely(this, maxCharacters - 1) + "…"
-        }
-
     private companion object {
         const val PAGE_WIDTH = 595
         const val PAGE_HEIGHT = 842
@@ -103,5 +96,14 @@ class PdfReceiptExporter {
         const val TOP_MARGIN = 52f
         const val BOTTOM_MARGIN = 48f
         const val LINE_HEIGHT = 20f
+    }
+}
+
+internal fun ellipsizePdfLine(text: String, maxCharacters: Int = 78): String {
+    require(maxCharacters >= 1) { "PDF line limit must allow an ellipsis" }
+    return if (text.length <= maxCharacters) {
+        text
+    } else {
+        truncateUtf16Safely(text, maxCharacters - 1) + "…"
     }
 }
