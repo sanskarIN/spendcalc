@@ -234,7 +234,7 @@ private fun SpendCalcMainScaffold(
         ActionFeedback.BACKUP_FAILED -> stringResource(R.string.backup_failed)
     }
 
-    LaunchedEffect(calculator.feedback) {
+    LaunchedEffect(calculator.feedback, calculator.feedbackSequence) {
         if (calculator.feedback != ActionFeedback.NONE) {
             val undoAction: (() -> Unit)? = when (calculator.feedback) {
                 ActionFeedback.HISTORY_DELETED -> viewModel::undoDeleteHistory
