@@ -8,276 +8,167 @@
 - Active branch: `complete/v1-finalization`
 - Active pull request: `#12` — `fix: complete SpendCalc release implementation`
 - Master specification: `15_spendcalc_master_prompt.md`
-- Target release: `1.0.0`
+- Target application release: `2.0.12`
+- Android `versionName`: `2.0.12`
+- Android `versionCode`: `20012`
+- Room database version: `1`
+- Explicit backup schema version: `1`
 - Platform: Android API 26+, Kotlin + Jetpack Compose, local/offline-first.
 - License: MIT.
 - Required product credit: `Made by the Sanskar`.
 - Requested Git email observed in GitHub commit metadata: `Sanskar <sanskarin@outlook.in>`.
-- Pre-handoff head for this update: `2fa5e41fcb1dcae2b87f5181deebe871e772ce84`.
-- Pull request state at the start of this final source-audit continuation: open, non-draft, mergeable.
-- Source state: the planned application implementation, persistence/export hardening, regression suite, repository automation, deep permanent documentation, strict backup byte/currency validation, and Unicode-safe PDF truncation are complete at source level on `complete/v1-finalization`. Every tracked file is covered by the exhaustive file reference whose coverage is enforced by CI.
-- Release state: do not tag or describe `v1.0.0` as verified until the exact final commit has successful CI, CodeQL, Dependency Review, and Repository Audit results plus the manual Android/accessibility/export/backup/signing/screenshot gates in `docs/verification.md`.
+- Pre-handoff head for this 2.0.12 continuation: `c7c376ce98888531447f4b2498f609bb7a976313`.
+- Pull request state immediately before this handoff commit: open, non-draft, mergeable.
+- Source state: planned product implementation, persistence/export hardening, platform-security fixes, regression suite, repository automation, exhaustive file documentation, release documentation, and 2.0.12 application metadata are complete at source level on `complete/v1-finalization`.
+- Release state: do **not** tag or describe `v2.0.12` as verified until exact-final-head CI, CodeQL, Dependency Review, and Repository Audit have acceptable successful conclusions and the manual Android/accessibility/export/backup/signing/screenshot gates in `docs/verification.md` are complete.
 
-## Continuation starting point
+## 2.0.12 versioning decision
 
-The previous handoff already included:
+The user requested this continuation to be prepared as version `2.0.12`.
 
-- precision-safe `BigDecimal` finance arithmetic and bounded input validation;
-- Room history and saved templates;
-- DataStore preferences;
-- named history saves;
-- history search/filter;
-- individual history/template delete Undo behavior;
-- history retention;
-- text/CSV/PDF export;
-- explicit local backup/restore with checksum, bounded parsing, transactional Room replacement, and compensating DataStore rollback;
-- UTF-16-safe saved-name policy and 120-character history/template name contract;
-- exact valid restored-name preservation;
-- Unicode-boundary history save tests;
-- bounded History search;
-- Android string-resource reference/duplicate-name audit;
-- Android local-first/FileProvider security audit;
-- branded splash/navigation assets and accessibility semantics;
-- CI, CodeQL, Dependency Review, Repository Audit, Dependabot, and release-candidate workflows;
-- release documentation and manual verification gates.
+Application/distribution metadata now uses:
 
-The active branch head at that previous handoff was `2470b124c19d628009428436788dd400aed05d2a`.
+```text
+versionName = 2.0.12
+versionCode = 20012
+```
 
-## Exact workflow status observed during the persistence continuation
+This release-number change intentionally does **not** manufacture a persistence migration:
 
-At head `eaad544f3ed4e5bd9f8658b7a70dac181ee0ccaa`, GitHub reported:
+- Room database version remains `1` because the database schema did not change merely because the application version changed.
+- Explicit backup schema version remains `1` because the serialized backup contract did not require an incompatible schema revision merely because the application version changed.
+- No fake Room `1 -> 2` migration was added.
+- No fake backup schema `1 -> 2` transformation was added.
+- Future Room or backup schema changes must be driven by actual compatibility requirements and receive their own migrations/tests/documentation.
+
+`versionCode = 20012` provides a monotonic Android distribution code corresponding to this requested application release target.
+
+## Exact workflow status before this handoff
+
+Immediately before the final `what_changed.md` commit, exact branch head `c7c376ce98888531447f4b2498f609bb7a976313` registered all four required workflow families:
 
 - CI — `pending`;
+- CodeQL — `pending`;
 - Dependency Review — `pending`;
-- CodeQL — `queued`;
-- Repository Audit — `queued`.
+- Repository Audit — `pending`.
 
-Earlier exact heads in the same continuation also repeatedly registered the same four workflow families as queued/pending. These states are not failures, but they are also not successful release verification. Workflow concurrency cancels superseded pull-request revisions, so no result from an older head should be used as proof for a newer one.
+Those runs are expected to be superseded by this handoff commit because workflow concurrency cancels older PR revisions. Pending/queued/cancelled/superseded states are not represented as successful verification.
 
-Immediately before this final handoff commit, exact head `2fa5e41fcb1dcae2b87f5181deebe871e772ce84` registered:
+After this file is committed, re-fetch PR #12 and all four workflow families for the new exact head. Never use an older green result as proof for a newer commit.
 
-- CI — `pending`;
-- Dependency Review — `pending`;
-- CodeQL — `queued`;
-- Repository Audit — `queued`.
+## 2.0.12 continuation completed
 
-Those runs are expected to be superseded by the handoff commit itself. Re-fetch all four workflow families for the new exact head before making any release decision.
+### Android release metadata
 
-The connected execution container still cannot resolve `github.com`, so a clean local Gradle dependency resolution/build cannot be used as release proof in this environment. Do not claim local `gradle test`, lint, debug, release, or instrumentation results unless they are actually run in a network-capable environment. GitHub Actions remains the authoritative automated Android/Gradle verification source here.
+`app/build.gradle.kts` now sets:
 
-## Work completed in the persistence continuation
+- `versionName = "2.0.12"`;
+- `versionCode = 20012`.
 
-### 1. Template repository finance validation
+No finance, Room schema, backup schema, package name, API-level, signing, or application-ID behavior was changed solely to perform the release-number retarget.
 
-Before this continuation, `TemplateRepository.save(...)` assumed callers had already passed through ViewModel validation. A direct repository caller could provide invalid persisted template settings and create local data that `BackupCodec` would later reject.
+### Changelog
 
-This is now closed:
+`CHANGELOG.md` now:
 
-- `TemplateRepository` accepts a `CalculatorEngine` validator dependency.
-- `save(...)` validates `input.copy(items = emptyList())` before persistence.
-- Only settings actually persisted by templates are validated; discarded expense line items do not block template saving.
-- `restore(...)` and `replaceAll(...)` revalidate template finance settings before DAO writes.
-- Invalid discount/tax/tip/service-charge/split/currency/exchange-rate settings fail closed with `IllegalArgumentException` before persistence.
-- `AppContainer` passes its shared `calculatorEngine` instance into `TemplateRepository`, so the production app does not create a separate rule implementation for template persistence.
+- identifies `[2.0.12] - Planned` as the target release;
+- records the 2.0.12/20012 application metadata;
+- explicitly states that Room database and backup schema versions remain independent compatibility dimensions;
+- retains the completed persistence, backup, UTF-8, canonical-currency, Unicode-safe PDF, CI, documentation, and security changes;
+- does not falsely claim the release has passed exact-head automation or manual device/signing gates.
 
-Regression tests cover:
+### Roadmap
 
-- invalid tax rejected during direct repository save;
-- invalid exchange rate rejected during restore;
-- invalid split rejected during replacement;
-- line items intentionally ignored for template-setting validation;
-- invalid candidate replacement preserving existing template data.
+`ROADMAP.md` now:
 
-### 2. Template naming UX and accessibility completion
+- targets `2.0.12` for current release engineering;
+- marks the application version metadata work complete;
+- keeps exact-head workflow/device/accessibility/export/backup/signing/screenshot gates open;
+- requires `v2.0.12` only after all blockers pass;
+- keeps possible receipt notes/categories as post-2.0.12 enhancement work rather than inventing release blockers;
+- explicitly keeps Room/backup compatibility versions independent from the app release number.
 
-The template dialog previously enforced the same 120-character Unicode-safe name contract as history labels but did not explain it to the user.
+### Release guide
 
-The dialog now includes:
+`docs/release.md` now:
 
-- `Template name` visible label;
-- supporting text: `Give this template a short name. Up to 120 characters.`;
-- surrogate-safe boundary truncation through `truncateUtf16Safely`;
-- a concise dialog confirmation labeled `Save`;
-- a separate `Cancel` action.
+- defines the active release as 2.0.12 / Android versionCode 20012;
+- requires exact metadata verification before release;
+- keeps source completeness, automated exact-head verification, manual Android verification, and distribution evidence as separate proof classes;
+- uses the `v2.0.12` tag procedure;
+- requires the signed artifact to report 2.0.12 in About;
+- explains that application versioning does not automatically require Room/backup schema changes.
 
-The underlying calculator action remains `Save template`. Using `Save` for the dialog confirmation removes an ambiguity where the title, underlying button, and confirmation all used the same phrase.
+### Verification checklist
 
-Compose tests now cover:
+`docs/verification.md` now:
 
-- template naming guidance is visible;
-- entered template name reaches the callback;
-- an emoji crossing the 120-character boundary is not split;
-- the distinct `Save` dialog action is used.
+- names 2.0.12/20012 as the current target;
+- checks app version metadata explicitly;
+- checks that Room/backup schema versions changed only for real compatibility reasons;
+- preserves all exact-head CI/CodeQL/Dependency Review/Repository Audit gates;
+- preserves connected-device instrumentation gates;
+- preserves TalkBack, large-font, responsive-layout, theme, reduced-motion, export/share, backup/restore, offline, screenshot, signing, and artifact checks;
+- explicitly includes malformed UTF-8 backup rejection, checksum-valid noncanonical currency rejection, and long-Unicode PDF truncation review.
 
-Accessibility documentation and release verification explicitly require TalkBack/large-font review of both history and template save dialogs.
+### Final release-candidate source audit
 
-### 3. Shared persisted-record structural policy
+`docs/release-candidate-final-audit.md` now:
 
-A new domain file, `SavedRecordPolicy.kt`, defines the structural contract for persisted history/template records.
+- is explicitly the `SpendCalc 2.0.12 Release-Candidate Final Audit`;
+- records 2.0.12/20012 source metadata as complete;
+- records the deliberate non-change of Room database/backup schema versions;
+- includes the previously completed strict UTF-8, canonical persisted-currency, persistence, Unicode-safe PDF, export-path, accessibility, and regression hardening;
+- continues to distinguish source audit completion from pending runtime/release evidence.
 
-Current constants:
+### Documentation source-of-truth map
 
-- `MAX_SAVED_ID_CHARS = 128`;
-- `MAX_SAVED_RESULT_INTEGER_DIGITS = 34`;
-- `MAX_SAVED_RESULT_SCALE = 12`;
-- `MAX_SAVED_SPLIT_COUNT = 1_000_000`.
+`docs/documentation-map.md` now:
 
-Current shared helpers include:
+- refers to the current 2.0.12 candidate;
+- adds explicit release-status/version-metadata documentation rules;
+- requires changelog, roadmap, release guide, verification, release-candidate audit, and handoff reconciliation for release-version changes;
+- requires compatibility versions to remain independent unless an actual schema contract changes.
 
-- `isValidSavedId(...)`;
-- `requireValidSavedId(...)`;
-- `hasUniqueSavedIds(...)`;
-- `requireUniqueSavedIds(...)`;
-- `isCanonicalSavedCurrencyCode(...)`;
-- `isValidSavedResultDecimal(...)`;
-- `isValidHistoryRecord(...)`;
-- `requireValidHistoryRecord(...)`;
-- `isValidTemplateEnvelope(...)`;
-- `requireValidTemplateEnvelope(...)`.
+### Exhaustive codebase reference
 
-Persisted IDs must be:
+`docs/codebase-reference.md` remains the exhaustive tracked-file ownership/reference document enforced by CI.
 
-- nonblank;
-- at most 128 UTF-16 code units;
-- well-formed UTF-16.
+Its descriptions were reconciled for 2.0.12 and the final hardening state, including:
 
-Persisted timestamps must be nonnegative.
+- `app/build.gradle.kts` — 2.0.12/versionCode 20012 metadata;
+- `BackupCodec.kt` — exact canonical persisted-currency validation;
+- `BackupFileIo.kt` — strict UTF-8 malformed/unmappable byte rejection;
+- `PdfReceiptExporter.kt` — Unicode-safe ellipsis-boundary truncation;
+- `BackupCodecPersistedPolicyTest.kt` — checksum-valid noncanonical decode rejection;
+- `PathSafetyTest.kt` — consolidated platform regressions for path containment, strict backup decoding, and PDF Unicode truncation;
+- `docs/release-candidate-final-audit.md` — current 2.0.12 source-level audit.
 
-Persisted currencies are canonical uppercase three-letter values such as `INR` and `USD`.
+No tracked file was added merely for the version retarget, so the file-index set remains structurally unchanged. The exact tracked-file equality result must still come from the final-head documentation coverage workflow.
 
-History records additionally require:
+### GitHub maintenance documentation
 
-- valid saved label;
-- split count from 1 through 1,000,000;
-- nonnegative subtotal, discount, tax, tip, service charge, total, converted total, per-person, and converted-per-person values;
-- saved result scale from 0 through 12;
-- at most 34 integer digits for saved result fields.
+`docs/github-maintenance.md` now uses:
 
-Template envelope validation covers:
+- `2.0.12` — current verified-production-release target milestone;
+- `2.1.0` — first post-2.0.12 feature milestone;
+- `maintenance` — optional recurring maintenance milestone.
 
-- ID;
-- timestamp;
-- saved name;
-- canonical base currency;
-- canonical converted currency.
+It explicitly warns that app release milestones are not Room/backup schema numbers.
 
-Template finance settings are then validated through `CalculatorEngine`.
+### Compatibility handoff
 
-### 4. History repository persistence boundary
+`what_changed_final.md` now points readers to this canonical handoff and identifies 2.0.12/versionCode 20012 as the active application target.
 
-`HistoryRepository` now validates records before DAO writes.
+`what_changed_latest.md` remains a compatibility pointer only and already contains no active 1.0.0 release target.
 
-Behavior:
+### README reconciliation
 
-- new history labels use `normalizeSavedName(...)`;
-- currencies are normalized with `trim().uppercase(Locale.ROOT)` before persistence;
-- the resulting domain record must pass `requireValidHistoryRecord(...)`;
-- invalid direct `CalculationResult` input cannot be persisted;
-- restore/replace records cannot bypass ID/timestamp/name/currency/split/result-shape bounds.
+`README.md` was re-read during this continuation. It does not contain an active `v1.0.0` release target requiring replacement. Its feature/build/release-boundary content remains consistent with the current implementation and deeper 2.0.12 release documentation.
 
-Tests now cover:
+Historical version references in old commits or explicitly historical handoff descriptions are not rewritten merely to erase history. Only current authoritative release-target language is changed.
 
-- negative history result rejected before persistence;
-- valid mixed-case/whitespace currency input canonicalized to `INR`/`USD`;
-- negative timestamp rejected;
-- oversized ID rejected;
-- invalid split rejected;
-- unsupported stored result magnitude rejected;
-- exact valid restored history-label whitespace preserved;
-- oversized restored label rejected rather than rewritten;
-- invalid replace-all candidate leaves existing history intact.
-
-### 5. Template repository structural persistence boundary
-
-`TemplateRepository` now performs two validation layers before DAO writes:
-
-1. normalize intended canonical currencies and validate the persisted template envelope;
-2. validate persisted finance settings through `CalculatorEngine`.
-
-Tests now cover:
-
-- negative injected save timestamp rejected;
-- valid mixed-case/whitespace currencies canonicalized before persistence;
-- negative restored timestamp rejected;
-- oversized restored ID rejected;
-- oversized name rejected rather than rewritten;
-- invalid finance settings rejected before persistence;
-- invalid replacement candidate leaves existing templates intact.
-
-### 6. Duplicate-ID replacement protection
-
-The backup codec already treated duplicate IDs as invalid. Direct repository `replaceAll(...)` calls did not previously enforce the same collection invariant.
-
-Now:
-
-- `HistoryRepository.replaceAll(...)` calls `requireUniqueSavedIds(...)` before mapping/replacement;
-- `TemplateRepository.replaceAll(...)` does the same;
-- every candidate record is mapped and validated before the DAO replacement call;
-- single-record `restore(...)` intentionally remains an upsert and may reuse an existing ID because Undo restores the exact deleted record.
-
-`RepositoryDuplicateIdTest.kt` proves:
-
-- duplicate history replacement IDs fail before existing data is cleared;
-- duplicate template replacement IDs fail before existing data is cleared.
-
-### 7. Backup codec and persistence policy alignment
-
-`BackupCodec` now reuses persisted-record policy rules rather than duplicating structural history/template envelope logic.
-
-Changes include:
-
-- history validation delegates to `isValidHistoryRecord(...)`;
-- template validation first requires `isValidTemplateEnvelope(...)`, then applies `CalculatorEngine` finance validation;
-- backup decimal-shape checks use the shared saved-result scale/integer-digit constants;
-- structurally invalid/noncanonical in-memory records are rejected during encode rather than silently transformed;
-- decoded history/template currency strings are validated in their exact decoded form instead of being uppercased before validation.
-
-This closes two round-trip semantic issues: a programmatically constructed persisted record with noncanonical currency cannot be encoded, and a checksum-valid edited backup containing lowercase/noncanonical currency cannot be silently repaired during decode. The persistence/export contract now fails closed in both directions.
-
-`BackupCodecPersistedPolicyTest.kt` covers:
-
-- noncanonical template currency rejected during encode;
-- checksum-valid noncanonical history currency rejected during decode;
-- checksum-valid noncanonical template currency rejected during decode;
-- oversized history identifier rejected during encode;
-- negative template timestamp rejected during encode.
-
-Backup decode continues to reject duplicate IDs, unsupported schemas, malformed records, excessive sizes/lines, invalid decimal shapes, malformed UTF-8/Unicode, invalid saved names, invalid timestamps/currencies/splits, and corrupted checksums.
-
-### 8. Persistence documentation
-
-A dedicated `docs/persistence-invariants.md` defines:
-
-- the repository/backup compatibility invariant;
-- ID rules;
-- timestamp rules;
-- saved-name rules;
-- canonical currency rules, including strict decoded forms;
-- history result/split rules;
-- template setting rules;
-- replacement ordering;
-- duplicate-ID handling;
-- backup relationship;
-- strict UTF-8 document input behavior;
-- future schema/regression expectations.
-
-The repository audit requires this file.
-
-`docs/architecture.md` describes repositories as validation boundaries and links to the persistence contract.
-
-`docs/security-backup.md` documents local repository validation and strict document-byte decoding in the backup threat model rather than treating only decoded backup fields as untrusted.
-
-`docs/testing.md` includes the complete persistence-invariant and final platform regression strategy.
-
-`docs/verification.md` includes automated/manual persistence, template-dialog, duplicate-ID, canonical-currency, and backup-alignment gates.
-
-`docs/release-candidate-final-audit.md` records the persistence-invariant source and regression coverage as complete.
-
-`docs/accessibility.md` includes template dialog guidance/confirmation/Unicode checks.
-
-`README.md`, `ROADMAP.md`, and `CHANGELOG.md` describe the hardened persistence model.
-
-## Current complete implementation state
+## Complete implementation state retained for 2.0.12
 
 ### Finance
 
@@ -285,7 +176,7 @@ The repository audit requires this file.
 - Deterministic calculation order.
 - Explicit rounding policy.
 - Itemized expenses.
-- Discount/tax/tip/service charge.
+- Discount, tax, tip, and service charge.
 - Manual currency conversion.
 - Split bill.
 - Discount limited to 0–100%.
@@ -381,7 +272,58 @@ The repository audit requires this file.
 - About/support/funding/license/version.
 - `Made by the Sanskar` credit.
 
-## Regression suite state
+## Persistence and backup invariants retained
+
+The 2.0.12 retarget does not weaken or bypass existing persistence safeguards.
+
+### Saved-record envelope
+
+- IDs must be nonblank, bounded, and valid Unicode.
+- Creation timestamps must be nonnegative.
+- Saved names must satisfy the shared 120-code-unit well-formed UTF-16 policy.
+- Persisted currencies must be canonical uppercase three-letter values.
+- History split count/result decimal shapes remain bounded.
+- Template finance settings are revalidated through `CalculatorEngine`.
+- Batch replacements reject duplicate IDs.
+
+### Repository boundary
+
+`HistoryRepository` and `TemplateRepository` validate records before DAO mutation. Batch replacement validates every candidate before the DAO replacement call, preventing an invalid candidate from clearing existing data first.
+
+### Backup boundary
+
+`BackupCodec` independently validates in-memory/decoded backup objects because they can bypass normal repositories.
+
+The codec:
+
+- reuses persisted-record structural predicates;
+- rejects unsupported schemas;
+- bounds payload/line/record/field/decimal sizes;
+- validates exact canonical persisted currencies;
+- rejects duplicate IDs;
+- validates saved names and Unicode;
+- detects accidental corruption with SHA-256;
+- does not treat SHA-256 as authentication/signature/encryption.
+
+`BackupFileIo` rejects malformed/unmappable UTF-8 bytes before backup semantic parsing.
+
+## Final platform defects already closed
+
+### Unicode-safe PDF truncation
+
+Long PDF receipt lines no longer use unsafe ordinary UTF-16 truncation at the ellipsis boundary. A supplementary Unicode character crossing the boundary cannot leave a dangling surrogate.
+
+Regression coverage lives in the documented JVM platform test bundle.
+
+### Strict backup UTF-8
+
+Backup document reads no longer rely on a decoder that may replace malformed byte input. Malformed/unmappable UTF-8 reports failure and therefore cannot silently mutate input before backup validation.
+
+### Strict decoded persisted currencies
+
+Checksum-valid edited backups containing lowercase/noncanonical persisted currencies are rejected. Decode does not uppercase/repair them before the shared persisted-record policy sees them.
+
+## Regression suite retained
 
 ### JVM/domain
 
@@ -428,7 +370,7 @@ The repository audit requires this file.
 - Complete required-file/local Markdown-link repository audit.
 - Common secret-pattern scan.
 
-## Current CI/repository automation
+## CI and repository automation retained
 
 Main `CI` performs:
 
@@ -451,316 +393,79 @@ Separate workflows:
 - Dependency Review;
 - Repository Audit, including documentation coverage and Android string-resource audit;
 - Dependabot;
-- tag-triggered unsigned Release Candidate artifact build, now repeating the fast guards, JVM tests, instrumentation compilation, full lint, and release compilation before artifact upload.
+- tag-triggered unsigned Release Candidate artifact build that repeats fast guards, JVM tests, instrumentation compilation, full lint, and release compilation before artifact upload.
 
 Superseded PR revisions use concurrency cancellation.
 
-## Commits from the persistence continuation
-
-- `1c4f891` — `fix: validate template settings at repository boundary`
-- `0c1a01d` — `test: enforce template finance persistence invariants`
-- `1693f06` — `refactor: share calculator validator with template repository`
-- `8e14578` — `ux: explain template name length limit`
-- `05829a8` — `ux: show template name length guidance`
-- `4d1240e` — `test: cover template naming guidance and Unicode boundary`
-- `d1c6869` — `ux: distinguish template dialog confirm action`
-- `8099a42` — `ux: use concise template dialog confirm action`
-- `46ab765` — `test: target concise template dialog confirm action`
-- `ef371d7` — `refactor: centralize persisted record validation policy`
-- `4526bb7` — `test: cover persisted record envelope policy`
-- `d3fd281` — `fix: validate history records before persistence`
-- `cb95c7b` — `fix: validate template record envelope before persistence`
-- `830e4c7` — `test: enforce history persistence invariants`
-- `6cda520` — `refactor: share persisted record rules with backup codec`
-- `a3cb84f` — `test: enforce backup persisted record policy`
-- `b4be00b` — `test: cover template envelope persistence rules`
-- `e170701` — `docs: record persisted record invariant hardening`
-- `8a26cb1` — `docs: document persisted record regression strategy`
-- `eaad544` — `docs: document repository and backup invariant policy`
-- `2f9263e` — `refactor: centralize duplicate saved ID validation`
-- `0df7610` — `fix: reject duplicate history IDs before replacement`
-- `3fd7b15` — `fix: reject duplicate template IDs before replacement`
-- `06edcf6` — `refactor: expose saved ID uniqueness predicate`
-- `1fde1b7` — `test: reject duplicate IDs before repository replacement`
-- `282e711` — `docs: define persistence and backup invariants`
-- `75ec14e` — `ci: require persistence invariant documentation`
-- `d5a4ff8` — `docs: link persistence invariants into architecture`
-- `dafa6af` — `docs: expand release checks for persistence invariants`
-- `c98ce5b` — `docs: finalize persistence invariant release audit`
-- `f7ca1f4` — `docs: add template dialog accessibility verification`
-- `0dbb9fb` — `docs: expose persistence invariant hardening in README`
-- `873b8ac` — `docs: mark persistence invariant audit complete`
-
-## Exhaustive documentation continuation
-
-This documentation pass started from release-candidate head `4c935e4baaa6d9b7fd75afaf4e0976ea3d611afb`.
-
-At that exact starting head, PR `#12` was still open, non-draft, mergeable, and GitHub registered:
-
-- CI — pending;
-- Dependency Review — pending;
-- CodeQL — queued;
-- Repository Audit — queued.
-
-No queued/pending result was represented as successful.
-
-### Full repository inventory
-
-A recursive inventory covered root files, `.github`, `app`, all source sets, Android resources, JVM tests, instrumentation tests, scripts, schemas, ADRs, assets, and permanent/compatibility documentation.
-
-Before this pass, the repository inventory contained 147 tracked files. Three maintained documentation/coverage files were added:
-
-- `docs/codebase-reference.md`;
-- `docs/documentation-map.md`;
-- `scripts/check_documentation_coverage.py`.
-
-The exhaustive reference is therefore designed for the resulting 150 tracked paths. This numeric expectation is not treated as proof until the new exact-head documentation guard actually runs successfully in GitHub Actions; the invariant is defined by exact set equality with `git ls-files`, not by a hard-coded count.
-
-The audit also confirmed that the repository intentionally does **not** commit Gradle wrapper files. Setup/development/troubleshooting/README now state this explicitly rather than implying `gradlew` should exist.
-
-### `docs/codebase-reference.md`
-
-A permanent file-by-file repository reference now documents every tracked path individually, grouped by role:
-
-- root build/policy/handoff files;
-- GitHub funding/templates/Dependabot/workflows;
-- app build/schema metadata;
-- all Android instrumentation/Compose/activity tests;
-- manifest/application bootstrap;
-- every data/Room repository/DAO/entity file;
-- every finance/domain/export/model file;
-- every Android platform adapter;
-- every Compose state/navigation/component/screen/theme file;
-- every drawable/value/XML Android resource;
-- every JVM repository/domain/export/model/platform/UI test;
-- every permanent document/ADR/asset;
-- every repository guard script.
-
-Each entry describes ownership plus the behavior/test/security/release invariant the file supports. The marked file-index block is deliberately machine-readable.
-
-### `docs/documentation-map.md`
-
-A documentation information architecture now defines:
-
-- public product documentation authority;
-- architecture/implementation authority;
-- persistence/backup/privacy/security authority;
-- testing/verification authority;
-- setup/operations/maintenance authority;
-- ADR durability rules;
-- changelog/roadmap responsibilities;
-- current-work handoff responsibilities;
-- screenshot/artwork distinction;
-- change-to-document matrix;
-- anti-drift rules.
-
-Important rule: `what_changed.md` owns volatile continuation state but does not replace permanent architecture/security/testing documentation.
-
-### Tracked-file documentation coverage guard
-
-`scripts/check_documentation_coverage.py` now:
-
-- invokes `git ls-files -z`;
-- parses only the marked file index in `docs/codebase-reference.md`;
-- requires exactly one marker pair;
-- rejects tracked files missing from the index;
-- rejects documented paths that are no longer tracked;
-- rejects duplicate documented paths;
-- reports the exact tracked-file count only on successful equality.
-
-This turns “document every file” from a one-time promise into a continuing repository invariant.
-
-### CI/repository/release enforcement
-
-The documentation guard is now run by:
-
-- `.github/workflows/ci.yml`;
-- `.github/workflows/repository-audit.yml`;
-- tag-triggered `.github/workflows/release.yml`.
-
-The tagged Release Candidate workflow was also strengthened to run:
-
-- format guard;
-- Kotlin namespace guard;
-- documentation coverage;
-- Android string-resource guard;
-- Android local-first security guard;
-- repository required-file/link audit;
-- secret scan;
-- JVM unit tests;
-- instrumentation-test compilation;
-- full Android lint;
-- release compilation;
-
-before uploading the unsigned APK artifact.
-
-`scripts/check_repository.py` now requires the complete permanent documentation/ADR/brand-screenshot-policy set plus the Android/documentation guard scripts, rather than only a smaller subset.
-
-### Permanent documentation reconciled
-
-This pass deeply updated:
-
-- `README.md` — public exhaustive documentation entry points, no-wrapper setup, documentation guard, CI/release boundaries;
-- `CONTRIBUTING.md` — every tracked-file change must update the codebase reference; complete quality commands and persistence/UI rules;
-- `docs/features.md` — calculator/history/template/persistence/backup/export/accessibility limits and actual behavior;
-- `docs/development.md` — file ownership/documentation maintenance, persistence/manifest/resources/build rules, complete guard commands;
-- `docs/testing.md` — documentation-coverage guard behavior and the full regression/CI/manual strategy;
-- `docs/github-maintenance.md` — workflow responsibilities, documentation maintenance, dependency/template/release/handoff practices;
-- `docs/setup.md` — explicit local Gradle/no-wrapper model, fast guards, build/test/release setup;
-- `docs/architecture.md` — application composition, persistence/backup/resource/repository-documentation architecture;
-- `docs/release.md` — separate source/automated/manual/distribution evidence classes and complete release procedure;
-- `docs/verification.md` — exhaustive documentation consistency gates alongside source/runtime/security/signing gates;
-- `docs/release-candidate-final-audit.md` — explicit exhaustive documentation source audit without faking pending runtime evidence;
-- `CHANGELOG.md` — documentation engineering, release workflow hardening, required-doc expansion;
-- `ROADMAP.md` — complete tracked-file documentation phase and still-open runtime/release gates;
-- `docs/troubleshooting.md` — no-wrapper, documentation/resource/security/repository guard diagnostics plus persistence/Actions troubleshooting;
-- `docs/design-system.md` — named-history/template dialog/search design contracts and screenshot/artwork distinction;
-- `docs/logging.md` — `Locale.ROOT` redaction semantics, URI/backup/exception privacy rules, testing/documentation links.
-
-The following existing deep documents were re-audited and remained consistent with the implementation without speculative rewrites:
-
-- `docs/backup-restore.md`;
-- `docs/persistence-invariants.md`;
-- `docs/privacy-backup.md`;
-- `docs/performance.md`.
-
-Earlier continuation work had already reconciled `docs/security-backup.md` and `docs/accessibility.md` with current persistence/Unicode/dialog behavior.
-
-### Documentation-pass commits
-
-- `ececde2` — `docs: add exhaustive codebase file reference`
-- `e07f7f1` — `docs: define documentation source-of-truth map`
-- `a35ec62` — `ci: add tracked-file documentation coverage guard`
-- `d3cac74` — `ci: enforce tracked-file documentation coverage`
-- `5a52efe` — `ci: add documentation coverage to repository audit`
-- `4a36c55` — `ci: require exhaustive documentation artifacts`
-- `3a2f92b` — `docs: deepen implemented feature contract`
-- `2f0b3ba` — `docs: add exhaustive documentation maintenance rules`
-- `fc1f34c` — `docs: document tracked-file coverage testing`
-- `9454ef5` — `docs: deepen repository maintenance guidance`
-- `1a1aced` — `docs: clarify reproducible local build setup`
-- `6084e4c` — `docs: connect architecture to exhaustive code reference`
-- `a83bade` — `docs: require complete documentation in contributions`
-- `bbd9a78` — `docs: deepen exact-commit release procedure`
-- `728221b` — `docs: add complete documentation release gates`
-- `7cb936f` — `docs: complete exhaustive repository documentation audit`
-- `63f7bbf` — `docs: record exhaustive documentation engineering`
-- `bdf07b8` — `docs: mark exhaustive documentation engineering complete`
-- `9e9021d` — `docs: add documentation and build guard troubleshooting`
-- `f3036e8` — `docs: expose exhaustive repository documentation`
-- `775adf3` — `ci: harden tagged release verification gates`
-- `93f34d8` — `ci: require complete permanent documentation set`
-- `33de194` — `docs: document saved-name dialog design contract`
-- `cf54f48` — `docs: deepen safe logging contract`
-- `7a06ab3` — `docs: record hardened tagged release workflow`
-
-## Final source audit continuation
-
-A final release-focused static audit was performed against the active PR branch rather than the older `main` checkpoint. It rechecked the master specification, PR state, finance/persistence/backup/export/platform/UI source, workflows, repository guards, permanent documentation, and TODO/FIXME state.
-
-Three concrete release defects were found and closed.
-
-### Unicode-safe PDF export truncation
-
-`PdfReceiptExporter` previously truncated a long rendered line with ordinary UTF-16 `take(...)`. A valid emoji or other supplementary Unicode code point crossing the line boundary could therefore be split into a dangling surrogate before drawing the PDF text.
-
-The exporter now:
-
-- routes line shortening through `ellipsizePdfLine(...)`;
-- reuses `truncateUtf16Safely(...)` from the shared saved-name Unicode policy;
-- preserves the configured 78-code-unit line budget including the ellipsis;
-- rejects impossible line budgets below one character.
-
-Existing `PathSafetyTest.kt` now also covers:
-
-- an emoji crossing the truncation boundary;
-- normal ASCII line-budget behavior;
-- exact preservation of short Unicode text.
-
-No extra tracked test file remains; the temporary focused file created during the audit was removed after its tests were consolidated into the already-documented JVM platform regression file.
-
-### Strict backup document UTF-8 decoding
-
-`BackupFileIo.read(...)` previously created `InputStreamReader` directly with `StandardCharsets.UTF_8`. Java decoder defaults may replace malformed input, which contradicted SpendCalc's fail-closed backup contract.
-
-Backup document input now:
-
-- uses `strictUtf8Decoder()`;
-- configures malformed input with `CodingErrorAction.REPORT`;
-- configures unmappable input with `CodingErrorAction.REPORT`;
-- continues enforcing the 5,000,000-character read bound;
-- fails before codec restore parsing when document bytes are not valid UTF-8.
-
-`PathSafetyTest.kt` includes a direct malformed-byte regression against the strict decoder.
-
-### Exact canonical currency validation during backup decode
-
-`BackupCodec` already required canonical uppercase persisted currency forms during encode, but decoded history/template currency text was uppercased before shared-policy validation. A checksum-valid edited backup containing lowercase currency could therefore be silently normalized instead of rejected.
-
-The codec now:
-
-- validates decoded history currency text exactly as encoded;
-- validates decoded converted-history currency text exactly as encoded;
-- validates decoded template currency text exactly as encoded;
-- validates decoded converted-template currency text exactly as encoded;
-- relies on the shared canonical persisted-record policy to fail closed.
-
-`BackupCodecPersistedPolicyTest.kt` now constructs checksum-valid modified backups and proves that noncanonical history and template currencies are rejected for semantic reasons rather than only because of checksum mismatch.
-
-### Final documentation reconciliation
-
-The final audit reconciled:
-
-- `CHANGELOG.md` — records strict backup byte decoding, strict decoded canonical currencies, Unicode-safe PDF truncation, and regression coverage;
-- `docs/security-backup.md` — documents the strict document-byte decoder and no-repair currency policy;
-- `docs/testing.md` — records the direct regressions and adds the long-Unicode PDF manual release check;
-- `docs/persistence-invariants.md` — defines strict decoded currency and document UTF-8 behavior as persistence/backup invariants;
-- `what_changed.md` — this complete source/release handoff.
-
-### Final-audit commits before this handoff
-
-- `0652203` — `fix: preserve Unicode boundaries in PDF export`
-- `292396d` — `fix: reject malformed UTF-8 backup files`
-- `c59c988` — `fix: reject noncanonical backup currencies`
-- `0bead1a` — `test: reject noncanonical currencies on backup decode`
-- `e1b0900` — `refactor: make PDF truncation directly testable`
-- `296616f` — `test: cover Unicode-safe PDF line truncation`
-- `2297e2e` — `test: cover Unicode-safe PDF line truncation`
-- `98a5534` — `chore: keep platform regressions in documented test file`
-- `41bd195` — `refactor: expose strict backup decoder for regression tests`
-- `be279fb` — `test: reject malformed UTF-8 backup bytes`
-- `4ccd857` — `docs: record final backup and PDF hardening`
-- `a4b7755` — `docs: clarify strict backup byte and currency validation`
-- `3233301` — `docs: add final backup and PDF regression coverage`
-- `2fa5e41` — `docs: align persistence contract with strict backup decode`
-
-The commit containing this handoff is intentionally the final source/documentation change of this audit unless a concrete exact-head workflow failure exposes another defect. Its exact SHA must be read from GitHub after the commit and used for all subsequent automated/manual release evidence.
+## 2.0.12 continuation commit sequence
+
+This continuation deliberately used granular release/documentation commits instead of one large undifferentiated commit. The branch now contains commits with these messages:
+
+- `release: set app version 2.0.12`
+- `docs: retarget changelog to 2.0.12`
+- `docs: retarget roadmap to 2.0.12`
+- `docs: update release guide for 2.0.12`
+- `docs: update 2.0.12 verification gates`
+- `docs: map 2.0.12 release documentation`
+- `docs: audit 2.0.12 release candidate`
+- `docs: point final handoff to 2.0.12`
+- `docs: align codebase reference with 2.0.12`
+- `docs: update 2.0.12 maintenance milestone`
+- the commit containing this file is the final 2.0.12 handoff commit unless an exact-head workflow failure exposes another concrete defect.
+
+## Exhaustive documentation state
+
+The permanent documentation set remains intentionally split by authority rather than duplicating everything in this handoff:
+
+- `README.md` — public overview and entry points;
+- `docs/features.md` — implemented user-visible behavior;
+- `docs/architecture.md` — layer/dependency architecture;
+- `docs/codebase-reference.md` — **every tracked file** and its ownership/invariant role;
+- `docs/documentation-map.md` — documentation authority/update matrix;
+- `docs/persistence-invariants.md` — repository/backup stored-data contract;
+- `docs/backup-restore.md` — functional explicit backup/restore behavior;
+- `docs/security-backup.md` — parser/threat/security details;
+- `docs/privacy-backup.md` and `PRIVACY.md` — privacy/data behavior;
+- `docs/testing.md` — automated/manual test strategy;
+- `docs/accessibility.md` — accessibility implementation/manual review;
+- `docs/performance.md` — bounded-work/performance policy;
+- `docs/logging.md` — privacy-conscious logging contract;
+- `docs/setup.md` / `docs/development.md` / `docs/troubleshooting.md` — contributor operations;
+- `docs/github-maintenance.md` — repository governance/maintenance;
+- `docs/release.md` — 2.0.12 release procedure;
+- `docs/verification.md` — authoritative blocking checklist;
+- `docs/release-candidate-final-audit.md` — 2.0.12 source-level completion audit;
+- `CHANGELOG.md` — notable changes;
+- `ROADMAP.md` — open/completed release work;
+- this file — volatile current continuation state.
+
+`scripts/check_documentation_coverage.py` mechanically compares the codebase-reference file index with `git ls-files`. This is the authoritative mechanism preventing new/deleted/renamed tracked paths from silently escaping documentation.
 
 ## Known verification limitation
 
-The connected execution environment used for these continuations cannot resolve `github.com` for a clean clone/dependency download. Therefore:
+The connected engineering environment used for these continuations cannot be treated as a substitute for a clean network-capable Android build/device environment. Therefore:
 
-- no local Gradle success is claimed;
-- no local lint success is claimed;
-- no connected Android test success is claimed;
-- the documentation coverage guard is not claimed successful until the exact-head GitHub workflow runs it;
-- queued/pending GitHub workflows are not treated as green.
+- no local Gradle success is claimed unless actually executed;
+- no local lint success is claimed unless actually executed;
+- no connected Android test success is claimed unless actually executed;
+- the documentation coverage guard is not claimed successful for the final head until its workflow runs;
+- queued/pending/cancelled/superseded GitHub workflows are not treated as green.
 
 This is a verification-environment limitation, not evidence of a source failure.
 
-## Remaining release gates
+## Remaining 2.0.12 release gates
 
-### Automated
+### Automated exact-final-head gates
 
-- exact-final-head documentation coverage success;
-- exact-final-head CI success;
-- exact-final-head CodeQL success;
-- exact-final-head Dependency Review success;
-- exact-final-head Repository Audit success.
+- documentation coverage success;
+- CI success;
+- CodeQL success;
+- Dependency Review success;
+- Repository Audit success.
 
-### Manual Android/runtime
+### Manual Android/runtime gates
 
-- `connectedDebugAndroidTest` on representative emulator/device;
+- `connectedDebugAndroidTest` on a representative emulator/device;
 - phone layout review;
 - tablet/wide layout review;
 - light/dark/system theme review;
@@ -773,41 +478,48 @@ This is a verification-environment limitation, not evidence of a source failure.
 - Unicode-heavy history/template name boundary review;
 - 100-item calculator limit review;
 - text/CSV/PDF share-flow review, including a long Unicode item name near the PDF truncation boundary;
+- malformed UTF-8 backup rejection review;
+- checksum-valid noncanonical persisted-currency backup rejection review;
 - backup export/progress/restore/replaced-data review;
 - offline/airplane-mode core workflow review;
 - branded launch-splash review.
 
-### Distribution
+### Distribution gates
 
-- capture real screenshots from the exact verified build using fictional data;
+- capture real screenshots from the exact verified 2.0.12 build using fictional data;
 - provide production signing material outside source control;
-- produce signed artifact from the exact verified commit;
-- verify signed artifact version/checksum/source SHA;
+- produce the signed artifact from the exact verified commit;
+- verify signed artifact reports version 2.0.12;
+- verify artifact checksum/source SHA;
 - merge/tag/release only after all blocking gates pass.
 
 ## Database/migration state
 
-- Room database version: 1.
-- No previous public production schema exists yet.
-- No fake v1→v2 migration has been added.
-- Destructive migration fallback is intentionally not the default.
+- Room database version: `1`.
+- Explicit backup schema version: `1`.
+- No app-version-driven fake Room migration exists.
+- No app-version-driven fake backup migration exists.
+- Destructive Room migration fallback is intentionally not the default.
 - Room schema export is configured under `app/schemas/`.
 - Future tracked generated schema files must be preserved as migration/release evidence and individually added to `docs/codebase-reference.md`.
-- The first future schema change must add an explicit Room migration and migration test.
+- The first real future Room schema change must add an explicit migration and migration test.
+- The first incompatible future backup-format change must deliberately change/supersede its schema compatibility handling and tests.
 
 ## Next exact actions
 
-1. Treat the exact commit containing this handoff as the new candidate head.
-2. Stop speculative feature/source/documentation churn unless a concrete release-blocking defect or verified documentation contradiction is found.
-3. Re-fetch PR `#12` exact head.
-4. Re-fetch CI, CodeQL, Dependency Review, and Repository Audit for that exact head.
-5. If a workflow fails, inspect the exact failing job/log and add the smallest regression-tested/documented fix.
-6. Any fix creates a new head and requires fresh exact-head automated verification.
-7. When automated checks are green, execute `docs/verification.md` manual Android/accessibility/export/backup gates.
-8. Merge PR `#12` only when branch protection/repository policy and release gates allow it.
-9. Capture real screenshots and sign outside source control.
-10. Tag `v1.0.0` only after the exact signed release candidate satisfies every blocking gate.
+1. Treat the exact commit containing this handoff as the new `2.0.12` candidate head.
+2. Re-fetch PR `#12` and confirm its exact head did not move unexpectedly.
+3. Re-fetch CI, CodeQL, Dependency Review, and Repository Audit for that exact head.
+4. If any workflow fails, inspect the exact failed job/log and make only the smallest concrete regression-tested/documented fix.
+5. Any fix creates a new head and invalidates older workflow evidence.
+6. When exact-head automation is green, execute all remaining `docs/verification.md` Android/accessibility/export/backup gates.
+7. Merge PR `#12` only when repository/branch rules and release gates allow it.
+8. Capture real screenshots from that verified build using fictional data.
+9. Sign outside source control and verify the exact signed artifact/source SHA/checksum/version relationship.
+10. Tag `v2.0.12` only after every blocking automated/manual/distribution gate is satisfied.
 
 ## Continuation rule
 
-While PR `#12` remains open, continue from `complete/v1-finalization`. After it is merged, continue from `main`. Do not use an older handoff, older branch head, or older successful run as proof for the newest revision. Inspect current source and exact-head workflow state first. Keep fixes small, meaningful, regression-tested, permanently documented, and reflected here.
+While PR `#12` remains open, continue from `complete/v1-finalization`. After it is merged, continue from `main`.
+
+Do not use an older handoff, older branch head, older successful workflow, or historical `v1.0.0` target as proof for the current 2.0.12 release candidate. Inspect current source and exact-head workflow state first. Keep any future fixes small, meaningful, regression-tested, permanently documented, and reflected here.
