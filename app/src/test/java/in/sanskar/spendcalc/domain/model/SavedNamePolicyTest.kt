@@ -17,6 +17,16 @@ class SavedNamePolicyTest {
     }
 
     @Test
+    fun `truncation heals a trailing high surrogate from an earlier unsafe boundary`() {
+        val unsafe = ("x".repeat(MAX_SAVED_NAME_CHARS - 1) + "😀").take(MAX_SAVED_NAME_CHARS)
+
+        val repaired = truncateUtf16Safely(unsafe, MAX_SAVED_NAME_CHARS)
+
+        assertEquals("x".repeat(MAX_SAVED_NAME_CHARS - 1), repaired)
+        assertTrue(isWellFormedUtf16(repaired))
+    }
+
+    @Test
     fun `normalization trims caps and preserves valid Unicode`() {
         val value = "  ${"a".repeat(MAX_SAVED_NAME_CHARS - 2)}😀tail  "
 
@@ -25,6 +35,16 @@ class SavedNamePolicyTest {
         assertTrue(normalized.length <= MAX_SAVED_NAME_CHARS)
         assertTrue(isWellFormedUtf16(normalized))
         assertTrue(normalized.startsWith("a"))
+    }
+
+    @Test
+    fun `normalization repairs a boundary surrogate before persistence`() {
+        val unsafe = ("x".repeat(MAX_SAVED_NAME_CHARS - 1) + "😀").take(MAX_SAVED_NAME_CHARS)
+
+        val normalized = normalizeSavedName(unsafe, "Fallback")
+
+        assertEquals("x".repeat(MAX_SAVED_NAME_CHARS - 1), normalized)
+        assertTrue(isWellFormedUtf16(normalized))
     }
 
     @Test
