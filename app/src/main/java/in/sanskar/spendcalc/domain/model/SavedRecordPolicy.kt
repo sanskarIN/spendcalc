@@ -19,8 +19,11 @@ fun requireValidSavedId(value: String): String {
     return value
 }
 
+fun hasUniqueSavedIds(ids: List<String>): Boolean =
+    ids.toSet().size == ids.size
+
 fun requireUniqueSavedIds(ids: List<String>, recordType: String) {
-    require(ids.toSet().size == ids.size) { "Duplicate $recordType identifiers" }
+    require(hasUniqueSavedIds(ids)) { "Duplicate $recordType identifiers" }
 }
 
 fun isCanonicalSavedCurrencyCode(value: String): Boolean =
