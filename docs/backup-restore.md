@@ -45,11 +45,15 @@ The checksum is corruption detection, not authentication. A party capable of edi
 
 The decoder enforces payload/line/record/field limits, strict checksum shape, schema version, unique IDs, timestamps, currencies, split limits, bounded plain-decimal numeric fields, and template finance validation. Imported history labels/template names follow the same 120-character saved-name limit used by the app, and imported IDs are capped at 128 characters.
 
+Newly entered saved names are truncated with a UTF-16-safe boundary helper so a valid surrogate pair such as an emoji is never cut in half at the 120-character boundary. Malformed Unicode supplied programmatically still fails closed. A decoded backup record that is already valid is restored exactly; repository replacement validates its saved name rather than trimming or silently rewriting it.
+
 History result decimals allow at most 34 integer digits and scale 0 through 12. The 34-digit result bound is deliberate: it accepts the bounded worst-case output that the supported 100-item calculator, charge ranges, and exchange-rate range can legitimately produce while still rejecting arbitrary huge values.
 
 ## Replacement and rollback behavior
 
 History and templates are captured and replaced under Room transactions. Restore uses batch inserts to avoid issuing one DAO write call for every imported record. Preferences live in DataStore and cannot participate in the Room transaction, so SpendCalc snapshots the previous complete state first. If the cross-store restore throws after database replacement, it makes a non-cancellable best-effort compensating restore of the prior Room and DataStore state before surfacing failure.
+
+Valid saved labels/template names are preserved exactly during replacement, including intentional surrounding whitespace present in an accepted backup. Name normalization is reserved for new user-entered saves; restore validates instead of mutating already-valid records.
 
 The UI does not claim success until the restore repository returns successfully. A restore that changes the history-retention preference subsequently applies that restored policy through the normal settings observer.
 
