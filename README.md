@@ -10,7 +10,7 @@
   <a href="https://github.com/sanskarIN/spendcalc/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/sanskarIN/spendcalc/actions/workflows/ci.yml/badge.svg" /></a>
   <a href="https://github.com/sanskarIN/spendcalc/actions/workflows/codeql.yml"><img alt="CodeQL" src="https://github.com/sanskarIN/spendcalc/actions/workflows/codeql.yml/badge.svg" /></a>
   <img alt="Android API 26+" src="https://img.shields.io/badge/Android-API%2026%2B-3DDC84?logo=android&logoColor=white" />
-  <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-Jetpack%20Compose-7F52FF?logo=kotlin&logoColor=white" />
+  <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-Jetpack%20Compose-7F52FF?logo=kotlin" />
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/License-MIT-blue.svg" /></a>
 </p>
 
@@ -170,6 +170,34 @@ Architecture decisions:
 
 Persistence contract: [`docs/persistence-invariants.md`](docs/persistence-invariants.md)
 
+## Complete documentation
+
+SpendCalc treats documentation coverage as a repository invariant rather than a one-time release task.
+
+- [`docs/codebase-reference.md`](docs/codebase-reference.md) documents **every tracked file individually**, including root/build/configuration, `.github` automation/templates, production Kotlin, Android resources, JVM/instrumentation tests, scripts, policies, assets, and permanent/compatibility documentation.
+- [`docs/documentation-map.md`](docs/documentation-map.md) defines which document is authoritative for product behavior, architecture, persistence/backup/security/privacy, testing, maintenance, release, ADRs, planning, and active-work continuity.
+- `scripts/check_documentation_coverage.py` compares the marked file index with `git ls-files` and fails when a tracked file is missing, a stale path remains documented, or a path is listed more than once.
+- Main CI and the lightweight Repository Audit both run this coverage guard.
+- Adding, deleting, or renaming a tracked file therefore requires updating the codebase reference in the same pull request.
+
+Useful documentation entry points:
+
+- [Features](docs/features.md)
+- [Architecture](docs/architecture.md)
+- [Codebase file reference](docs/codebase-reference.md)
+- [Documentation source-of-truth map](docs/documentation-map.md)
+- [Development](docs/development.md)
+- [Testing](docs/testing.md)
+- [Accessibility](docs/accessibility.md)
+- [Performance](docs/performance.md)
+- [Backup/restore](docs/backup-restore.md)
+- [Backup security](docs/security-backup.md)
+- [Backup privacy](docs/privacy-backup.md)
+- [Persistence invariants](docs/persistence-invariants.md)
+- [Release guide](docs/release.md)
+- [Release verification](docs/verification.md)
+- [Troubleshooting](docs/troubleshooting.md)
+
 ## Calculation rule
 
 The calculation order is deterministic:
@@ -192,7 +220,9 @@ Any behavior change to this order should include exact regression tests and chan
 - Git
 - JDK 17
 - Android SDK Platform 35
-- Gradle 8.9 if a local Gradle installation is used
+- Gradle 8.9 for command-line builds
+
+The repository currently does **not** commit a Gradle wrapper. This is intentional; local commands use a compatible installed Gradle 8.9 or Android Studio environment, while CI pins Gradle 8.9 via `gradle/actions/setup-gradle`.
 
 Clone:
 
@@ -221,6 +251,7 @@ gradle assembleDebug
 gradle assembleRelease
 python3 scripts/check_format.py
 python3 scripts/check_kotlin_namespace.py
+python3 scripts/check_documentation_coverage.py
 python3 scripts/check_android_resources.py
 python3 scripts/check_android_security.py
 python3 scripts/check_repository.py
@@ -253,7 +284,7 @@ The repository includes:
 - Room history/template/backup integration tests;
 - Compose calculator, named-history-save/Unicode-boundary, template-name/Unicode-boundary, History label-filter, and Settings busy-state tests;
 - a real-activity calculate/named-save/history journey test;
-- fast repository guards for formatting, namespace, string resources, Android local-first security, links/required files, and common secret patterns.
+- fast repository guards for formatting, namespace, exhaustive tracked-file documentation, string resources, Android local-first security, links/required files, and common secret patterns.
 
 CI compiles the instrumentation suite; final release verification still requires executing it on a connected emulator/device.
 
@@ -275,16 +306,16 @@ gradle assembleRelease
 
 Production signing material is **not** committed to the repository. Tagged release-candidate workflow runs produce an unsigned release artifact after repository/test/lint/release-build verification. Signing and store distribution use protected credentials outside source control.
 
-A configured or queued workflow is not treated as a successful release check. The exact commit being released must satisfy [`docs/verification.md`](docs/verification.md).
+A configured, queued, pending, cancelled, or superseded workflow is not treated as a successful release check. The exact commit being released must satisfy [`docs/verification.md`](docs/verification.md), including connected-device/accessibility/export/backup/signing/screenshot gates that source CI cannot prove.
 
 Release guide: [`docs/release.md`](docs/release.md)
 
 ## CI and repository automation
 
-- `CI`: format, Kotlin namespace, Android string-resource audit, Android local-first security policy, repository/link audit, secret scan, JVM tests, instrumentation-test compilation, full Android lint, debug build, release build.
+- `CI`: format, Kotlin namespace, exhaustive tracked-file documentation coverage, Android string-resource audit, Android local-first security policy, repository/link audit, secret scan, JVM tests, instrumentation-test compilation, full Android lint, debug build, release build.
 - `CodeQL`: Java/Kotlin static analysis.
 - `Dependency Review`: pull-request dependency change review.
-- `Repository Audit`: required-file/local-link audit plus Android string-resource reference/duplicate-name guard; release-critical persistence/security/verification docs are required files.
+- `Repository Audit`: required-file/local-link audit plus tracked-file documentation coverage and Android string-resource reference/duplicate-name guard.
 - `Dependabot`: weekly Gradle and GitHub Actions updates.
 - `Release Candidate`: tag-triggered unsigned release build.
 - Superseded PR workflow runs use concurrency cancellation so the newest revision receives runner priority.
@@ -294,6 +325,8 @@ Repository workflow files live under [`.github/workflows/`](.github/workflows/).
 ## Security
 
 SpendCalc minimizes permissions and remote dependencies. The export provider is non-exported, path-restricted, and grants temporary read access only during a user-selected share action. CSV text cells are escaped and common formula-leading characters are neutralized. Repository persistence and explicit backup parsing both fail closed for unsupported/malformed records, including malformed Unicode saved text and invalid persisted-record envelopes.
+
+The backup SHA-256 checksum detects accidental corruption; it is not a signature, MAC, encryption mechanism, or proof of backup authorship.
 
 Do not report exploitable vulnerability details in a public issue. Follow [`SECURITY.md`](SECURITY.md).
 
@@ -317,11 +350,11 @@ Read [`docs/performance.md`](docs/performance.md).
 
 ## Troubleshooting
 
-JDK, Android SDK, KSP/Room, emulator, export, and release troubleshooting is documented in [`docs/troubleshooting.md`](docs/troubleshooting.md).
+JDK, Android SDK, local Gradle/no-wrapper setup, documentation/resource/security guards, KSP/Room, emulator, persistence, export/backup, and release troubleshooting is documented in [`docs/troubleshooting.md`](docs/troubleshooting.md).
 
 ## Contributing
 
-Contributions are welcome. Start with [`CONTRIBUTING.md`](CONTRIBUTING.md) and the pull-request checklist.
+Contributions are welcome. Start with [`CONTRIBUTING.md`](CONTRIBUTING.md) and the pull-request checklist. Any new/renamed/deleted tracked file must update the exhaustive codebase reference in the same change.
 
 For local commits, the requested project commit email is:
 
@@ -334,6 +367,8 @@ git config user.email "sanskarin@outlook.in"
 - [`ROADMAP.md`](ROADMAP.md)
 - [`CHANGELOG.md`](CHANGELOG.md)
 - [`what_changed.md`](what_changed.md) — canonical multi-session engineering handoff/current verification state
+
+`what_changed_final.md` and `what_changed_latest.md` are retained only as compatibility pointers and must not be treated as newer state than `what_changed.md`.
 
 ## Support and contact
 
