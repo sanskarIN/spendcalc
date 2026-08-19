@@ -81,6 +81,8 @@ All notable changes to SpendCalc are documented here. The project follows a sema
 - Development, testing, architecture, setup, contribution, maintenance, release, verification, and source-audit documentation now cross-reference one explicit documentation source-of-truth model instead of duplicating ambiguous status.
 - The repository's intentional absence of a committed Gradle wrapper is documented explicitly; command-line setup uses compatible local Gradle 8.9 while CI pins Gradle 8.9 through the setup action.
 - Future tracked Room schema files are explicitly treated as migration/release evidence that must be individually covered by the exhaustive file reference.
+- The tag-triggered release workflow now runs the same fast formatting/namespace/documentation/resource/security/repository/secret guards, JVM tests, instrumentation compilation, and full Android lint before release compilation/uploading an unsigned artifact.
+- Repository required-file auditing now covers the complete permanent documentation/ADR/brand-screenshot-policy set rather than only a smaller release subset.
 
 ### Security
 
