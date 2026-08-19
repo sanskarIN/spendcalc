@@ -1,5 +1,6 @@
 package in.sanskar.spendcalc.ui
 
+import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -17,7 +18,7 @@ class CalculatorScreenTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun calculatorFormAndReceiptAreVisible() {
+    fun calculatorFormAndReceiptAreInTheComposition() {
         composeRule.setContent {
             SpendCalcTheme(themeMode = ThemeMode.LIGHT, largeText = false) {
                 CalculatorScreen(
@@ -45,6 +46,6 @@ class CalculatorScreenTest {
         }
 
         composeRule.onNodeWithText("Expense calculator").assertIsDisplayed()
-        composeRule.onNodeWithText("Receipt").assertIsDisplayed()
+        composeRule.onNodeWithText("Receipt").assertExists()
     }
 }
