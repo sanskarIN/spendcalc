@@ -37,9 +37,11 @@ All notable changes to SpendCalc are documented here. The project follows a sema
 - Android integration tests for Room persistence and backup replacement, plus Compose and real-activity journey smoke tests.
 - Compose regression coverage for the named-history save dialog and callback wiring.
 - Compose regression coverage proving History filtering finds saved labels and removes non-matching entries.
+- UTF-16-safe saved-name policy tests plus backup round-trip coverage at an emoji boundary.
 - Settings UI coverage for the backup busy state.
 - CI compilation of instrumentation tests in addition to JVM tests, full Android lint, debug build, and release compilation.
 - Android manifest/FileProvider local-first policy guard in CI.
+- Android string-resource reference/duplicate-name audit in CI and the lightweight Repository Audit workflow.
 - Repository metadata/link audit, secret-pattern scan, CodeQL, and dependency-review workflows.
 - Project policies for privacy, security, support, contribution, and community conduct.
 
@@ -50,9 +52,11 @@ All notable changes to SpendCalc are documented here. The project follows a sema
 - Split counts are bounded to 1 through 1,000,000.
 - Editable expense items are capped at 100 with a visible UI limit state to bound eager Compose work.
 - Calculator item/name/input counts are bounded before expensive conversion or rendering work.
-- Saved history labels and template names now share one 120-character domain limit; persistence normalizes the value before storage so valid local data cannot later violate backup validation.
+- Saved history labels and template names now share one 120-character domain limit; new user input is normalized before storage so valid local data cannot later violate backup validation.
+- Saved-name truncation is UTF-16 safe and cannot split a valid surrogate pair such as an emoji at the length boundary.
+- Valid history/template names entering restore/replace paths are validated and preserved exactly rather than silently trimmed or rewritten.
 - Saved-name normalization now occurs at the repository boundary instead of being partially duplicated in the ViewModel.
-- History search input is capped at 120 characters and the UI explains the limit, bounding repeated in-memory filtering work.
+- History search input is capped at 120 characters, truncated with the same surrogate-safe helper, and the UI explains the limit.
 - Backup document I/O runs on `Dispatchers.IO`, while bounded backup encoding/decoding runs on `Dispatchers.Default` instead of the UI thread.
 - Room history/templates are captured in one transaction for backups and restored with batch DAO inserts.
 - Backup result decimals accept the full bounded magnitude that `CalculatorEngine` can legitimately produce, including converted totals up to 34 integer digits.
@@ -70,6 +74,7 @@ All notable changes to SpendCalc are documented here. The project follows a sema
 - CSV text values are protected from common spreadsheet formula injection prefixes.
 - Backup parser rejects oversized payloads, excessive line counts, malformed checksum fields, exponent-expansion decimal shapes, duplicate identifiers, invalid timestamps, invalid currencies, unsupported schema versions, oversized saved names, malformed UTF-8 input, and out-of-contract result magnitudes.
 - Backup export rejects malformed Unicode instead of silently replacing invalid surrogate data.
+- Saved-name input hardening prevents normal UI truncation from manufacturing malformed trailing surrogate data.
 - Structured logging redacts sensitive keys and performs key normalization with `Locale.ROOT` so redaction is locale independent.
 - Production signing material is intentionally not stored in the repository.
 
