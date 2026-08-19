@@ -7,6 +7,7 @@ import `in`.sanskar.spendcalc.domain.model.CalculationInput
 import `in`.sanskar.spendcalc.domain.model.CalculationOutcome
 import `in`.sanskar.spendcalc.domain.model.ExpenseItem
 import `in`.sanskar.spendcalc.domain.model.HistoryRecord
+import `in`.sanskar.spendcalc.domain.model.MAX_SAVED_NAME_CHARS
 import java.math.BigDecimal
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,6 +35,29 @@ class HistoryRepositoryTest {
         assertEquals(1234L, records.single().createdAtEpochMillis)
         assertEquals("Coffee run", records.single().label)
         assertEquals(BigDecimal("12.34"), records.single().total)
+    }
+
+    @Test
+    fun `normalizes and bounds saved history labels`() = runTest {
+        val dao = FakeHistoryDao()
+        val repository = HistoryRepository(dao)
+        val result = (CalculatorEngine().calculate(CalculationInput(items = emptyList())) as CalculationOutcome.Success).result
+        val oversized = "  ${"x".repeat(MAX_SAVED_NAME_CHARS + 25)}  "
+
+        repository.save(result, oversized)
+
+        assertEquals("x".repeat(MAX_SAVED_NAME_CHARS), repository.observeHistory().first().single().label)
+    }
+
+    @Test
+    fun `blank history labels use a stable fallback`() = runTest {
+        val dao = FakeHistoryDao()
+        val repository = HistoryRepository(dao)
+        val result = (CalculatorEngine().calculate(CalculationInput(items = emptyList())) as CalculationOutcome.Success).result
+
+        repository.save(result, "   ")
+
+        assertEquals("Calculation", repository.observeHistory().first().single().label)
     }
 
     @Test
