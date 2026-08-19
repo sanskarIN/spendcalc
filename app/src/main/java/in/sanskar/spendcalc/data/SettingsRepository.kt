@@ -45,6 +45,16 @@ class SettingsRepository(private val context: Context) {
         context.spendCalcDataStore.edit { it[Keys.ONBOARDING_COMPLETED] = value }
     }
 
+    suspend fun replace(value: UserPreferences) {
+        context.spendCalcDataStore.edit { preferences ->
+            preferences[Keys.THEME_MODE] = value.themeMode.name
+            preferences[Keys.LARGE_TEXT] = value.largeText
+            preferences[Keys.REDUCED_MOTION] = value.reducedMotion
+            preferences[Keys.AUTO_DELETE] = value.autoDeleteHistory.name
+            preferences[Keys.ONBOARDING_COMPLETED] = value.onboardingCompleted
+        }
+    }
+
     private fun toUserPreferences(values: Preferences): UserPreferences =
         UserPreferences(
             themeMode = enumOrDefault(values[Keys.THEME_MODE], ThemeMode.SYSTEM),
