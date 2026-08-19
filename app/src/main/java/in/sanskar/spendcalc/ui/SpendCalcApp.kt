@@ -10,6 +10,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -170,7 +171,16 @@ private fun SpendCalcMainScaffold(
         }
     }
 
-    if (confirmRestore) {
+    if (backupBusy) {
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text(stringResource(R.string.backup_in_progress)) },
+            text = { CircularProgressIndicator() },
+            confirmButton = {},
+        )
+    }
+
+    if (confirmRestore && !backupBusy) {
         AlertDialog(
             onDismissRequest = {
                 confirmRestore = false
@@ -180,12 +190,11 @@ private fun SpendCalcMainScaffold(
             text = { Text(stringResource(R.string.restore_backup_confirmation)) },
             confirmButton = {
                 TextButton(
-                    enabled = !backupBusy,
                     onClick = {
                         val payload = pendingRestorePayload
                         confirmRestore = false
                         pendingRestorePayload = null
-                        if (payload != null && !backupBusy) {
+                        if (payload != null) {
                             backupBusy = true
                             scope.launch {
                                 try {
@@ -202,7 +211,6 @@ private fun SpendCalcMainScaffold(
             },
             dismissButton = {
                 TextButton(
-                    enabled = !backupBusy,
                     onClick = {
                         confirmRestore = false
                         pendingRestorePayload = null
