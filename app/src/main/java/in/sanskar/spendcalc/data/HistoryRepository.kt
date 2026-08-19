@@ -64,7 +64,7 @@ class HistoryRepository(
         HistoryEntity(
             id = id,
             createdAtEpochMillis = createdAtEpochMillis,
-            label = normalizeSavedName(label, DEFAULT_HISTORY_LABEL),
+            label = requireValidSavedName(label),
             currencyCode = currencyCode.trim().uppercase(Locale.ROOT),
             convertedCurrencyCode = convertedCurrencyCode.trim().uppercase(Locale.ROOT),
             subtotal = subtotal.toPlainString(),
@@ -100,6 +100,12 @@ class HistoryRepository(
 
     private fun normalizeSavedName(value: String, fallback: String): String =
         value.trim().take(MAX_SAVED_NAME_CHARS).ifBlank { fallback }
+
+    private fun requireValidSavedName(value: String): String {
+        require(value.isNotBlank()) { "History label must not be blank" }
+        require(value.length <= MAX_SAVED_NAME_CHARS) { "History label is too long" }
+        return value
+    }
 
     private companion object {
         const val DEFAULT_HISTORY_LABEL = "Calculation"
