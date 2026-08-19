@@ -25,6 +25,8 @@ REQUIRED_FILES = [
     ".gitattributes",
     ".env.example",
     "docs/architecture.md",
+    "docs/codebase-reference.md",
+    "docs/documentation-map.md",
     "docs/setup.md",
     "docs/development.md",
     "docs/testing.md",
@@ -41,6 +43,7 @@ REQUIRED_FILES = [
     "docs/logging.md",
     "scripts/check_android_resources.py",
     "scripts/check_android_security.py",
+    "scripts/check_documentation_coverage.py",
 ]
 README_REQUIREMENTS = [
     "Made by the Sanskar",
