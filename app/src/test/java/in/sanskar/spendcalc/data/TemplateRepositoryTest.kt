@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TemplateRepositoryTest {
@@ -98,6 +99,33 @@ class TemplateRepositoryTest {
         repository.restore(original)
 
         assertEquals(original, repository.observeTemplates().first().single())
+    }
+
+    @Test
+    fun `restore preserves valid template name whitespace exactly`() = runTest {
+        val dao = FakeTemplateDao()
+        val repository = TemplateRepository(dao)
+        val original = template("backup", "  Dinner preset  ", 124L)
+
+        repository.restore(original)
+
+        assertEquals(original, repository.observeTemplates().first().single())
+    }
+
+    @Test
+    fun `restore rejects an oversized template name instead of rewriting it`() = runTest {
+        val dao = FakeTemplateDao()
+        val repository = TemplateRepository(dao)
+        val invalid = template(
+            id = "invalid",
+            name = "t".repeat(MAX_SAVED_NAME_CHARS + 1),
+            createdAt = 125L,
+        )
+
+        val failure = runCatching { repository.restore(invalid) }.exceptionOrNull()
+
+        assertTrue(failure is IllegalArgumentException)
+        assertTrue(repository.observeTemplates().first().isEmpty())
     }
 
     @Test
