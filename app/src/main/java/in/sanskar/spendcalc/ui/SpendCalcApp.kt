@@ -10,6 +10,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -177,6 +178,7 @@ private fun SpendCalcMainScaffold(
         ActionFeedback.NONE -> ""
         ActionFeedback.HISTORY_SAVED -> stringResource(R.string.history_saved)
         ActionFeedback.TEMPLATE_SAVED -> stringResource(R.string.template_saved)
+        ActionFeedback.HISTORY_DELETED -> stringResource(R.string.history_deleted)
         ActionFeedback.DELETED -> stringResource(R.string.entry_deleted)
         ActionFeedback.HISTORY_CLEARED -> stringResource(R.string.history_cleared)
         ActionFeedback.BACKUP_EXPORTED -> stringResource(R.string.backup_exported)
@@ -186,7 +188,14 @@ private fun SpendCalcMainScaffold(
 
     LaunchedEffect(calculator.feedback) {
         if (calculator.feedback != ActionFeedback.NONE) {
-            snackbarHostState.showSnackbar(feedbackText)
+            val historyDelete = calculator.feedback == ActionFeedback.HISTORY_DELETED
+            val result = snackbarHostState.showSnackbar(
+                message = feedbackText,
+                actionLabel = if (historyDelete) context.getString(R.string.undo) else null,
+            )
+            if (historyDelete && result == SnackbarResult.ActionPerformed) {
+                viewModel.undoDeleteHistory()
+            }
             viewModel.consumeFeedback()
         }
     }
