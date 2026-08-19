@@ -36,7 +36,10 @@ enum class BackupDecodeError {
 class BackupCodec {
     fun encode(backup: SpendCalcBackup): String {
         require(backup.schemaVersion == CURRENT_SCHEMA_VERSION) { "Unsupported backup schema" }
+        require(backup.exportedAtEpochMillis >= 0L) { "Invalid export timestamp" }
         require(backup.history.size + backup.templates.size <= MAX_RECORDS) { "Backup is too large" }
+        requireUniqueIds(backup.history.map { it.id }, "history")
+        requireUniqueIds(backup.templates.map { it.id }, "templates")
 
         val body = buildString {
             appendLine("$MAGIC\t${backup.schemaVersion}\t${backup.exportedAtEpochMillis}")
@@ -91,8 +94,9 @@ class BackupCodec {
                 )
             }
         }
-        require(body.length <= MAX_BACKUP_CHARS) { "Backup is too large" }
-        return body + "SHA256\t${sha256(body)}\n"
+        val payload = body + "SHA256\t${sha256(body)}\n"
+        require(payload.length <= MAX_BACKUP_CHARS) { "Backup is too large" }
+        return payload
     }
 
     fun decode(payload: String): BackupDecodeResult {
@@ -131,6 +135,7 @@ class BackupCodec {
         }
         val exportedAt = header[2].toLongOrNull()
             ?: return BackupDecodeResult.Failure(BackupDecodeError.INVALID_FORMAT)
+        if (exportedAt < 0L) return BackupDecodeResult.Failure(BackupDecodeError.INVALID_RECORD)
 
         var preferences: UserPreferences? = null
         val history = mutableListOf<HistoryRecord>()
@@ -167,6 +172,12 @@ class BackupCodec {
 
         val restoredPreferences = preferences
             ?: return BackupDecodeResult.Failure(BackupDecodeError.INVALID_FORMAT)
+        if (history.map { it.id }.toSet().size != history.size) {
+            return BackupDecodeResult.Failure(BackupDecodeError.INVALID_RECORD)
+        }
+        if (templates.map { it.id }.toSet().size != templates.size) {
+            return BackupDecodeResult.Failure(BackupDecodeError.INVALID_RECORD)
+        }
         return BackupDecodeResult.Success(
             SpendCalcBackup(
                 schemaVersion = version,
@@ -196,6 +207,7 @@ class BackupCodec {
         val convertedCurrency = decodedText(fields[5]).uppercase(Locale.ROOT)
         val splitCount = fields[15].toInt()
         require(id.isNotBlank() && id.length <= MAX_FIELD_CHARS)
+        require(createdAt >= 0L)
         require(label.length <= MAX_FIELD_CHARS)
         require(validCurrency(currency) && validCurrency(convertedCurrency))
         require(splitCount >= 1)
@@ -234,6 +246,7 @@ class BackupCodec {
         )
         require(template.id.isNotBlank() && template.id.length <= MAX_FIELD_CHARS)
         require(template.name.length <= MAX_FIELD_CHARS)
+        require(template.createdAtEpochMillis >= 0L)
         val errors = CalculatorEngine().validate(
             CalculationInput(
                 items = emptyList(),
@@ -271,7 +284,13 @@ class BackupCodec {
         require(value.length <= MAX_ENCODED_FIELD_CHARS)
         val decoded = DECODER.decode(value)
         require(decoded.size <= MAX_FIELD_BYTES)
-        return String(decoded, StandardCharsets.UTF_8)
+        return String(decoded, StandardCharsets.UTF_8).also { text ->
+            require(text.length <= MAX_FIELD_CHARS)
+        }
+    }
+
+    private fun requireUniqueIds(ids: List<String>, label: String) {
+        require(ids.toSet().size == ids.size) { "Duplicate $label identifiers" }
     }
 
     private fun validCurrency(value: String): Boolean = CURRENCY_CODE.matches(value)
@@ -283,7 +302,7 @@ class BackupCodec {
 
     private companion object {
         const val MAGIC = "SPENDCALC_BACKUP"
-        const val CURRENT_SCHEMA_VERSION = 1
+        const val CURRENT_SCHEMA_VERSION = SpendCalcBackup.CURRENT_SCHEMA_VERSION
         const val MAX_BACKUP_CHARS = 5_000_000
         const val MAX_RECORDS = 10_000
         const val MAX_LINE_CHARS = 16_384
