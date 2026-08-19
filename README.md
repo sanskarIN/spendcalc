@@ -44,12 +44,13 @@ Verified screenshots are intentionally captured from real release-candidate buil
 
 - Room-backed calculation history.
 - Optional user-provided history labels, bounded to 120 characters, with a safe default when left blank.
-- Local history search by labels, currencies, totals, and per-person values.
+- UTF-16-safe saved-name truncation avoids splitting valid surrogate pairs such as emoji at the boundary.
+- Local history search by labels, currencies, totals, and per-person values, with a bounded 120-character query.
 - Individual history deletion with Snackbar Undo.
 - Clear-all confirmation.
 - Optional history auto-delete after 30 or 90 days.
 - Saved templates for common discount/tax/tip/service/split/currency settings.
-- Saved history labels and template names are normalized at the persistence boundary so locally stored data remains valid for backup/export.
+- New saved history labels/template names are normalized at the persistence boundary, while already-valid restore records are preserved exactly.
 - Individual template deletion with Snackbar Undo.
 
 ### Backup and restore
@@ -60,8 +61,9 @@ Verified screenshots are intentionally captured from real release-candidate buil
 - Duplicate backup actions are disabled while a backup operation is active.
 - Versioned, bounded backup format with URL-safe Base64 text fields.
 - SHA-256 accidental-corruption detection.
-- Strict schema, record, identifier, timestamp, currency, split, checksum, and decimal validation.
+- Strict schema, record, identifier, timestamp, currency, split, checksum, decimal, saved-name, and Unicode validation.
 - Restore confirmation before replacing current data.
+- Valid decoded history labels/template names are restored without silent trimming or rewriting.
 - Transactional Room replacement plus compensating rollback for the separate DataStore preference write when a multi-store restore fails.
 
 See [`docs/backup-restore.md`](docs/backup-restore.md) and [`docs/security-backup.md`](docs/security-backup.md).
@@ -202,6 +204,8 @@ gradle assembleDebug
 gradle assembleRelease
 python3 scripts/check_format.py
 python3 scripts/check_kotlin_namespace.py
+python3 scripts/check_android_resources.py
+python3 scripts/check_android_security.py
 python3 scripts/check_repository.py
 python3 scripts/scan_secrets.py
 ```
@@ -220,14 +224,17 @@ The repository includes:
 
 - finance arithmetic, rounding, bounds, and validation unit tests;
 - deterministic seeded finance fuzz/regression coverage;
-- history and template repository tests, including exact restore-after-delete behavior and saved-name normalization bounds;
-- backup round-trip, corruption, schema, structural-bound, and semantic-validation tests;
+- history and template repository tests covering new-input normalization, exact valid restore behavior, and over-limit rejection;
+- UTF-16-safe saved-name policy tests, including emoji-boundary and malformed-surrogate cases;
+- backup round-trip coverage for Unicode saved names at the saved-name boundary;
+- backup corruption, schema, structural-bound, and semantic-validation tests;
 - deterministic seeded backup serialization/corruption fuzz coverage;
 - CSV security/escaping and receipt formatter tests;
 - export path-containment and structured-log redaction tests;
 - Room history/template/backup integration tests;
-- Compose calculator, named-history-save dialog, and Settings busy-state tests;
-- a real-activity calculate/save/history journey test.
+- Compose calculator, named-history-save/Unicode-boundary dialog, History label-filter, and Settings busy-state tests;
+- a real-activity calculate/named-save/history journey test;
+- fast repository guards for formatting, namespace, string resources, Android local-first security, links/required files, and common secret patterns.
 
 CI compiles the instrumentation suite; final release verification still requires executing it on a connected emulator/device.
 
@@ -255,10 +262,10 @@ Release guide: [`docs/release.md`](docs/release.md)
 
 ## CI and repository automation
 
-- `CI`: format, Kotlin namespace, repository/link audit, repository scanning, JVM tests, instrumentation-test compilation, full Android lint, debug build, release build.
+- `CI`: format, Kotlin namespace, Android string-resource audit, Android local-first security policy, repository/link audit, secret scan, JVM tests, instrumentation-test compilation, full Android lint, debug build, release build.
 - `CodeQL`: Java/Kotlin static analysis.
 - `Dependency Review`: pull-request dependency change review.
-- `Repository Audit`: independent required-file/local-link audit.
+- `Repository Audit`: required-file/local-link audit plus Android string-resource reference/duplicate-name guard.
 - `Dependabot`: weekly Gradle and GitHub Actions updates.
 - `Release Candidate`: tag-triggered unsigned release build.
 - Superseded PR workflow runs use concurrency cancellation so the newest revision receives runner priority.
@@ -267,7 +274,7 @@ Repository workflow files live under [`.github/workflows/`](.github/workflows/).
 
 ## Security
 
-SpendCalc minimizes permissions and remote dependencies. The export provider is non-exported, path-restricted, and grants temporary read access only during a user-selected share action. CSV text cells are escaped and common formula-leading characters are neutralized. Explicit backup parsing is bounded and fail-closed for unsupported/malformed records.
+SpendCalc minimizes permissions and remote dependencies. The export provider is non-exported, path-restricted, and grants temporary read access only during a user-selected share action. CSV text cells are escaped and common formula-leading characters are neutralized. Explicit backup parsing is bounded and fail-closed for unsupported/malformed records, including malformed Unicode saved text.
 
 Do not report exploitable vulnerability details in a public issue. Follow [`SECURITY.md`](SECURITY.md).
 
@@ -279,13 +286,13 @@ Read [`PRIVACY.md`](PRIVACY.md) and [`docs/privacy-backup.md`](docs/privacy-back
 
 ## Accessibility
 
-Release checks include TalkBack traversal, large system font scale, light/dark/system themes, app large-text behavior, reduced-motion behavior, navigation-label semantics, backup-progress messaging, touch-target review, small/wide screen behavior, and non-color-only validation.
+Release checks include TalkBack traversal, large system font scale, light/dark/system themes, app large-text behavior, reduced-motion behavior, navigation-label semantics, named-history dialog semantics, backup-progress messaging, touch-target review, small/wide screen behavior, and non-color-only validation.
 
 Read [`docs/accessibility.md`](docs/accessibility.md).
 
 ## Performance
 
-The app avoids network initialization, keeps ordinary calculation work in memory, caps the editable calculator at 100 line items, bounds user/backup inputs, and moves document/PDF/CSV file I/O off the main thread. Optimization should remain evidence-driven rather than replacing correct decimal math with unsafe primitives.
+The app avoids network initialization, keeps ordinary calculation work in memory, caps the editable calculator at 100 line items, bounds history search and user/backup inputs, and moves document/PDF/CSV file I/O off the main thread. Optimization should remain evidence-driven rather than replacing correct decimal math with unsafe primitives.
 
 Read [`docs/performance.md`](docs/performance.md).
 
