@@ -23,10 +23,11 @@ The roadmap prioritizes correctness, privacy, accessibility, and maintainability
 ## Phase 2 — Persistence and reusable workflows
 
 - [x] Room history.
+- [x] Optional named history saves with a shared persistence/backup name bound.
 - [x] Saved templates.
 - [x] DataStore settings.
 - [x] Optional history auto-delete.
-- [x] History search/filter.
+- [x] History search/filter, including user-provided labels.
 - [x] Undo for individual history deletion.
 - [x] Undo for individual template deletion.
 - [x] CSV/text/PDF export paths.
@@ -52,13 +53,14 @@ The roadmap prioritizes correctness, privacy, accessibility, and maintainability
 ## Phase 4 — Verification depth
 
 - [x] Domain unit tests.
-- [x] Repository tests.
+- [x] Repository tests, including saved history/template name normalization boundaries.
 - [x] Backup codec validation and corruption tests.
 - [x] Deterministic finance and backup fuzz/regression tests.
 - [x] Room integration and backup replacement tests.
 - [x] Compose smoke tests.
+- [x] Named-history save dialog regression coverage.
 - [x] Settings backup-busy UI regression coverage.
-- [x] Real-activity calculate/save/history journey smoke test.
+- [x] Real-activity calculate/named-save/history journey smoke test.
 - [x] Instrumentation-test compilation in CI.
 - [ ] Execute the Android instrumentation suite on a connected emulator/device for the final release candidate.
 - [ ] Add database migration tests when schema version 2 exists.
