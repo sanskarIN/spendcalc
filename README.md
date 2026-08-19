@@ -31,6 +31,7 @@ Verified screenshots are intentionally captured from real release-candidate buil
 ### Expense calculation
 
 - Itemized expense lines with live totals.
+- Up to 100 editable expense items per calculation, with an explicit limit state to keep the eager Compose editor bounded.
 - Discount, tax, tip, and service-charge percentages.
 - Discount capped at 100% so valid input cannot produce a negative discounted base.
 - Split-bill calculation for 1 through 1,000,000 people.
@@ -47,11 +48,14 @@ Verified screenshots are intentionally captured from real release-candidate buil
 - Clear-all confirmation.
 - Optional history auto-delete after 30 or 90 days.
 - Saved templates for common discount/tax/tip/service/split/currency settings.
+- Individual template deletion with Snackbar Undo.
 
 ### Backup and restore
 
 - Explicit user-driven local backup for history, templates, and preferences.
 - Android Storage Access Framework document creation/selection; no broad storage permission.
+- Visible busy/progress state while backup data is being read, written, or restored.
+- Duplicate backup actions are disabled while a backup operation is active.
 - Versioned, bounded backup format with URL-safe Base64 text fields.
 - SHA-256 accidental-corruption detection.
 - Strict schema, record, identifier, timestamp, currency, split, checksum, and decimal validation.
@@ -69,13 +73,15 @@ See [`docs/backup-restore.md`](docs/backup-restore.md) and [`docs/security-backu
 - Canonical-path containment prevents sharing files outside the private export cache directory.
 - Backup/CSV/PDF file I/O runs off the main thread.
 
-### UI and accessibility
+### UI, branding, and accessibility
 
 - Jetpack Compose + Material 3.
 - Responsive phone/tablet layout.
 - Light, dark, and system theme modes.
 - Large-text preference.
 - Reduced-motion preference that removes navigation transitions when enabled.
+- Repository-owned vector icons for primary navigation with visible text labels.
+- Branded AndroidX launch splash treatment using the SpendCalc icon.
 - Externalized user-facing strings for localization readiness.
 - Clear validation text in addition to color/state styling.
 - First-run onboarding.
@@ -106,6 +112,7 @@ See [`PRIVACY.md`](PRIVACY.md) and [`SECURITY.md`](SECURITY.md).
 - Kotlin
 - Jetpack Compose
 - Material 3
+- AndroidX SplashScreen
 - AndroidX Navigation Compose
 - AndroidX Lifecycle/ViewModel
 - Room + KSP
@@ -188,7 +195,7 @@ Detailed platform-specific setup: [`docs/setup.md`](docs/setup.md)
 ```bash
 gradle testDebugUnitTest
 gradle assembleDebugAndroidTest
-gradle lintDebug
+gradle lint
 gradle assembleDebug
 gradle assembleRelease
 python3 scripts/check_format.py
@@ -211,13 +218,13 @@ The repository includes:
 
 - finance arithmetic, rounding, bounds, and validation unit tests;
 - deterministic seeded finance fuzz/regression coverage;
-- history and template repository tests;
+- history and template repository tests, including exact restore-after-delete behavior;
 - backup round-trip, corruption, schema, structural-bound, and semantic-validation tests;
 - deterministic seeded backup serialization/corruption fuzz coverage;
 - CSV security/escaping and receipt formatter tests;
 - export path-containment and structured-log redaction tests;
 - Room history/template/backup integration tests;
-- Compose screen smoke tests;
+- Compose calculator and Settings busy-state tests;
 - a real-activity calculate/save/history journey test.
 
 CI compiles the instrumentation suite; final release verification still requires executing it on a connected emulator/device.
@@ -246,7 +253,7 @@ Release guide: [`docs/release.md`](docs/release.md)
 
 ## CI and repository automation
 
-- `CI`: format, Kotlin namespace, repository/link audit, repository scanning, JVM tests, instrumentation-test compilation, Android lint, debug build, release build.
+- `CI`: format, Kotlin namespace, repository/link audit, repository scanning, JVM tests, instrumentation-test compilation, full Android lint, debug build, release build.
 - `CodeQL`: Java/Kotlin static analysis.
 - `Dependency Review`: pull-request dependency change review.
 - `Repository Audit`: independent required-file/local-link audit.
@@ -264,19 +271,19 @@ Do not report exploitable vulnerability details in a public issue. Follow [`SECU
 
 ## Privacy and data
 
-History/templates use Room while preferences use DataStore. Users can search/clear history, undo an individual deletion, delete templates, and configure history expiry. Explicit backup is user-selected and local; Android system backup/device transfer may separately include the documented private database/preferences according to OS/device settings.
+History/templates use Room while preferences use DataStore. Users can search/clear history, undo an individual history deletion, delete/undo templates, and configure history expiry. Explicit backup is user-selected and local; Android system backup/device transfer may separately include the documented private database/preferences according to OS/device settings.
 
 Read [`PRIVACY.md`](PRIVACY.md) and [`docs/privacy-backup.md`](docs/privacy-backup.md).
 
 ## Accessibility
 
-Release checks include TalkBack traversal, large system font scale, light/dark/system themes, app large-text behavior, reduced-motion behavior, touch-target review, small/wide screen behavior, and non-color-only validation.
+Release checks include TalkBack traversal, large system font scale, light/dark/system themes, app large-text behavior, reduced-motion behavior, navigation-label semantics, backup-progress messaging, touch-target review, small/wide screen behavior, and non-color-only validation.
 
 Read [`docs/accessibility.md`](docs/accessibility.md).
 
 ## Performance
 
-The app avoids network initialization, keeps ordinary calculation work in memory, bounds user/backup inputs, and moves document/PDF/CSV file I/O off the main thread. Optimization should remain evidence-driven rather than replacing correct decimal math with unsafe primitives.
+The app avoids network initialization, keeps ordinary calculation work in memory, caps the editable calculator at 100 line items, bounds user/backup inputs, and moves document/PDF/CSV file I/O off the main thread. Optimization should remain evidence-driven rather than replacing correct decimal math with unsafe primitives.
 
 Read [`docs/performance.md`](docs/performance.md).
 
