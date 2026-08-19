@@ -6,6 +6,7 @@ import `in`.sanskar.spendcalc.domain.CalculatorEngine
 import `in`.sanskar.spendcalc.domain.model.CalculationInput
 import `in`.sanskar.spendcalc.domain.model.CalculationTemplate
 import `in`.sanskar.spendcalc.domain.model.normalizeSavedName
+import `in`.sanskar.spendcalc.domain.model.requireUniqueSavedIds
 import `in`.sanskar.spendcalc.domain.model.requireValidTemplateEnvelope
 import java.math.BigDecimal
 import java.util.Locale
@@ -52,7 +53,9 @@ class TemplateRepository(
     suspend fun delete(id: String) = dao.deleteById(id)
 
     suspend fun replaceAll(templates: List<CalculationTemplate>) {
-        dao.replaceAll(templates.map { it.toEntity() })
+        requireUniqueSavedIds(templates.map { it.id }, "template")
+        val entities = templates.map { it.toEntity() }
+        dao.replaceAll(entities)
     }
 
     private fun CalculationTemplate.toEntity(): TemplateEntity {
