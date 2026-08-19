@@ -51,7 +51,10 @@ import `in`.sanskar.spendcalc.ui.screens.OnboardingScreen
 import `in`.sanskar.spendcalc.ui.screens.SettingsScreen
 import `in`.sanskar.spendcalc.ui.screens.TemplatesScreen
 import `in`.sanskar.spendcalc.ui.theme.SpendCalcTheme
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private const val ROUTE_CALCULATOR = "calculator"
 private const val ROUTE_HISTORY = "history"
@@ -116,19 +119,26 @@ private fun SpendCalcMainScaffold(
     val csvFormatter = remember { CsvExportFormatter() }
     val receiptFormatter = remember { ReceiptTextFormatter() }
     val pdfExporter = remember { PdfReceiptExporter() }
-    var pendingBackupPayload by remember { mutableStateOf<String?>(null) }
     var pendingRestorePayload by remember { mutableStateOf<String?>(null) }
     var confirmRestore by remember { mutableStateOf(false) }
 
     val createBackupLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument(BACKUP_MIME_TYPE),
     ) { uri ->
-        val payload = pendingBackupPayload
-        pendingBackupPayload = null
-        if (uri != null && payload != null) {
-            runCatching { BackupFileIo.write(context, uri, payload) }
-                .onSuccess { viewModel.reportBackupExported() }
-                .onFailure { viewModel.reportBackupFailure() }
+        if (uri != null) {
+            scope.launch {
+                try {
+                    val payload = viewModel.createBackupPayload()
+                    withContext(Dispatchers.IO) {
+                        BackupFileIo.write(context, uri, payload)
+                    }
+                    viewModel.reportBackupExported()
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    viewModel.reportBackupFailure()
+                }
+            }
         }
     }
 
@@ -136,12 +146,18 @@ private fun SpendCalcMainScaffold(
         contract = ActivityResultContracts.OpenDocument(),
     ) { uri ->
         if (uri != null) {
-            runCatching { BackupFileIo.read(context, uri) }
-                .onSuccess { payload ->
-                    pendingRestorePayload = payload
+            scope.launch {
+                try {
+                    pendingRestorePayload = withContext(Dispatchers.IO) {
+                        BackupFileIo.read(context, uri)
+                    }
                     confirmRestore = true
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    viewModel.reportBackupFailure()
                 }
-                .onFailure { viewModel.reportBackupFailure() }
+            }
         }
     }
 
@@ -215,14 +231,7 @@ private fun SpendCalcMainScaffold(
     }
 
     fun exportBackup() {
-        scope.launch {
-            runCatching { viewModel.createBackupPayload() }
-                .onSuccess { payload ->
-                    pendingBackupPayload = payload
-                    createBackupLauncher.launch(context.getString(R.string.backup_file_name))
-                }
-                .onFailure { viewModel.reportBackupFailure() }
-        }
+        createBackupLauncher.launch(context.getString(R.string.backup_file_name))
     }
 
     fun restoreBackup() {
@@ -251,32 +260,48 @@ private fun SpendCalcMainScaffold(
     fun shareCsv() {
         val input = calculator.toCalculationInputOrNull() ?: return
         val result = calculator.result ?: return
-        runCatching {
-            ExportManager.shareTextFile(
-                context = context,
-                chooserTitle = context.getString(R.string.share_chooser_title),
-                fileName = "spendcalc-${System.currentTimeMillis()}.csv",
-                mimeType = csvFormatter.mimeType,
-                text = csvFormatter.format(input, result),
-            )
-        }.onFailure {
-            Toast.makeText(context, R.string.export_failed, Toast.LENGTH_SHORT).show()
+        scope.launch {
+            try {
+                val file = withContext(Dispatchers.IO) {
+                    ExportManager.createTextFile(
+                        context = context,
+                        fileName = "spendcalc-${System.currentTimeMillis()}.csv",
+                        text = csvFormatter.format(input, result),
+                    )
+                }
+                ExportManager.shareFile(
+                    context = context,
+                    chooserTitle = context.getString(R.string.share_chooser_title),
+                    file = file,
+                    mimeType = csvFormatter.mimeType,
+                )
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                Toast.makeText(context, R.string.export_failed, Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
     fun sharePdf() {
         val input = calculator.toCalculationInputOrNull() ?: return
         val result = calculator.result ?: return
-        runCatching {
-            val file = pdfExporter.create(context, input, result)
-            ExportManager.shareFile(
-                context = context,
-                chooserTitle = context.getString(R.string.share_chooser_title),
-                file = file,
-                mimeType = "application/pdf",
-            )
-        }.onFailure {
-            Toast.makeText(context, R.string.export_failed, Toast.LENGTH_SHORT).show()
+        scope.launch {
+            try {
+                val file = withContext(Dispatchers.IO) {
+                    pdfExporter.create(context, input, result)
+                }
+                ExportManager.shareFile(
+                    context = context,
+                    chooserTitle = context.getString(R.string.share_chooser_title),
+                    file = file,
+                    mimeType = "application/pdf",
+                )
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                Toast.makeText(context, R.string.export_failed, Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
