@@ -1,4 +1,4 @@
-package in.sanskar.spendcalc
+package `in`.sanskar.spendcalc
 
 import android.app.Application
 
