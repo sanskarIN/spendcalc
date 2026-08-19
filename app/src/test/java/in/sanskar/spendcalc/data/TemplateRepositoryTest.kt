@@ -3,6 +3,7 @@ package `in`.sanskar.spendcalc.data
 import `in`.sanskar.spendcalc.data.local.TemplateDao
 import `in`.sanskar.spendcalc.data.local.TemplateEntity
 import `in`.sanskar.spendcalc.domain.model.CalculationInput
+import `in`.sanskar.spendcalc.domain.model.CalculationTemplate
 import java.math.BigDecimal
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -52,6 +53,35 @@ class TemplateRepositoryTest {
         assertEquals(emptyList<TemplateEntity>(), dao.observeAll().first())
     }
 
+    @Test
+    fun `replace all clears stale templates and restores backup templates`() = runTest {
+        val dao = FakeTemplateDao()
+        val repository = TemplateRepository(dao)
+        repository.save("Old", CalculationInput(items = emptyList()))
+        val restored = listOf(
+            template("b", "Beta", 20L),
+            template("a", "Alpha", 10L),
+        )
+
+        repository.replaceAll(restored)
+
+        assertEquals(listOf("Alpha", "Beta"), repository.observeTemplates().first().map { it.name })
+    }
+
+    private fun template(id: String, name: String, createdAt: Long) = CalculationTemplate(
+        id = id,
+        name = name,
+        createdAtEpochMillis = createdAt,
+        discountPercent = BigDecimal("5"),
+        taxPercent = BigDecimal("18"),
+        tipPercent = BigDecimal("3"),
+        serviceChargePercent = BigDecimal("2"),
+        splitCount = 4,
+        currencyCode = "INR",
+        exchangeRate = BigDecimal("0.0119"),
+        convertedCurrencyCode = "USD",
+    )
+
     private class FakeTemplateDao : TemplateDao {
         private val templates = MutableStateFlow<List<TemplateEntity>>(emptyList())
 
@@ -64,6 +94,10 @@ class TemplateRepositoryTest {
 
         override suspend fun deleteById(id: String) {
             templates.value = templates.value.filterNot { it.id == id }
+        }
+
+        override suspend fun clear() {
+            templates.value = emptyList()
         }
     }
 }
