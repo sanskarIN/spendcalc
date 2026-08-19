@@ -87,7 +87,7 @@ class SpendCalcViewModel(
     }
 
     fun addItem() {
-        if (_calculator.value.items.size >= MAX_ITEMS) return
+        if (_calculator.value.items.size >= MAX_EXPENSE_ITEMS) return
         updateCalculator { state -> state.copy(items = state.items + ExpenseItemDraft()) }
     }
 
@@ -373,7 +373,6 @@ class SpendCalcViewModel(
 
     companion object {
         private const val MILLIS_PER_DAY = 86_400_000L
-        private const val MAX_ITEMS = 500
         private const val MAX_NAME_INPUT_CHARS = 120
         private const val MAX_NUMERIC_INPUT_CHARS = 64
         private const val MAX_SPLIT_INPUT_CHARS = 7
