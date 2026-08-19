@@ -80,11 +80,11 @@ Dependabot checks Gradle and GitHub Actions dependencies on its configured sched
 
 Use milestones only when they improve planning. Suggested milestones:
 
-- `1.0.0` — first verified production-ready release
-- `1.1.0` — first post-release feature set
+- `2.0.12` — current verified production-release target
+- `2.1.0` — first post-2.0.12 feature set
 - `maintenance` — optional recurring fixes when a version milestone would be misleading
 
-Every release milestone should reference its definition of done in `ROADMAP.md` and keep blocker issues visible.
+Every release milestone should reference its definition of done in `ROADMAP.md` and keep blocker issues visible. Application release milestones must not be treated as Room database or explicit backup schema version numbers; those compatibility versions change only when their own contracts require it.
 
 ## GitHub Discussions guidance
 
