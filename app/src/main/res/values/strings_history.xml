@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="history_privacy_note">Saved calculations stay on this device.</string>
+    <string name="clear_history_confirmation">Delete all saved calculation history? This cannot be undone.</string>
+</resources>
