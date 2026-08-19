@@ -46,6 +46,9 @@ jobs:
       - name: Check Kotlin namespace declarations
         run: python3 scripts/check_kotlin_namespace.py
 
+      - name: Check tracked-file documentation coverage
+        run: python3 scripts/check_documentation_coverage.py
+
       - name: Check Android string resource references
         run: python3 scripts/check_android_resources.py
 
