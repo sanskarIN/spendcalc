@@ -87,6 +87,41 @@ class BackupCodecTest {
     }
 
     @Test
+    fun `rejects history decimal above bounded calculated result magnitude`() {
+        val tooLarge = history("too-large", 10L, "Too large").copy(
+            convertedTotal = BigDecimal("10000000000000000000000000000000000"),
+        )
+
+        assertTrue(runCatching { codec.encode(emptyBackup().copy(history = listOf(tooLarge))) }.isFailure)
+    }
+
+    @Test
+    fun `rejects saved names that exceed the application bound`() {
+        val oversizedHistory = history("history", 10L, "x".repeat(121))
+        val oversizedTemplate = template("template", 20L, "y".repeat(121))
+
+        assertTrue(runCatching { codec.encode(emptyBackup().copy(history = listOf(oversizedHistory))) }.isFailure)
+        assertTrue(runCatching { codec.encode(emptyBackup().copy(templates = listOf(oversizedTemplate))) }.isFailure)
+    }
+
+    @Test
+    fun `rejects malformed utf8 from a checksummed text field`() {
+        val encoded = codec.encode(emptyBackup().copy(history = listOf(history("one", 10L, "One"))))
+        val historyLine = encoded.lineSequence().first { it.startsWith("H\t") }
+        val fields = historyLine.split('\t').toMutableList()
+        fields[1] = "_w"
+        val malformedLine = fields.joinToString("\t")
+        val body = encoded.substringBeforeLast("SHA256\t")
+            .replace("$historyLine\n", "$malformedLine\n")
+        val payload = body + "SHA256\t${sha256(body)}\n"
+
+        assertEquals(
+            BackupDecodeResult.Failure(BackupDecodeError.INVALID_RECORD),
+            codec.decode(payload),
+        )
+    }
+
+    @Test
     fun `detects payload tampering through checksum`() {
         val backup = emptyBackup()
         val encoded = codec.encode(backup)
