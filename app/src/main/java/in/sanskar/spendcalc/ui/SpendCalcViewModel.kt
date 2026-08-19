@@ -42,6 +42,7 @@ class SpendCalcViewModel(
     private val _calculator = MutableStateFlow(CalculatorUiState())
     val calculator: StateFlow<CalculatorUiState> = _calculator
     private var lastDeletedHistory: HistoryRecord? = null
+    private var lastDeletedTemplate: CalculationTemplate? = null
 
     val preferences: StateFlow<UserPreferences> = settingsRepository.preferences.stateIn(
         scope = viewModelScope,
@@ -180,9 +181,19 @@ class SpendCalcViewModel(
     }
 
     fun deleteTemplate(id: String) {
+        val template = templates.value.firstOrNull { it.id == id } ?: return
         viewModelScope.launch {
             templateRepository.delete(id)
-            showFeedback(ActionFeedback.DELETED)
+            lastDeletedTemplate = template
+            showFeedback(ActionFeedback.TEMPLATE_DELETED)
+        }
+    }
+
+    fun undoDeleteTemplate() {
+        val template = lastDeletedTemplate ?: return
+        lastDeletedTemplate = null
+        viewModelScope.launch {
+            templateRepository.restore(template)
         }
     }
 
@@ -213,6 +224,8 @@ class SpendCalcViewModel(
         is BackupDecodeResult.Success -> {
             try {
                 backupRepository.restore(decoded.backup)
+                lastDeletedHistory = null
+                lastDeletedTemplate = null
                 showFeedback(ActionFeedback.BACKUP_RESTORED)
                 true
             } catch (cancelled: CancellationException) {
