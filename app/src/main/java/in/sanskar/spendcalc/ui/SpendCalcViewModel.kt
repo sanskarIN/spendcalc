@@ -17,6 +17,7 @@ import in.sanskar.spendcalc.domain.model.ExpenseItem
 import in.sanskar.spendcalc.domain.model.ThemeMode
 import in.sanskar.spendcalc.domain.model.UserPreferences
 import java.math.BigDecimal
+import java.util.Locale
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -84,10 +85,12 @@ class SpendCalcViewModel(
     fun updateTip(value: String) = updateCalculator { it.copy(tipPercent = value) }
     fun updateServiceCharge(value: String) = updateCalculator { it.copy(serviceChargePercent = value) }
     fun updateSplitCount(value: String) = updateCalculator { it.copy(splitCount = value) }
-    fun updateCurrencyCode(value: String) = updateCalculator { it.copy(currencyCode = value.uppercase()) }
+    fun updateCurrencyCode(value: String) = updateCalculator {
+        it.copy(currencyCode = value.uppercase(Locale.ROOT))
+    }
     fun updateExchangeRate(value: String) = updateCalculator { it.copy(exchangeRate = value) }
     fun updateConvertedCurrencyCode(value: String) = updateCalculator {
-        it.copy(convertedCurrencyCode = value.uppercase())
+        it.copy(convertedCurrencyCode = value.uppercase(Locale.ROOT))
     }
 
     fun resetCalculator() {
