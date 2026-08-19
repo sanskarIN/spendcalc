@@ -5,6 +5,7 @@ The explicit SpendCalc backup format is treated as untrusted input during restor
 ## Current defenses
 
 - Maximum total payload size is checked while reading and again before decoding.
+- Backup document bytes are decoded with a strict UTF-8 `CharsetDecoder` configured with `CodingErrorAction.REPORT`, so malformed or unmappable byte sequences fail instead of being silently replaced before parser validation.
 - Newline count is bounded before `split()` so a small-but-line-dense input cannot create an excessive record list.
 - Record count, line length, text length, encoded-field length, identifier length, saved-name length, and decimal text length are bounded.
 - Numeric fields accept bounded plain-decimal shapes only; exponent forms that could expand dramatically through `toPlainString()` are rejected.
@@ -15,14 +16,14 @@ The explicit SpendCalc backup format is treated as untrusted input during restor
 - New saved names use a shared UTF-16-safe truncation policy that never splits a valid surrogate pair at the 120-character boundary; malformed surrogate input still fails closed.
 - Valid decoded/restored saved names are preserved exactly rather than being silently trimmed or rewritten during repository replacement.
 - Timestamps must be non-negative.
-- Persisted currency codes are canonical uppercase three-letter values. Repository writes normalize valid user/caller currency forms before persistence, while backup encoding requires the already-persisted canonical form.
+- Persisted currency codes are canonical uppercase three-letter values. Repository writes normalize valid user/caller currency forms before persistence, while backup encoding requires the already-persisted canonical form and backup decoding validates the decoded form without first uppercasing or otherwise repairing it.
 - The history repository rejects negative/out-of-contract stored results, invalid split counts, bad identifiers, or invalid timestamps before any DAO write.
 - The template repository revalidates the exact settings it persists through `CalculatorEngine`, even when a caller bypasses `SpendCalcViewModel`.
 - Template repository restore/replace also validates identifier/timestamp/name/canonical-currency envelope fields before DAO writes.
 - Repository `replaceAll` paths map and validate every supplied record before invoking replacement, so one invalid candidate cannot clear valid existing data first.
 - The backup codec reuses the same persisted-record envelope policy as repositories, reducing the chance that local storage and export rules drift apart.
 - URL-safe Base64 field encoding keeps tabs/newlines in text from changing record boundaries.
-- Decoded text must be valid UTF-8 and re-encode to the exact original bytes; malformed UTF-8 fails closed.
+- Decoded Base64 text fields must be valid UTF-8 and re-encode to the exact original bytes; malformed UTF-8 fails closed.
 - Exported text must also round trip through UTF-8 exactly, so malformed Unicode surrogate data is rejected instead of normalized.
 - Schema version is explicit and unknown versions are rejected.
 - SHA-256 checksum text is strictly shaped as 64 hexadecimal characters and compared with `MessageDigest.isEqual`.
@@ -59,7 +60,7 @@ Restore intentionally does not deserialize arbitrary Java/Kotlin objects, execut
 
 ## Failure semantics
 
-A decode/validation failure does not enter the repository restore path. Repository prevalidation rejects an invalid replacement collection before its DAO replacement method is invoked. A database replacement failure rolls back through Room's transaction. If a later DataStore write fails, SpendCalc attempts a non-cancellable compensating restore of the pre-restore Room and preference snapshot, then reports failure to the UI.
+A document-decoding, backup decoding, or validation failure does not enter the repository restore path. Repository prevalidation rejects an invalid replacement collection before its DAO replacement method is invoked. A database replacement failure rolls back through Room's transaction. If a later DataStore write fails, SpendCalc attempts a non-cancellable compensating restore of the pre-restore Room and preference snapshot, then reports failure to the UI.
 
 This is a defensive best-effort atomicity strategy across two independent persistence technologies; it is not equivalent to one database transaction spanning both systems.
 
