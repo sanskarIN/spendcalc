@@ -8,6 +8,7 @@
     <string name="privacy_title">Local-first privacy</string>
     <string name="backup_section">Backup and restore</string>
     <string name="backup_description">Export history, templates, and preferences to a file you choose. Restoring replaces the current saved data after confirmation.</string>
+    <string name="backup_in_progress">Backup operation in progress…</string>
     <string name="export_backup">Export backup</string>
     <string name="restore_backup">Restore backup</string>
     <string name="restore_backup_title">Replace saved SpendCalc data?</string>
