@@ -1,6 +1,7 @@
 package `in`.sanskar.spendcalc.data
 
 import android.content.Context
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -15,7 +16,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 
-private val Context.spendCalcDataStore by preferencesDataStore(name = "spendcalc_settings")
+private val Context.spendCalcDataStore by preferencesDataStore(
+    name = "spendcalc_settings",
+    corruptionHandler = ReplaceFileCorruptionHandler {
+        emptyPreferences()
+    },
+)
 
 class SettingsRepository(private val context: Context) {
     val preferences: Flow<UserPreferences> =
