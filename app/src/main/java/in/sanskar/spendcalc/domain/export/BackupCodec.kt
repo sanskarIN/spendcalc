@@ -222,8 +222,8 @@ class BackupCodec {
             id = decodedText(fields[1]),
             createdAtEpochMillis = fields[2].toLong(),
             label = decodedText(fields[3]),
-            currencyCode = decodedText(fields[4]).uppercase(Locale.ROOT),
-            convertedCurrencyCode = decodedText(fields[5]).uppercase(Locale.ROOT),
+            currencyCode = decodedText(fields[4]),
+            convertedCurrencyCode = decodedText(fields[5]),
             subtotal = decimal(fields[6]),
             discountAmount = decimal(fields[7]),
             taxAmount = decimal(fields[8]),
@@ -249,9 +249,9 @@ class BackupCodec {
             tipPercent = decimal(fields[6]),
             serviceChargePercent = decimal(fields[7]),
             splitCount = fields[8].toInt(),
-            currencyCode = decodedText(fields[9]).uppercase(Locale.ROOT),
+            currencyCode = decodedText(fields[9]),
             exchangeRate = decimal(fields[10]),
-            convertedCurrencyCode = decodedText(fields[11]).uppercase(Locale.ROOT),
+            convertedCurrencyCode = decodedText(fields[11]),
         )
         require(validTemplate(template))
         template
