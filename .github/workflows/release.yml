@@ -37,7 +37,7 @@ jobs:
         run: gradle --no-daemon clean testDebugUnitTest lintDebug assembleRelease
 
       - name: Upload unsigned release artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: spendcalc-${{ github.ref_name }}-unsigned
           path: app/build/outputs/apk/release/*.apk
