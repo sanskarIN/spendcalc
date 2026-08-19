@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="repository_label">SpendCalc repository</string>
+    <string name="contact_support_title">Contact &amp; support</string>
+    <string name="about_privacy_footer">SpendCalc is open source, works offline, requires no account, and keeps its calculation database on your device.</string>
+</resources>
