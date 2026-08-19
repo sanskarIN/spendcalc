@@ -22,6 +22,8 @@
 
 SpendCalc is built for everyday expense calculations rather than demo arithmetic. It keeps finance rules separate from Android UI/infrastructure, uses `BigDecimal` for money, works without a required network connection or account, and provides local history, templates, explicit backup/restore, accessibility settings, and offline export options.
 
+> **Current release candidate:** `2.0.12` (`versionCode 20012`). Room database and explicit backup schema versions are maintained separately from the application release number. See [`docs/verification.md`](docs/verification.md) for the exact-head release gates.
+
 ## Screenshots
 
 Verified screenshots are intentionally captured from real release-candidate builds rather than presented as fake production images. The capture checklist is in [`docs/assets/screenshots/README.md`](docs/assets/screenshots/README.md). Until those captures are added, the editable brand artwork at [`docs/assets/spendcalc-logo.svg`](docs/assets/spendcalc-logo.svg) is the repository's visual placeholder.
@@ -75,6 +77,8 @@ See [`docs/persistence-invariants.md`](docs/persistence-invariants.md).
 - Versioned, bounded backup format with URL-safe Base64 text fields.
 - SHA-256 accidental-corruption detection.
 - Strict schema, record, identifier, timestamp, currency, split, checksum, decimal, saved-name, duplicate-ID, and Unicode validation.
+- Backup document input rejects malformed/unmappable UTF-8 instead of silently replacing bytes.
+- Backup decode validates canonical persisted currency text exactly rather than repairing noncanonical forms.
 - Backup encoding rejects structurally invalid/noncanonical in-memory records instead of silently changing them.
 - Restore confirmation before replacing current data.
 - Valid decoded history labels/template names are restored without silent trimming or rewriting.
@@ -87,6 +91,7 @@ See [`docs/backup-restore.md`](docs/backup-restore.md), [`docs/security-backup.m
 - Plain-text receipt sharing.
 - CSV export with quote escaping and spreadsheet-formula neutralization for text cells.
 - Offline PDF receipt creation using Android `PdfDocument`.
+- Unicode-safe PDF line truncation preserves valid surrogate boundaries for long item names.
 - Cache-file sharing through a non-exported Android `FileProvider` with temporary read permission.
 - Canonical-path containment prevents sharing files outside the private export cache directory.
 - Backup/CSV/PDF file I/O runs off the main thread.
@@ -276,11 +281,12 @@ The repository includes:
 - shared persisted-record policy tests for identifiers, timestamps, currencies, split/result bounds, and template envelopes;
 - UTF-16-safe saved-name policy tests, including emoji-boundary and malformed-surrogate cases;
 - backup round-trip coverage for Unicode saved names at the saved-name boundary;
-- backup persisted-policy tests that reject noncanonical/invalid in-memory records before encoding;
+- backup persisted-policy tests that reject noncanonical/invalid in-memory records before encoding and checksum-valid noncanonical currencies during decode;
+- strict malformed UTF-8 backup-byte decoder regression coverage;
 - backup corruption, schema, structural-bound, and semantic-validation tests;
 - deterministic seeded backup serialization/corruption fuzz coverage;
 - CSV security/escaping and receipt formatter tests;
-- export path-containment and structured-log redaction tests;
+- export path-containment, Unicode-safe PDF truncation, and structured-log redaction tests;
 - Room history/template/backup integration tests;
 - Compose calculator, named-history-save/Unicode-boundary, template-name/Unicode-boundary, History label-filter, and Settings busy-state tests;
 - a real-activity calculate/named-save/history journey test;
@@ -308,6 +314,8 @@ Production signing material is **not** committed to the repository. Tagged relea
 
 A configured, queued, pending, cancelled, or superseded workflow is not treated as a successful release check. The exact commit being released must satisfy [`docs/verification.md`](docs/verification.md), including connected-device/accessibility/export/backup/signing/screenshot gates that source CI cannot prove.
 
+Current tag target after all blocking gates pass: `v2.0.12`.
+
 Release guide: [`docs/release.md`](docs/release.md)
 
 ## CI and repository automation
@@ -324,7 +332,7 @@ Repository workflow files live under [`.github/workflows/`](.github/workflows/).
 
 ## Security
 
-SpendCalc minimizes permissions and remote dependencies. The export provider is non-exported, path-restricted, and grants temporary read access only during a user-selected share action. CSV text cells are escaped and common formula-leading characters are neutralized. Repository persistence and explicit backup parsing both fail closed for unsupported/malformed records, including malformed Unicode saved text and invalid persisted-record envelopes.
+SpendCalc minimizes permissions and remote dependencies. The export provider is non-exported, path-restricted, and grants temporary read access only during a user-selected share action. CSV text cells are escaped and common formula-leading characters are neutralized. Repository persistence and explicit backup parsing both fail closed for unsupported/malformed records, including malformed Unicode saved text, malformed UTF-8 document bytes, noncanonical persisted currencies, and invalid persisted-record envelopes.
 
 The backup SHA-256 checksum detects accidental corruption; it is not a signature, MAC, encryption mechanism, or proof of backup authorship.
 
