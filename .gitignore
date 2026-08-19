@@ -1,0 +1,39 @@
+# Gradle
+.gradle/
+**/build/
+
+# Android local SDK configuration
+local.properties
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Kotlin/Java
+*.class
+out/
+
+# Signing and secrets
+*.jks
+*.keystore
+*.p12
+*.pem
+.env
+.env.*
+!.env.example
+secrets.properties
+
+# Android tooling
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Test/report output
+**/reports/
+**/test-results/
+
+# Local exports
+exports/
