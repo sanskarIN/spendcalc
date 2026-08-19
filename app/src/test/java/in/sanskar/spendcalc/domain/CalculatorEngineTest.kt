@@ -5,6 +5,7 @@ import in.sanskar.spendcalc.domain.model.CalculationInput
 import in.sanskar.spendcalc.domain.model.CalculationOutcome
 import in.sanskar.spendcalc.domain.model.ExpenseItem
 import java.math.BigDecimal
+import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -85,6 +86,27 @@ class CalculatorEngineTest {
         val result = (outcome as CalculationOutcome.Success).result
         assertEquals("INR", result.currencyCode)
         assertEquals("USD", result.convertedCurrencyCode)
+    }
+
+    @Test
+    fun `currency normalization is stable under Turkish locale`() {
+        val previousLocale = Locale.getDefault()
+        try {
+            Locale.setDefault(Locale.forLanguageTag("tr-TR"))
+            val outcome = engine.calculate(
+                CalculationInput(
+                    items = emptyList(),
+                    currencyCode = "inr",
+                    convertedCurrencyCode = "usd",
+                ),
+            )
+
+            val result = (outcome as CalculationOutcome.Success).result
+            assertEquals("INR", result.currencyCode)
+            assertEquals("USD", result.convertedCurrencyCode)
+        } finally {
+            Locale.setDefault(previousLocale)
+        }
     }
 
     @Test
