@@ -106,6 +106,9 @@ class BackupCodec {
     fun decode(payload: String): BackupDecodeResult {
         if (payload.length > MAX_BACKUP_CHARS) return BackupDecodeResult.Failure(BackupDecodeError.TOO_LARGE)
         if (!payload.endsWith('\n')) return BackupDecodeResult.Failure(BackupDecodeError.INVALID_FORMAT)
+        if (payload.count { it == '\n' } > MAX_BACKUP_LINES) {
+            return BackupDecodeResult.Failure(BackupDecodeError.TOO_LARGE)
+        }
 
         val lines = payload.split('\n')
         if (lines.size < 4 || lines.last().isNotEmpty()) {
@@ -113,8 +116,15 @@ class BackupCodec {
         }
 
         val checksumLine = lines[lines.lastIndex - 1]
+        if (checksumLine.length > MAX_CHECKSUM_LINE_CHARS) {
+            return BackupDecodeResult.Failure(BackupDecodeError.INVALID_FORMAT)
+        }
         val checksumParts = checksumLine.split('\t')
-        if (checksumParts.size != 2 || checksumParts[0] != "SHA256") {
+        if (
+            checksumParts.size != 2 ||
+            checksumParts[0] != "SHA256" ||
+            !SHA256_HEX.matches(checksumParts[1])
+        ) {
             return BackupDecodeResult.Failure(BackupDecodeError.INVALID_FORMAT)
         }
         val bodyLines = lines.subList(0, lines.lastIndex - 1)
@@ -333,7 +343,9 @@ class BackupCodec {
         const val CURRENT_SCHEMA_VERSION = SpendCalcBackup.CURRENT_SCHEMA_VERSION
         const val MAX_BACKUP_CHARS = 5_000_000
         const val MAX_RECORDS = 10_000
+        const val MAX_BACKUP_LINES = MAX_RECORDS + 3
         const val MAX_LINE_CHARS = 16_384
+        const val MAX_CHECKSUM_LINE_CHARS = 71
         const val MAX_FIELD_CHARS = 4_096
         const val MAX_FIELD_BYTES = 16_384
         const val MAX_ENCODED_FIELD_CHARS = 24_000
@@ -342,6 +354,7 @@ class BackupCodec {
         const val MAX_DECIMAL_SCALE = 12
         const val MAX_SPLIT_COUNT = 1_000_000
         val PLAIN_DECIMAL = Regex("[+-]?\\d+(?:\\.\\d+)?")
+        val SHA256_HEX = Regex("[A-Fa-f0-9]{64}")
         val CURRENCY_CODE = Regex("[A-Z]{3}")
         val ENCODER: Base64.Encoder = Base64.getUrlEncoder().withoutPadding()
         val DECODER: Base64.Decoder = Base64.getUrlDecoder()
