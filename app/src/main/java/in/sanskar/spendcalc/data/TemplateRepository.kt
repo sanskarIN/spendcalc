@@ -4,6 +4,7 @@ import `in`.sanskar.spendcalc.data.local.TemplateDao
 import `in`.sanskar.spendcalc.data.local.TemplateEntity
 import `in`.sanskar.spendcalc.domain.model.CalculationInput
 import `in`.sanskar.spendcalc.domain.model.CalculationTemplate
+import `in`.sanskar.spendcalc.domain.model.MAX_SAVED_NAME_CHARS
 import java.math.BigDecimal
 import java.util.Locale
 import java.util.UUID
@@ -25,7 +26,7 @@ class TemplateRepository(
         dao.upsert(
             CalculationTemplate(
                 id = id,
-                name = name.trim().ifBlank { "Template" },
+                name = normalizeSavedName(name, DEFAULT_TEMPLATE_NAME),
                 createdAtEpochMillis = clock(),
                 discountPercent = input.discountPercent,
                 taxPercent = input.taxPercent,
@@ -53,7 +54,7 @@ class TemplateRepository(
     private fun CalculationTemplate.toEntity(): TemplateEntity =
         TemplateEntity(
             id = id,
-            name = name.trim().ifBlank { "Template" },
+            name = normalizeSavedName(name, DEFAULT_TEMPLATE_NAME),
             createdAtEpochMillis = createdAtEpochMillis,
             discountPercent = discountPercent.toPlainString(),
             taxPercent = taxPercent.toPlainString(),
@@ -79,4 +80,11 @@ class TemplateRepository(
             exchangeRate = BigDecimal(exchangeRate),
             convertedCurrencyCode = convertedCurrencyCode,
         )
+
+    private fun normalizeSavedName(value: String, fallback: String): String =
+        value.trim().take(MAX_SAVED_NAME_CHARS).ifBlank { fallback }
+
+    private companion object {
+        const val DEFAULT_TEMPLATE_NAME = "Template"
+    }
 }
