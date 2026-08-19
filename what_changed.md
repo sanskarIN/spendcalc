@@ -5,178 +5,165 @@
 - Date: 2026-08-19
 - Repository: `sanskarIN/spendcalc`
 - Default branch: `main`
-- Target: Android, Kotlin, Jetpack Compose, offline-first.
-- Current implementation state: Phase 0 through Phase 5 features/documentation are substantially implemented; final Phase 6 verification is in progress.
+- Active branch: `complete/v1-finalization`
+- Active pull request: `#12` — `fix: complete SpendCalc release implementation`
+- Master specification: `15_spendcalc_master_prompt.md`
+- Target: Android, Kotlin, Jetpack Compose, local/offline-first.
+- Current state: implementation and source hardening are substantially complete. The exact final PR revision must still finish automated verification and the documented manual Android/accessibility/release gates before a production tag is justified.
 
-## Source prompt analyzed
+## Why this branch exists
 
-The repository is implemented against `15_spendcalc_master_prompt.md`. The required product is an offline expense calculator with precision-safe decimal arithmetic, itemized expenses, tax/discount/tip/service-charge/split calculations, manual currency conversion, reusable templates, receipt-style results, history with optional auto-delete, export architecture, accessibility, tests, polished settings/about UI, security/privacy documentation, CI, and release engineering.
+The prior handoff overstated completion of a few later-stage features. This continuation audited the actual source tree, found disconnected backup/search pieces, and repaired the missing repository, DAO, ViewModel, UI, test, and workflow integration instead of relying on documentation claims.
 
-## Completed work
+## Finance and validation work
 
-### Repository/build foundation
+- Kept finance arithmetic entirely on `BigDecimal` with explicit half-up money rounding.
+- Preserved charge order: subtotal -> discount -> discounted base -> tax/tip/service charge -> total -> conversion -> split.
+- Fixed discount validation so discounts cannot exceed 100% and create a negative taxable base.
+- Kept bounded extended ranges for tax, tip, and service charge.
+- Added supported decimal shape limits for item amounts and exchange rates.
+- Rejects exponent forms that could expand into extremely large plain-decimal strings.
+- Bounded split count to `1..1,000,000`.
+- Added deterministic `Locale.ROOT` currency normalization.
+- Bounded ViewModel item count, names, numeric text, split input, and currency-code input before expensive work.
 
-- Added Gradle settings/root build configuration and Android app module.
-- Configured Android API 26 minimum, API 35 target/compile SDK, Java 17 bytecode, Kotlin, Jetpack Compose, KSP, Room, DataStore, and Android test dependencies.
-- Added manifest, launch theme, vector icon, backup/device-transfer policy, and private `FileProvider` export paths.
-- Added `.gitignore`, `.editorconfig`, `.gitattributes`, `.env.example`, and MIT license.
+## History, templates, and preferences
 
-### Domain and finance engine
+- Added transactional history/template replacement for restore flows.
+- Added history restore support and Undo after individual deletion.
+- Added offline history search/filter across labels, currencies, totals, converted totals, and per-person values.
+- Preserved clear-all confirmation and 30/90-day retention behavior.
+- Added full DataStore preference replacement for restore.
+- Reduced-motion preference now actually removes navigation transitions instead of only being persisted.
 
-- Added `ExpenseItem`, `CalculationInput`, `CalculationResult`, typed calculation errors/outcomes, and explicit rounding policy.
-- Implemented `CalculatorEngine` using `BigDecimal` only for finance arithmetic.
-- Defined charge order: subtotal -> discount -> discounted base -> tax/tip/service -> total -> conversion -> split.
-- Added currency-code, percentage, exchange-rate, split-count, and non-negative amount validation.
-- Added reusable persisted domain models for history, templates, theme, accessibility, and retention.
+## Explicit backup and restore
 
-### Persistence and settings
+- Added versioned `SpendCalcBackup` model and complete `BackupCodec`/`BackupRepository` wiring.
+- Settings now exposes Export backup and Restore backup through Android's document picker APIs.
+- Backup includes history, templates, and user preferences.
+- Restore requires a destructive replacement confirmation.
+- Decoder rejects unknown schemas and malformed records.
+- Added bounded payload, line, record, field, timestamp, split, and decimal validation.
+- Added pre-split newline counting so line-dense input is rejected before creating a large split list.
+- Added unique identifier checks for history/templates.
+- Added strict checksum shape and SHA-256 corruption detection.
+- Added plain-decimal-only validation so exponent expansion is rejected.
+- Template values are revalidated through `CalculatorEngine`.
+- Room history/templates replace inside one database transaction.
+- Because preferences use DataStore, restore snapshots the old full state first and performs compensating rollback if the multi-store operation fails.
+- Backup read/write is dispatched off the UI thread.
 
-- Added Room entities/DAOs/database for calculation history and templates.
-- Added history repository with save/delete/clear/age purge.
-- Added template repository with save/load/delete mapping.
-- Added DataStore settings repository for system/light/dark theme, large text, reduced motion, history retention, and onboarding completion.
-- Added explicit application dependency wiring through `AppContainer` and `SpendCalcApplication`.
+## Export and platform hardening
 
-### UI/UX
+- Preserved text, CSV, and PDF receipt exports.
+- CSV formula-prefix neutralization remains covered by tests.
+- FileProvider remains non-exported and limited to the private `cache/exports/` path.
+- Added canonical path containment instead of simple string-prefix containment.
+- Added regression coverage proving sibling paths such as `exports-private` are rejected.
+- Refactored export file creation from file sharing.
+- CSV/PDF file creation now runs on `Dispatchers.IO`.
+- Backup payload is generated after the destination picker returns instead of relying on fragile pending in-memory content.
+- Cancellation is preserved through coroutine error paths.
 
-- Added design tokens and custom light/dark Compose themes.
-- Added first-run onboarding.
-- Added responsive calculator form with itemized expenses and validation.
-- Added receipt-style result card.
-- Added history screen with clear confirmation and per-entry deletion.
-- Added templates screen with load/delete actions.
-- Added settings screen for appearance, accessibility, privacy/retention, repository updates, and About navigation.
-- Added About screen with version, MIT license, GitHub, repository, Buy Me a Coffee, business/support contacts, and `Made by the Sanskar`.
-- Added app navigation shell and snackbar feedback.
-- Externalized user-facing strings into Android resources.
+## Logging and privacy hardening
 
-### Export
+- Structured logging continues to sanitize line breaks, truncate values, and redact protected field names.
+- Field-key normalization now uses `Locale.ROOT` so redaction is stable across device locales.
+- Added locale regression coverage.
+- The current manifest still has no Android `INTERNET` permission.
+- Android system-managed backup/device transfer remains separately documented from explicit user-created backup files.
 
-- Added platform-independent `ExportFormatter` abstraction.
-- Added CSV export with proper quoting and common spreadsheet-formula-prefix neutralization for text cells.
-- Added plain-text receipt export.
-- Added offline PDF receipt generation using Android `PdfDocument`.
-- Added secure app-cache file sharing through non-exported `FileProvider` URIs.
-- Added safe URL and email intent helpers.
+## Tests added or expanded
 
-### Tests
+### JVM
 
-- Added finance-engine tests covering totals, charge order, conversion, split rounding, decimal precision, currency normalization, invalid amounts, invalid exchange rates/splits, and invalid currency codes.
-- Added CSV export tests for quote escaping and formula injection defense.
-- Added receipt text export test.
-- Added history repository tests for persistence mapping, retention purge, and clear.
-- Added template repository tests.
-- Added Room Android integration tests for history/template round trips.
-- Added Compose calculator smoke test.
+- Finance discount cap, decimal shape bounds, split bounds, locale normalization, and exponent-shape rejection.
+- Seeded deterministic finance fuzz/regression tests.
+- History restore/Undo repository path.
+- Template replacement path.
+- Backup round trip, Unicode, checksum corruption, schema rejection, duplicate IDs, structural limits, exponent rejection, timestamp and numeric validation.
+- Seeded deterministic backup fuzz/regression tests.
+- Canonical export path containment.
+- Locale-independent structured-log redaction.
 
-### CI/security/release automation
+### Android
 
-- Added no-dependency repository formatting guard.
-- Added conservative common-secret-pattern scanner.
-- Added GitHub Actions CI for format check, secret-pattern check, unit tests, Android lint, debug build, and release compilation.
-- Added CodeQL Java/Kotlin analysis workflow.
-- Added pull-request dependency review workflow.
-- Added tag-triggered release-candidate build workflow.
-- Added Dependabot for Gradle and GitHub Actions dependencies.
-- Added issue forms, support/security issue configuration, pull-request checklist, and funding configuration.
+- Existing Room and Compose tests retained.
+- Backup replacement database integration retained.
+- Existing real-activity calculate -> save -> History journey retained as the canonical end-to-end smoke path.
+- A duplicate stateful journey test created during the audit was removed after comparison to avoid shared DataStore interference.
+- CI now compiles instrumentation tests with `assembleDebugAndroidTest`; connected-device execution remains a separate release gate.
 
-### Documentation
+## CI and automation
 
-- Added comprehensive `README.md` with logo, feature overview, platform support, tech stack, setup, testing, release, architecture, security/privacy, accessibility, performance, contribution, support, BMC, MIT license, and `Made by the Sanskar`.
-- Added `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `SUPPORT.md`, `PRIVACY.md`, `CHANGELOG.md`, and `ROADMAP.md`.
-- Added `docs/architecture.md`, `docs/setup.md`, `docs/development.md`, `docs/testing.md`, `docs/release.md`, `docs/troubleshooting.md`, `docs/accessibility.md`, and `docs/performance.md`.
-- Added ADRs for BigDecimal finance arithmetic, local-first core behavior, and Room/DataStore persistence.
-- Added editable SVG brand artwork and a verified-screenshot capture policy.
+Main CI now checks formatting, Kotlin package syntax, repository metadata/local Markdown links, repository scanning rules, JVM tests, instrumentation-test compilation, Android lint, debug build, and release build.
 
-## Important files/modules
+Separate workflows cover CodeQL, dependency review, repository audit, and tag-triggered unsigned release-candidate builds. Superseded CI/security/audit runs use concurrency cancellation so the newest PR revision receives runner priority.
+
+GitHub workflow actions were updated to maintained major versions while keeping the prompt-defined Android/Gradle/Kotlin project baseline stable.
+
+## Documentation reconciled
+
+This continuation updated:
+
+- `CHANGELOG.md`
+- `ROADMAP.md`
+- `docs/testing.md`
+- `docs/verification.md`
+- `docs/security-backup.md`
+- `docs/backup-restore.md`
+- `docs/privacy-backup.md`
+- `docs/performance.md`
+- `what_changed.md`
+
+The documents now distinguish implemented source/automation from checks that still require a device, signing environment, real screenshots, or completed GitHub workflow results.
+
+## Important implementation files
 
 - `app/src/main/java/in/sanskar/spendcalc/domain/CalculatorEngine.kt`
-- `app/src/main/java/in/sanskar/spendcalc/domain/model/ExpenseModels.kt`
+- `app/src/main/java/in/sanskar/spendcalc/domain/model/SavedModels.kt`
+- `app/src/main/java/in/sanskar/spendcalc/domain/export/BackupCodec.kt`
+- `app/src/main/java/in/sanskar/spendcalc/data/BackupRepository.kt`
 - `app/src/main/java/in/sanskar/spendcalc/data/HistoryRepository.kt`
 - `app/src/main/java/in/sanskar/spendcalc/data/TemplateRepository.kt`
 - `app/src/main/java/in/sanskar/spendcalc/data/SettingsRepository.kt`
-- `app/src/main/java/in/sanskar/spendcalc/data/local/SpendCalcDatabase.kt`
 - `app/src/main/java/in/sanskar/spendcalc/ui/SpendCalcViewModel.kt`
 - `app/src/main/java/in/sanskar/spendcalc/ui/SpendCalcApp.kt`
-- `app/src/main/java/in/sanskar/spendcalc/ui/screens/CalculatorScreen.kt`
-- `app/src/main/java/in/sanskar/spendcalc/platform/PdfReceiptExporter.kt`
-- `.github/workflows/ci.yml`
-- `.github/workflows/codeql.yml`
-- `.github/workflows/dependency-review.yml`
-- `.github/workflows/release.yml`
-- `README.md`
+- `app/src/main/java/in/sanskar/spendcalc/ui/screens/HistoryScreen.kt`
+- `app/src/main/java/in/sanskar/spendcalc/ui/screens/SettingsScreen.kt`
+- `app/src/main/java/in/sanskar/spendcalc/platform/BackupFileIo.kt`
+- `app/src/main/java/in/sanskar/spendcalc/platform/ExportManager.kt`
+- `app/src/main/java/in/sanskar/spendcalc/platform/PathSafety.kt`
+- `app/src/main/java/in/sanskar/spendcalc/platform/SafeLogger.kt`
 
-## Commands/checks run and results
+## Verification truth
 
-- Confirmed repository exists, is public, default branch is `main`, and connected GitHub account has admin/push access.
-- Direct local `git clone` from the execution container was attempted but failed because that container cannot resolve `github.com`; this is an execution-environment network limitation, not a repository result.
-- GitHub commit status endpoint returned no legacy commit statuses for the latest commit; GitHub Actions uses check runs rather than those legacy statuses, so this did not verify the build.
-- Source-level compile-risk review identified and fixed two issues before final CI verification:
-  - changed settings card content receiver from invalid `Column` receiver to `ColumnScope`;
-  - safely finished nullable PDF pages;
-  - adapted the optional-argument history-save method to the no-argument UI callback;
-  - added explicit Android test-core dependency.
-- Final clean Android build/test/lint verification is still pending through a pull-request-triggered Actions run so workflow runs can be inspected with the connected GitHub tool.
+- PR `#12` is the active release-candidate verification path.
+- Commit-graph checks confirmed the critical workflow, instrumentation-compilation, path-containment, background-I/O, and logging fixes are ancestors of the PR head rather than detached work.
+- Git commit metadata produced during this work uses the requested `sanskarin@outlook.in` address.
+- A configured or queued workflow is not recorded as a successful build.
+- No `v1.0.0` tag should be created until the exact final PR revision passes the required release gates.
 
-## Known limitations / not-yet-verified items
+## Remaining release gates
 
-- The connected GitHub file/commit API does not expose a commit-author-email argument. Commits therefore use the authenticated GitHub identity. Documentation records `git config user.email "sanskarin@outlook.in"` for local contributions.
-- A Gradle wrapper JAR is not committed; documented local setup uses Gradle 8.9, while GitHub Actions explicitly installs Gradle 8.9 through `gradle/actions/setup-gradle`.
-- Real Android screenshots are intentionally not fabricated. `docs/assets/screenshots/README.md` defines the release screenshot capture checklist; captures should be added only from a verified real build with fictional data.
-- No production signing keys are committed. The release workflow builds an unsigned release candidate by design.
-- Database schema version is 1, so there is no historical migration to test yet; future schema version changes must add explicit migrations and migration tests.
+These cannot be truthfully fabricated from source code alone:
 
-## Open issues
+- final CI, CodeQL, Dependency Review, and Repository Audit success on the exact final PR revision;
+- `connectedDebugAndroidTest` on an emulator/device;
+- manual TalkBack and large-system-font review;
+- manual phone/tablet/wide-layout review;
+- manual Android share/document-picker checks for receipt/CSV/PDF/backup paths;
+- real screenshots captured from the verified build with fictional data;
+- production signing outside source control;
+- creation of the production tag/release after all blockers pass.
 
-- Final CI verification and any resulting compile/lint/test fixes.
-- Final repository audit after CI is green.
-- Real release screenshots and production signing remain release/distribution tasks rather than source-code secrets.
-
-## Next exact tasks
-
-1. Create a final verification branch from current `main`.
-2. Open a pull request to trigger CI/CodeQL/dependency-review workflows in a way inspectable by the connected GitHub workflow-run tools.
-3. Inspect failed workflow jobs/logs if any, patch every reproducible code/configuration issue, and rerun failed jobs.
-4. When checks are green, merge the verification PR.
-5. Update this file with actual verification results and final commit/PR hashes.
-6. Perform final repository tree/documentation audit and close any remaining blocker issue.
-
-## Migration notes
+## Database/migration state
 
 - Room database version: 1.
-- No production migration path exists yet because this is the initial schema.
-- Destructive migration fallback is intentionally not enabled.
+- No historical production schema exists yet.
+- Destructive migration fallback is intentionally not the default strategy.
+- Schema version 2 must include an explicit migration and migration test.
 
-## Release notes draft
+## Continuation rule
 
-### Unreleased / 1.0.0 release candidate
-
-- Precision-safe itemized expense calculator with discount, tax, tip, service charge, split bill, and manual exchange-rate conversion.
-- Offline Room history and saved calculation templates.
-- Configurable local history retention.
-- Text, CSV, and PDF receipt export/sharing.
-- Light/dark/system themes, large-text option, reduced-motion setting, onboarding, and responsive phone/tablet UI.
-- Local-first privacy model with no required account or Internet permission for core functionality.
-- Comprehensive repository documentation, testing baseline, CI, CodeQL, dependency review, Dependabot, issue templates, and release workflow.
-
-## Recent meaningful commits
-
-- `9dd55fd` — `test: add Android test core dependency`
-- `320aa7e` — `docs: add complete SpendCalc README`
-- `325660a` — `design: add editable SpendCalc logo artwork`
-- `cece0be` — `docs: configure project funding links`
-- `2cac309` — `docs: add pull request quality checklist`
-- `d5aff753` — `ci: configure Dependabot updates`
-- `752bf5d` — `ci: add release candidate build workflow`
-- `d06fa42` — `ci: add dependency review workflow`
-- `5405b51` — `ci: add CodeQL Java Kotlin analysis`
-- `94710c2` — `ci: add Android build test lint security workflow`
-- `06deab3` — `fix: align app navigation callbacks and error handling`
-- `2be5f21` — `fix: safely finish nullable PDF page`
-- `14ecb79` — `fix: use ColumnScope for settings card content`
-- `332118d` — `feat: add Compose main activity`
-- `729c7dc` — `feat: build responsive calculator and receipt UI`
-- `c64a3d1` — `feat: implement app view model and calculator workflow`
-- `1489737` — `feat: implement precision-safe calculator engine`
-- `a2123ab` — `test: cover finance arithmetic and validation`
-- `0ebaa9e` — `docs: add implementation handoff plan`
+While PR `#12` is open, continue from `complete/v1-finalization`. After it is merged, continue from `main`. Do not use an older handoff as proof that a feature or verification gate is complete; inspect the current source and check results first. Keep future changes small, meaningful, and reflected in this file.
