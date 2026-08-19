@@ -13,7 +13,8 @@ This file is the final source-audit checklist for the first public release candi
 - [x] Editable calculator work is bounded to 100 line items with a visible limit state.
 - [x] Receipt-style output is implemented.
 - [x] Local Room history and saved templates are implemented.
-- [x] History retention controls and local search are implemented.
+- [x] Users can optionally name saved history records; labels are bounded consistently across UI, persistence, and backup validation.
+- [x] History retention controls and local search, including label search, are implemented.
 - [x] Individual history and template deletion provide Undo recovery.
 - [x] Text, CSV, and PDF export paths are implemented.
 - [x] Explicit local backup/restore is implemented for history, templates, and preferences.
@@ -26,6 +27,8 @@ This file is the final source-audit checklist for the first public release candi
 
 - [x] Finance inputs are validated centrally.
 - [x] Currency normalization is locale-stable.
+- [x] Saved history/template names are trimmed, bounded, and defaulted at the repository boundary rather than trusting only UI callers.
+- [x] The shared 120-character saved-name contract is reused by backup validation so normal persisted data cannot later violate backup name limits.
 - [x] CSV text cells neutralize common spreadsheet-formula prefixes.
 - [x] Export files use app cache + FileProvider rather than broad storage access.
 - [x] Export path containment uses canonical path semantics.
@@ -45,13 +48,14 @@ This file is the final source-audit checklist for the first public release candi
 - [x] Locale normalization regression test.
 - [x] CSV escaping/formula-prefix tests and deterministic fuzz coverage.
 - [x] Receipt formatter test.
-- [x] History repository deletion/restore coverage.
-- [x] Template repository deletion/exact-restore coverage.
+- [x] History repository deletion/restore plus saved-label normalization coverage.
+- [x] Template repository deletion/exact-restore plus saved-name normalization coverage.
 - [x] Backup codec round-trip, corruption, version, malformed/oversized input, and deterministic fuzz coverage.
 - [x] Room round-trip and transactional replace-all instrumentation tests.
 - [x] Compose calculator smoke test.
+- [x] Named-history save dialog Compose regression coverage.
 - [x] Settings backup-busy Compose regression test.
-- [x] Primary calculate/save/history instrumentation journey coverage.
+- [x] Primary calculate/named-save/history instrumentation journey coverage verifies both label and amount.
 - [x] Kotlin reserved-namespace regression guard.
 - [x] Repository required-file/local-link audit.
 
@@ -59,6 +63,7 @@ This file is the final source-audit checklist for the first public release candi
 
 - [x] Numeric inputs request appropriate Android number/decimal keyboards.
 - [x] Validation includes explanatory text rather than color-only state.
+- [x] Named-history save uses a titled dialog, labeled optional text field, visible 120-character guidance, concise Save action, and Cancel path.
 - [x] Large-text and reduced-motion preferences affect the actual UI.
 - [x] Primary navigation keeps visible labels and avoids duplicate icon announcements.
 - [x] Destructive individual deletions provide Undo; destructive bulk/restore operations require confirmation.
@@ -73,7 +78,7 @@ This file is the final source-audit checklist for the first public release candi
 - [x] MIT license.
 - [x] Contributor guide and code of conduct.
 - [x] Security and support policies.
-- [x] Privacy documentation.
+- [x] Privacy documentation, including local history-label/backup handling.
 - [x] Changelog, roadmap, and canonical work-continuity document.
 - [x] Architecture/setup/development/testing/release/troubleshooting/accessibility/performance/design-system documentation.
 - [x] ADR set includes precision arithmetic, local-first behavior, persistence, and backup-format decisions.
