@@ -6,6 +6,7 @@ import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
 import `in`.sanskar.spendcalc.domain.model.CalculationInput
 import `in`.sanskar.spendcalc.domain.model.CalculationResult
+import `in`.sanskar.spendcalc.domain.model.truncateUtf16Safely
 import java.io.File
 import java.io.FileOutputStream
 
@@ -89,7 +90,11 @@ class PdfReceiptExporter {
     }
 
     private fun String.ellipsizeForPdf(maxCharacters: Int = 78): String =
-        if (length <= maxCharacters) this else take(maxCharacters - 1) + "…"
+        if (length <= maxCharacters) {
+            this
+        } else {
+            truncateUtf16Safely(this, maxCharacters - 1) + "…"
+        }
 
     private companion object {
         const val PAGE_WIDTH = 595
