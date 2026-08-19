@@ -12,8 +12,14 @@ interface TemplateDao {
     @Query("SELECT * FROM calculation_templates ORDER BY name COLLATE NOCASE ASC")
     fun observeAll(): Flow<List<TemplateEntity>>
 
+    @Query("SELECT * FROM calculation_templates ORDER BY name COLLATE NOCASE ASC")
+    suspend fun snapshotAll(): List<TemplateEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(template: TemplateEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertAll(templates: List<TemplateEntity>)
 
     @Query("DELETE FROM calculation_templates WHERE id = :id")
     suspend fun deleteById(id: String)
@@ -21,7 +27,7 @@ interface TemplateDao {
     @Transaction
     suspend fun replaceAll(templates: List<TemplateEntity>) {
         clear()
-        templates.forEach { upsert(it) }
+        if (templates.isNotEmpty()) upsertAll(templates)
     }
 
     @Query("DELETE FROM calculation_templates")
