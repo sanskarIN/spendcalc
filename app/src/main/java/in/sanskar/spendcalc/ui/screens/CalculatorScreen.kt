@@ -97,7 +97,7 @@ fun CalculatorScreen(
                     },
                     enabled = state.result != null,
                 ) {
-                    Text(stringResource(R.string.save_to_history))
+                    Text(stringResource(R.string.save_history_confirm))
                 }
             },
             dismissButton = {
