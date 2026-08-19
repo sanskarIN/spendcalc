@@ -4,10 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import `in`.sanskar.spendcalc.AppContainer
+import `in`.sanskar.spendcalc.data.BackupRepository
 import `in`.sanskar.spendcalc.data.HistoryRepository
 import `in`.sanskar.spendcalc.data.SettingsRepository
 import `in`.sanskar.spendcalc.data.TemplateRepository
 import `in`.sanskar.spendcalc.domain.CalculatorEngine
+import `in`.sanskar.spendcalc.domain.export.BackupCodec
+import `in`.sanskar.spendcalc.domain.export.BackupDecodeResult
 import `in`.sanskar.spendcalc.domain.model.AutoDeleteHistory
 import `in`.sanskar.spendcalc.domain.model.CalculationError
 import `in`.sanskar.spendcalc.domain.model.CalculationInput
@@ -31,6 +34,8 @@ class SpendCalcViewModel(
     private val historyRepository: HistoryRepository,
     private val templateRepository: TemplateRepository,
     private val settingsRepository: SettingsRepository,
+    private val backupRepository: BackupRepository,
+    private val backupCodec: BackupCodec,
 ) : ViewModel() {
     private val _calculator = MutableStateFlow(CalculatorUiState())
     val calculator: StateFlow<CalculatorUiState> = _calculator
@@ -102,7 +107,7 @@ class SpendCalcViewModel(
         val result = _calculator.value.result ?: return
         viewModelScope.launch {
             historyRepository.save(result, label)
-            _calculator.value = _calculator.value.copy(feedback = ActionFeedback.HISTORY_SAVED)
+            showFeedback(ActionFeedback.HISTORY_SAVED)
         }
     }
 
@@ -113,7 +118,7 @@ class SpendCalcViewModel(
         val input = parsed.input ?: return
         viewModelScope.launch {
             templateRepository.save(name, input)
-            _calculator.value = _calculator.value.copy(feedback = ActionFeedback.TEMPLATE_SAVED)
+            showFeedback(ActionFeedback.TEMPLATE_SAVED)
         }
     }
 
@@ -133,21 +138,21 @@ class SpendCalcViewModel(
     fun deleteHistory(id: String) {
         viewModelScope.launch {
             historyRepository.delete(id)
-            _calculator.value = _calculator.value.copy(feedback = ActionFeedback.DELETED)
+            showFeedback(ActionFeedback.DELETED)
         }
     }
 
     fun clearHistory() {
         viewModelScope.launch {
             historyRepository.clear()
-            _calculator.value = _calculator.value.copy(feedback = ActionFeedback.HISTORY_CLEARED)
+            showFeedback(ActionFeedback.HISTORY_CLEARED)
         }
     }
 
     fun deleteTemplate(id: String) {
         viewModelScope.launch {
             templateRepository.delete(id)
-            _calculator.value = _calculator.value.copy(feedback = ActionFeedback.DELETED)
+            showFeedback(ActionFeedback.DELETED)
         }
     }
 
@@ -171,10 +176,38 @@ class SpendCalcViewModel(
         viewModelScope.launch { settingsRepository.setOnboardingCompleted(true) }
     }
 
+    suspend fun createBackupPayload(): String =
+        backupCodec.encode(backupRepository.snapshot())
+
+    suspend fun restoreBackupPayload(payload: String): Boolean = when (val decoded = backupCodec.decode(payload)) {
+        is BackupDecodeResult.Success -> {
+            runCatching { backupRepository.restore(decoded.backup) }
+                .onSuccess { showFeedback(ActionFeedback.BACKUP_RESTORED) }
+                .onFailure { showFeedback(ActionFeedback.BACKUP_FAILED) }
+                .isSuccess
+        }
+        is BackupDecodeResult.Failure -> {
+            showFeedback(ActionFeedback.BACKUP_FAILED)
+            false
+        }
+    }
+
+    fun reportBackupExported() {
+        showFeedback(ActionFeedback.BACKUP_EXPORTED)
+    }
+
+    fun reportBackupFailure() {
+        showFeedback(ActionFeedback.BACKUP_FAILED)
+    }
+
     fun consumeFeedback() {
         if (_calculator.value.feedback != ActionFeedback.NONE) {
             _calculator.value = _calculator.value.copy(feedback = ActionFeedback.NONE)
         }
+    }
+
+    private fun showFeedback(value: ActionFeedback) {
+        _calculator.value = _calculator.value.copy(feedback = value)
     }
 
     private fun updateCalculator(transform: (CalculatorUiState) -> CalculatorUiState) {
@@ -293,6 +326,8 @@ class SpendCalcViewModel(
                         historyRepository = container.historyRepository,
                         templateRepository = container.templateRepository,
                         settingsRepository = container.settingsRepository,
+                        backupRepository = container.backupRepository,
+                        backupCodec = container.backupCodec,
                     ) as T
                 }
             }
