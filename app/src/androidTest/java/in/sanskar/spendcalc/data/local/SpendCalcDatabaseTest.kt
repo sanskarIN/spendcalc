@@ -1,4 +1,4 @@
-package in.sanskar.spendcalc.data.local
+package `in`.sanskar.spendcalc.data.local
 
 import android.content.Context
 import androidx.room.Room
