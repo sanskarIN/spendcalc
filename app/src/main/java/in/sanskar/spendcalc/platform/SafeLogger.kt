@@ -1,6 +1,7 @@
 package `in`.sanskar.spendcalc.platform
 
 import android.util.Log
+import java.util.Locale
 
 /**
  * Minimal structured logger that refuses common sensitive field names and truncates values.
@@ -38,7 +39,7 @@ object SafeLogger {
         val encoded = fields.entries
             .sortedBy { it.key }
             .joinToString(separator = " ") { (key, value) ->
-                val normalizedKey = key.trim().lowercase()
+                val normalizedKey = key.trim().lowercase(Locale.ROOT)
                 val safeValue = if (normalizedKey in blockedKeys) {
                     REDACTED
                 } else {
