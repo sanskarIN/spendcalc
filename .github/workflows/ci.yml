@@ -46,6 +46,9 @@ jobs:
       - name: Check Kotlin namespace declarations
         run: python3 scripts/check_kotlin_namespace.py
 
+      - name: Check Android local-first security policy
+        run: python3 scripts/check_android_security.py
+
       - name: Audit repository metadata and local links
         run: python3 scripts/check_repository.py
 
