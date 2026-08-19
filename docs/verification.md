@@ -23,17 +23,18 @@ These require a connected Android runtime and are intentionally not claimed by a
 
 - [ ] `connectedDebugAndroidTest` passes.
 - [ ] Room history/template/backup integration tests pass.
-- [ ] Compose calculator and Settings busy-state tests pass.
-- [ ] Real-activity calculate -> save -> History journey passes.
+- [ ] Compose calculator, named-history-save dialog, and Settings busy-state tests pass.
+- [ ] Real-activity calculate -> named save -> History journey passes and verifies both the saved label and amount.
 - [ ] Fresh install shows the branded SpendCalc launch splash and then onboarding.
 - [ ] Calculator, History, Templates, Settings, and About navigation work.
+- [ ] Saving with a meaningful history label stores that label and History search finds the entry by it; blank labels fall back to `Calculation`.
 - [ ] History search, individual delete + Undo, clear-all confirmation, and retention settings work.
 - [ ] Template save/load/delete + Undo work.
 - [ ] Calculator stops at 100 editable line items, disables Add item, and explains the limit.
 - [ ] Text, CSV, and PDF exports open the expected Android share flow.
 - [ ] Backup export opens the document creator; backup restore opens the document picker and requires confirmation before replacement.
 - [ ] Backup progress is visible during real work and duplicate backup actions remain disabled until completion.
-- [ ] Restored history, templates, theme/accessibility preferences, and retention preference match the selected backup.
+- [ ] Restored history, including history labels, templates, theme/accessibility preferences, and retention preference match the selected backup.
 - [ ] Core calculation/history/template behavior works with network disabled.
 
 ## Accessibility and responsive-layout checks
@@ -42,9 +43,10 @@ These require a connected Android runtime and are intentionally not claimed by a
 - [ ] Dark theme reviewed.
 - [ ] System theme reviewed.
 - [ ] App large-text preference reviewed.
-- [ ] Large Android system font scale reviewed.
+- [ ] Large Android system font scale reviewed, including the named-history save dialog.
 - [ ] Reduced-motion preference verified to remove navigation transitions.
 - [ ] TalkBack order, labels, buttons, dialogs, navigation, progress state, and list actions reviewed.
+- [ ] Named-history save dialog title, optional label field, supporting text, Save, and Cancel are announced in a logical order.
 - [ ] Primary navigation destinations are announced once rather than duplicating icon + label names.
 - [ ] Small phone layout reviewed.
 - [ ] Tablet/wide layout reviewed.
@@ -58,6 +60,7 @@ These require a connected Android runtime and are intentionally not claimed by a
 - [ ] FileProvider remains non-exported and limited to the private export cache path.
 - [ ] CSV formula-neutralization regression tests pass.
 - [ ] Backup size/line/record/decimal/schema/checksum validation tests pass.
+- [ ] Saved history/template names produced through repository operations stay within the same 120-character contract accepted by backup validation.
 - [ ] SafeLogger redaction tests pass.
 - [ ] Android system-managed backup/device-transfer behavior matches `PRIVACY.md`.
 
