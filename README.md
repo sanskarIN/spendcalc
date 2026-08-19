@@ -50,8 +50,21 @@ Verified screenshots are intentionally captured from real release-candidate buil
 - Clear-all confirmation.
 - Optional history auto-delete after 30 or 90 days.
 - Saved templates for common discount/tax/tip/service/split/currency settings.
-- New saved history labels/template names are normalized at the persistence boundary, while already-valid restore records are preserved exactly.
+- Template naming displays the same 120-character guidance and Unicode-safe boundary behavior as history labels.
+- Template dialog confirmation uses a concise `Save` action distinct from the underlying `Save template` calculator action.
+- New saved history labels/template names are normalized at the persistence boundary, while already-valid restored names are preserved exactly.
 - Individual template deletion with Snackbar Undo.
+
+### Persistence integrity
+
+- Repositories are validation boundaries rather than passive DAO wrappers.
+- Shared persisted-record rules cover IDs, timestamps, canonical currency codes, saved names, history split/result bounds, and duplicate IDs in replacement collections.
+- History records are validated before save/restore/replace DAO writes.
+- Template settings are validated through the same `CalculatorEngine` rules used by the calculator, even when repository callers bypass the ViewModel.
+- Batch replacement validates the entire candidate set before invoking DAO replacement, so one invalid/duplicate record cannot clear valid existing data first.
+- Backup validation reuses the same persisted-record structural policy, preventing local persistence and explicit backup rules from drifting apart.
+
+See [`docs/persistence-invariants.md`](docs/persistence-invariants.md).
 
 ### Backup and restore
 
@@ -61,12 +74,13 @@ Verified screenshots are intentionally captured from real release-candidate buil
 - Duplicate backup actions are disabled while a backup operation is active.
 - Versioned, bounded backup format with URL-safe Base64 text fields.
 - SHA-256 accidental-corruption detection.
-- Strict schema, record, identifier, timestamp, currency, split, checksum, decimal, saved-name, and Unicode validation.
+- Strict schema, record, identifier, timestamp, currency, split, checksum, decimal, saved-name, duplicate-ID, and Unicode validation.
+- Backup encoding rejects structurally invalid/noncanonical in-memory records instead of silently changing them.
 - Restore confirmation before replacing current data.
 - Valid decoded history labels/template names are restored without silent trimming or rewriting.
 - Transactional Room replacement plus compensating rollback for the separate DataStore preference write when a multi-store restore fails.
 
-See [`docs/backup-restore.md`](docs/backup-restore.md) and [`docs/security-backup.md`](docs/security-backup.md).
+See [`docs/backup-restore.md`](docs/backup-restore.md), [`docs/security-backup.md`](docs/security-backup.md), and [`docs/persistence-invariants.md`](docs/persistence-invariants.md).
 
 ### Export
 
@@ -88,6 +102,7 @@ See [`docs/backup-restore.md`](docs/backup-restore.md) and [`docs/security-backu
 - Branded AndroidX launch splash treatment using the SpendCalc icon.
 - Externalized user-facing strings for localization readiness.
 - Clear validation text in addition to color/state styling.
+- Named-history/template dialogs include visible input guidance and unambiguous Save/Cancel actions.
 - First-run onboarding.
 - About screen with version, license, support, repository, funding, and credit.
 
@@ -142,7 +157,7 @@ Room / DataStore
 Platform adapters: document picker, FileProvider, PDF, share intents, external links
 ```
 
-The finance domain layer does not depend on Compose, Room, Activity, or Android resources. Backup orchestration coordinates Room and DataStore through explicit repositories rather than bypassing persistence boundaries.
+The domain layer does not depend on Compose, Room, Activity, or Android resources. It owns finance rules plus shared saved-name/persisted-record policies. Repositories remain authoritative persistence boundaries, and backup orchestration coordinates Room and DataStore through explicit repositories rather than bypassing them.
 
 Full details: [`docs/architecture.md`](docs/architecture.md)
 
@@ -152,6 +167,8 @@ Architecture decisions:
 - [`ADR 0002 — Local-first core`](docs/adr/0002-local-first-core.md)
 - [`ADR 0003 — Room and DataStore`](docs/adr/0003-room-and-datastore.md)
 - [`ADR 0004 — Versioned bounded backup format`](docs/adr/0004-versioned-local-backup.md)
+
+Persistence contract: [`docs/persistence-invariants.md`](docs/persistence-invariants.md)
 
 ## Calculation rule
 
@@ -224,15 +241,17 @@ The repository includes:
 
 - finance arithmetic, rounding, bounds, and validation unit tests;
 - deterministic seeded finance fuzz/regression coverage;
-- history and template repository tests covering new-input normalization, exact valid restore behavior, and over-limit rejection;
+- history/template repository tests covering names, canonical currencies, persisted-record envelopes, finance settings, exact restore behavior, duplicate replacement IDs, and fail-before-replace semantics;
+- shared persisted-record policy tests for identifiers, timestamps, currencies, split/result bounds, and template envelopes;
 - UTF-16-safe saved-name policy tests, including emoji-boundary and malformed-surrogate cases;
 - backup round-trip coverage for Unicode saved names at the saved-name boundary;
+- backup persisted-policy tests that reject noncanonical/invalid in-memory records before encoding;
 - backup corruption, schema, structural-bound, and semantic-validation tests;
 - deterministic seeded backup serialization/corruption fuzz coverage;
 - CSV security/escaping and receipt formatter tests;
 - export path-containment and structured-log redaction tests;
 - Room history/template/backup integration tests;
-- Compose calculator, named-history-save/Unicode-boundary dialog, History label-filter, and Settings busy-state tests;
+- Compose calculator, named-history-save/Unicode-boundary, template-name/Unicode-boundary, History label-filter, and Settings busy-state tests;
 - a real-activity calculate/named-save/history journey test;
 - fast repository guards for formatting, namespace, string resources, Android local-first security, links/required files, and common secret patterns.
 
@@ -265,7 +284,7 @@ Release guide: [`docs/release.md`](docs/release.md)
 - `CI`: format, Kotlin namespace, Android string-resource audit, Android local-first security policy, repository/link audit, secret scan, JVM tests, instrumentation-test compilation, full Android lint, debug build, release build.
 - `CodeQL`: Java/Kotlin static analysis.
 - `Dependency Review`: pull-request dependency change review.
-- `Repository Audit`: required-file/local-link audit plus Android string-resource reference/duplicate-name guard.
+- `Repository Audit`: required-file/local-link audit plus Android string-resource reference/duplicate-name guard; release-critical persistence/security/verification docs are required files.
 - `Dependabot`: weekly Gradle and GitHub Actions updates.
 - `Release Candidate`: tag-triggered unsigned release build.
 - Superseded PR workflow runs use concurrency cancellation so the newest revision receives runner priority.
@@ -274,7 +293,7 @@ Repository workflow files live under [`.github/workflows/`](.github/workflows/).
 
 ## Security
 
-SpendCalc minimizes permissions and remote dependencies. The export provider is non-exported, path-restricted, and grants temporary read access only during a user-selected share action. CSV text cells are escaped and common formula-leading characters are neutralized. Explicit backup parsing is bounded and fail-closed for unsupported/malformed records, including malformed Unicode saved text.
+SpendCalc minimizes permissions and remote dependencies. The export provider is non-exported, path-restricted, and grants temporary read access only during a user-selected share action. CSV text cells are escaped and common formula-leading characters are neutralized. Repository persistence and explicit backup parsing both fail closed for unsupported/malformed records, including malformed Unicode saved text and invalid persisted-record envelopes.
 
 Do not report exploitable vulnerability details in a public issue. Follow [`SECURITY.md`](SECURITY.md).
 
@@ -286,13 +305,13 @@ Read [`PRIVACY.md`](PRIVACY.md) and [`docs/privacy-backup.md`](docs/privacy-back
 
 ## Accessibility
 
-Release checks include TalkBack traversal, large system font scale, light/dark/system themes, app large-text behavior, reduced-motion behavior, navigation-label semantics, named-history dialog semantics, backup-progress messaging, touch-target review, small/wide screen behavior, and non-color-only validation.
+Release checks include TalkBack traversal, large system font scale, light/dark/system themes, app large-text behavior, reduced-motion behavior, navigation-label semantics, named-history/template dialog semantics, backup-progress messaging, touch-target review, small/wide screen behavior, and non-color-only validation.
 
 Read [`docs/accessibility.md`](docs/accessibility.md).
 
 ## Performance
 
-The app avoids network initialization, keeps ordinary calculation work in memory, caps the editable calculator at 100 line items, bounds history search and user/backup inputs, and moves document/PDF/CSV file I/O off the main thread. Optimization should remain evidence-driven rather than replacing correct decimal math with unsafe primitives.
+The app avoids network initialization, keeps ordinary calculation work in memory, caps the editable calculator at 100 line items, bounds history search and user/backup inputs, prevalidates replacement collections before DAO calls, and moves document/PDF/CSV file I/O off the main thread. Optimization should remain evidence-driven rather than replacing correct decimal math with unsafe primitives.
 
 Read [`docs/performance.md`](docs/performance.md).
 
