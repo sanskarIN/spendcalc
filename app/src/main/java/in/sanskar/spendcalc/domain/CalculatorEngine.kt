@@ -73,7 +73,7 @@ class CalculatorEngine(
         if (!validChargePercentage(input.taxPercent)) add(CalculationError.InvalidTax)
         if (!validChargePercentage(input.tipPercent)) add(CalculationError.InvalidTip)
         if (!validChargePercentage(input.serviceChargePercent)) add(CalculationError.InvalidServiceCharge)
-        if (input.splitCount < 1) add(CalculationError.InvalidSplitCount)
+        if (input.splitCount !in 1..MAX_SPLIT_COUNT) add(CalculationError.InvalidSplitCount)
         if (!validCurrencyCode(input.currencyCode)) add(CalculationError.InvalidCurrencyCode)
         if (!validCurrencyCode(input.convertedCurrencyCode)) add(CalculationError.InvalidConvertedCurrencyCode)
         if (input.exchangeRate <= BigDecimal.ZERO || !validDecimalShape(input.exchangeRate)) {
@@ -115,6 +115,7 @@ class CalculatorEngine(
     private companion object {
         val ONE_HUNDRED = BigDecimal("100")
         val MAX_CHARGE_PERCENTAGE = BigDecimal("1000")
+        const val MAX_SPLIT_COUNT = 1_000_000
         const val MAX_DECIMAL_INTEGER_DIGITS = 15
         const val MAX_DECIMAL_SCALE = 12
         const val MAX_PERCENT_INTEGER_DIGITS = 4
