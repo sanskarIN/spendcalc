@@ -70,16 +70,23 @@ class SpendCalcViewModel(
         }
     }
 
-    fun updateItemName(id: String, value: String) = updateCalculator { state ->
-        state.copy(items = state.items.map { if (it.id == id) it.copy(name = value) else it })
+    fun updateItemName(id: String, value: String) {
+        if (value.length > MAX_NAME_INPUT_CHARS) return
+        updateCalculator { state ->
+            state.copy(items = state.items.map { if (it.id == id) it.copy(name = value) else it })
+        }
     }
 
-    fun updateItemAmount(id: String, value: String) = updateCalculator { state ->
-        state.copy(items = state.items.map { if (it.id == id) it.copy(amount = value) else it })
+    fun updateItemAmount(id: String, value: String) {
+        if (value.length > MAX_NUMERIC_INPUT_CHARS) return
+        updateCalculator { state ->
+            state.copy(items = state.items.map { if (it.id == id) it.copy(amount = value) else it })
+        }
     }
 
-    fun addItem() = updateCalculator { state ->
-        state.copy(items = state.items + ExpenseItemDraft())
+    fun addItem() {
+        if (_calculator.value.items.size >= MAX_ITEMS) return
+        updateCalculator { state -> state.copy(items = state.items + ExpenseItemDraft()) }
     }
 
     fun removeItem(id: String) = updateCalculator { state ->
@@ -87,17 +94,26 @@ class SpendCalcViewModel(
         state.copy(items = remaining.ifEmpty { listOf(ExpenseItemDraft()) })
     }
 
-    fun updateDiscount(value: String) = updateCalculator { it.copy(discountPercent = value) }
-    fun updateTax(value: String) = updateCalculator { it.copy(taxPercent = value) }
-    fun updateTip(value: String) = updateCalculator { it.copy(tipPercent = value) }
-    fun updateServiceCharge(value: String) = updateCalculator { it.copy(serviceChargePercent = value) }
-    fun updateSplitCount(value: String) = updateCalculator { it.copy(splitCount = value) }
-    fun updateCurrencyCode(value: String) = updateCalculator {
-        it.copy(currencyCode = value.uppercase(Locale.ROOT))
+    fun updateDiscount(value: String) = updateNumericField(value) { it.copy(discountPercent = value) }
+    fun updateTax(value: String) = updateNumericField(value) { it.copy(taxPercent = value) }
+    fun updateTip(value: String) = updateNumericField(value) { it.copy(tipPercent = value) }
+    fun updateServiceCharge(value: String) = updateNumericField(value) { it.copy(serviceChargePercent = value) }
+
+    fun updateSplitCount(value: String) {
+        if (value.length > MAX_SPLIT_INPUT_CHARS) return
+        updateCalculator { it.copy(splitCount = value) }
     }
-    fun updateExchangeRate(value: String) = updateCalculator { it.copy(exchangeRate = value) }
-    fun updateConvertedCurrencyCode(value: String) = updateCalculator {
-        it.copy(convertedCurrencyCode = value.uppercase(Locale.ROOT))
+
+    fun updateCurrencyCode(value: String) {
+        if (value.length > MAX_CURRENCY_INPUT_CHARS) return
+        updateCalculator { it.copy(currencyCode = value.uppercase(Locale.ROOT)) }
+    }
+
+    fun updateExchangeRate(value: String) = updateNumericField(value) { it.copy(exchangeRate = value) }
+
+    fun updateConvertedCurrencyCode(value: String) {
+        if (value.length > MAX_CURRENCY_INPUT_CHARS) return
+        updateCalculator { it.copy(convertedCurrencyCode = value.uppercase(Locale.ROOT)) }
     }
 
     fun resetCalculator() {
@@ -108,7 +124,7 @@ class SpendCalcViewModel(
     fun saveHistory(label: String = "Calculation") {
         val result = _calculator.value.result ?: return
         viewModelScope.launch {
-            historyRepository.save(result, label)
+            historyRepository.save(result, label.take(MAX_NAME_INPUT_CHARS))
             showFeedback(ActionFeedback.HISTORY_SAVED)
         }
     }
@@ -119,7 +135,7 @@ class SpendCalcViewModel(
         val parsed = parseForm(state)
         val input = parsed.input ?: return
         viewModelScope.launch {
-            templateRepository.save(name, input)
+            templateRepository.save(name.take(MAX_NAME_INPUT_CHARS), input)
             showFeedback(ActionFeedback.TEMPLATE_SAVED)
         }
     }
@@ -223,6 +239,14 @@ class SpendCalcViewModel(
         _calculator.value = _calculator.value.copy(feedback = value)
     }
 
+    private fun updateNumericField(
+        value: String,
+        transform: (CalculatorUiState) -> CalculatorUiState,
+    ) {
+        if (value.length > MAX_NUMERIC_INPUT_CHARS) return
+        updateCalculator(transform)
+    }
+
     private fun updateCalculator(transform: (CalculatorUiState) -> CalculatorUiState) {
         _calculator.value = transform(_calculator.value).copy(feedback = ActionFeedback.NONE)
         recalculate()
@@ -272,7 +296,7 @@ class SpendCalcViewModel(
         val exchangeRate = parseDecimal(state.exchangeRate, blankAsZero = false)
             ?: issue(issues, FormIssue.EXCHANGE_RATE)
         val split = state.splitCount.trim().toIntOrNull()
-        if (split == null) issues += FormIssue.SPLIT_COUNT
+        if (split == null || split !in 1..MAX_SPLIT_COUNT) issues += FormIssue.SPLIT_COUNT
 
         if (issues.isNotEmpty()) return ParsedForm(null, issues)
 
@@ -294,6 +318,7 @@ class SpendCalcViewModel(
 
     private fun parseDecimal(raw: String, blankAsZero: Boolean): BigDecimal? {
         val text = raw.trim()
+        if (text.length > MAX_NUMERIC_INPUT_CHARS) return null
         if (text.isBlank()) return if (blankAsZero) BigDecimal.ZERO else null
         return text.toBigDecimalOrNull()
     }
@@ -328,6 +353,12 @@ class SpendCalcViewModel(
 
     companion object {
         private const val MILLIS_PER_DAY = 86_400_000L
+        private const val MAX_ITEMS = 500
+        private const val MAX_NAME_INPUT_CHARS = 120
+        private const val MAX_NUMERIC_INPUT_CHARS = 64
+        private const val MAX_SPLIT_INPUT_CHARS = 7
+        private const val MAX_SPLIT_COUNT = 1_000_000
+        private const val MAX_CURRENCY_INPUT_CHARS = 3
 
         fun factory(container: AppContainer): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
