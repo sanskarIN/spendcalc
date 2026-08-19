@@ -38,7 +38,8 @@ object ExportManager {
         file: File,
         mimeType: String,
     ) {
-        require(file.canonicalPath.startsWith(File(context.cacheDir, "exports").canonicalPath)) {
+        val exportDirectory = File(context.cacheDir, "exports")
+        require(file.isWithinDirectory(exportDirectory)) {
             "Only SpendCalc cache exports may be shared"
         }
         val uri = FileProvider.getUriForFile(
