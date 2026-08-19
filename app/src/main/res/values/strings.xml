@@ -82,11 +82,11 @@
     <string name="repository_url">https://github.com/sanskarIN/spendcalc</string>
     <string name="bmc_url">https://buymeacoffee.com/sanskarIN</string>
 
-    <string name="validation_amount">Enter a valid non-negative amount.</string>
+    <string name="validation_amount">Enter a valid non-negative amount within the supported numeric range.</string>
     <string name="validation_percent">Enter a valid percentage within the allowed range.</string>
-    <string name="validation_split">Split count must be at least 1.</string>
+    <string name="validation_split">Use between 1 and 1,000,000 people.</string>
     <string name="validation_currency">Use a 3-letter currency code.</string>
-    <string name="validation_exchange_rate">Exchange rate must be greater than 0.</string>
+    <string name="validation_exchange_rate">Enter an exchange rate greater than 0 within the supported numeric range.</string>
     <string name="save_success">Saved.</string>
     <string name="delete_success">Deleted.</string>
     <string name="generic_error">Something went wrong. Please try again.</string>
