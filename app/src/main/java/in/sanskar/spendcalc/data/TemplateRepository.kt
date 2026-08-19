@@ -2,6 +2,7 @@ package `in`.sanskar.spendcalc.data
 
 import `in`.sanskar.spendcalc.data.local.TemplateDao
 import `in`.sanskar.spendcalc.data.local.TemplateEntity
+import `in`.sanskar.spendcalc.domain.CalculatorEngine
 import `in`.sanskar.spendcalc.domain.model.CalculationInput
 import `in`.sanskar.spendcalc.domain.model.CalculationTemplate
 import `in`.sanskar.spendcalc.domain.model.normalizeSavedName
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.map
 class TemplateRepository(
     private val dao: TemplateDao,
     private val clock: () -> Long = System::currentTimeMillis,
+    private val calculatorEngine: CalculatorEngine = CalculatorEngine(),
 ) {
     fun observeTemplates(): Flow<List<CalculationTemplate>> =
         dao.observeAll().map { templates -> templates.map { it.toDomain() } }
@@ -23,6 +25,7 @@ class TemplateRepository(
         dao.snapshotAll().map { it.toDomain() }
 
     suspend fun save(name: String, input: CalculationInput): String {
+        requireValidTemplateSettings(input.copy(items = emptyList()))
         val id = UUID.randomUUID().toString()
         dao.upsert(
             CalculationTemplate(
@@ -52,8 +55,21 @@ class TemplateRepository(
         dao.replaceAll(templates.map { it.toEntity() })
     }
 
-    private fun CalculationTemplate.toEntity(): TemplateEntity =
-        TemplateEntity(
+    private fun CalculationTemplate.toEntity(): TemplateEntity {
+        requireValidTemplateSettings(
+            CalculationInput(
+                items = emptyList(),
+                discountPercent = discountPercent,
+                taxPercent = taxPercent,
+                tipPercent = tipPercent,
+                serviceChargePercent = serviceChargePercent,
+                splitCount = splitCount,
+                currencyCode = currencyCode,
+                exchangeRate = exchangeRate,
+                convertedCurrencyCode = convertedCurrencyCode,
+            ),
+        )
+        return TemplateEntity(
             id = id,
             name = requireValidSavedName(name),
             createdAtEpochMillis = createdAtEpochMillis,
@@ -66,6 +82,12 @@ class TemplateRepository(
             exchangeRate = exchangeRate.toPlainString(),
             convertedCurrencyCode = convertedCurrencyCode.trim().uppercase(Locale.ROOT),
         )
+    }
+
+    private fun requireValidTemplateSettings(input: CalculationInput) {
+        val errors = calculatorEngine.validate(input)
+        require(errors.isEmpty()) { "Invalid template settings: $errors" }
+    }
 
     private fun TemplateEntity.toDomain(): CalculationTemplate =
         CalculationTemplate(
