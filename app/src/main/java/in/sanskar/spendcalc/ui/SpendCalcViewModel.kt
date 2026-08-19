@@ -23,6 +23,7 @@ import `in`.sanskar.spendcalc.domain.model.UserPreferences
 import java.math.BigDecimal
 import java.util.Locale
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -30,6 +31,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class SpendCalcViewModel(
     private val calculatorEngine: CalculatorEngine,
@@ -217,27 +219,36 @@ class SpendCalcViewModel(
         viewModelScope.launch { settingsRepository.setOnboardingCompleted(true) }
     }
 
-    suspend fun createBackupPayload(): String =
-        backupCodec.encode(backupRepository.snapshot())
+    suspend fun createBackupPayload(): String {
+        val backup = backupRepository.snapshot()
+        return withContext(Dispatchers.Default) {
+            backupCodec.encode(backup)
+        }
+    }
 
-    suspend fun restoreBackupPayload(payload: String): Boolean = when (val decoded = backupCodec.decode(payload)) {
-        is BackupDecodeResult.Success -> {
-            try {
-                backupRepository.restore(decoded.backup)
-                lastDeletedHistory = null
-                lastDeletedTemplate = null
-                showFeedback(ActionFeedback.BACKUP_RESTORED)
-                true
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (_: Exception) {
+    suspend fun restoreBackupPayload(payload: String): Boolean {
+        val decoded = withContext(Dispatchers.Default) {
+            backupCodec.decode(payload)
+        }
+        return when (decoded) {
+            is BackupDecodeResult.Success -> {
+                try {
+                    backupRepository.restore(decoded.backup)
+                    lastDeletedHistory = null
+                    lastDeletedTemplate = null
+                    showFeedback(ActionFeedback.BACKUP_RESTORED)
+                    true
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    showFeedback(ActionFeedback.BACKUP_FAILED)
+                    false
+                }
+            }
+            is BackupDecodeResult.Failure -> {
                 showFeedback(ActionFeedback.BACKUP_FAILED)
                 false
             }
-        }
-        is BackupDecodeResult.Failure -> {
-            showFeedback(ActionFeedback.BACKUP_FAILED)
-            false
         }
     }
 
