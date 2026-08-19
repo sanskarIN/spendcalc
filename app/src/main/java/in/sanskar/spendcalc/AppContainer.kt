@@ -23,7 +23,12 @@ class AppContainer(context: Context) {
 
     val calculatorEngine: CalculatorEngine by lazy { CalculatorEngine() }
     val historyRepository: HistoryRepository by lazy { HistoryRepository(database.historyDao()) }
-    val templateRepository: TemplateRepository by lazy { TemplateRepository(database.templateDao()) }
+    val templateRepository: TemplateRepository by lazy {
+        TemplateRepository(
+            dao = database.templateDao(),
+            calculatorEngine = calculatorEngine,
+        )
+    }
     val settingsRepository: SettingsRepository by lazy { SettingsRepository(appContext) }
     val backupCodec: BackupCodec by lazy { BackupCodec() }
     val backupRepository: BackupRepository by lazy {
