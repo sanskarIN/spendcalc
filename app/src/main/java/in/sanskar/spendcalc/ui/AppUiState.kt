@@ -25,6 +25,7 @@ enum class ActionFeedback {
     NONE,
     HISTORY_SAVED,
     TEMPLATE_SAVED,
+    HISTORY_DELETED,
     DELETED,
     HISTORY_CLEARED,
     BACKUP_EXPORTED,
