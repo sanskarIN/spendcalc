@@ -6,6 +6,10 @@ import `in`.sanskar.spendcalc.domain.model.MAX_SAVED_ID_CHARS
 import `in`.sanskar.spendcalc.domain.model.SpendCalcBackup
 import `in`.sanskar.spendcalc.domain.model.UserPreferences
 import java.math.BigDecimal
+import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
+import java.util.Base64
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -17,6 +21,28 @@ class BackupCodecPersistedPolicyTest {
         val backup = backup(templates = listOf(template().copy(currencyCode = "inr")))
 
         assertTrue(runCatching { codec.encode(backup) }.isFailure)
+    }
+
+    @Test
+    fun `decode rejects non canonical history currency`() {
+        val payload = codec.encode(backup(history = listOf(history())))
+        val tampered = replaceTextFieldAndResign(payload, "INR", "inr")
+
+        assertEquals(
+            BackupDecodeResult.Failure(BackupDecodeError.INVALID_RECORD),
+            codec.decode(tampered),
+        )
+    }
+
+    @Test
+    fun `decode rejects non canonical template currency`() {
+        val payload = codec.encode(backup(templates = listOf(template())))
+        val tampered = replaceTextFieldAndResign(payload, "INR", "inr")
+
+        assertEquals(
+            BackupDecodeResult.Failure(BackupDecodeError.INVALID_RECORD),
+            codec.decode(tampered),
+        )
     }
 
     @Test
@@ -38,6 +64,21 @@ class BackupCodecPersistedPolicyTest {
 
         assertTrue(runCatching { codec.encode(backup) }.isFailure)
     }
+
+    private fun replaceTextFieldAndResign(payload: String, from: String, to: String): String {
+        val body = payload.substringBeforeLast("SHA256\t")
+        val updatedBody = body.replaceFirst(encoded(from), encoded(to))
+        require(updatedBody != body) { "Expected encoded field was not present" }
+        return updatedBody + "SHA256\t${sha256(updatedBody)}\n"
+    }
+
+    private fun encoded(value: String): String =
+        Base64.getUrlEncoder().withoutPadding().encodeToString(value.toByteArray(StandardCharsets.UTF_8))
+
+    private fun sha256(value: String): String =
+        MessageDigest.getInstance("SHA-256")
+            .digest(value.toByteArray(StandardCharsets.UTF_8))
+            .joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
 
     private fun backup(
         history: List<HistoryRecord> = emptyList(),
