@@ -360,7 +360,7 @@ private fun SpendCalcMainScaffold(
                         icon = {
                             Icon(
                                 painter = painterResource(destination.iconResource),
-                                contentDescription = label,
+                                contentDescription = null,
                             )
                         },
                         label = { Text(label) },
