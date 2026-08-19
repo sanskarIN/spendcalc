@@ -401,7 +401,7 @@ private fun SpendCalcMainScaffold(
                     onCurrencyChange = viewModel::updateCurrencyCode,
                     onExchangeRateChange = viewModel::updateExchangeRate,
                     onConvertedCurrencyChange = viewModel::updateConvertedCurrencyCode,
-                    onSaveHistory = { viewModel.saveHistory() },
+                    onSaveHistory = viewModel::saveHistory,
                     onSaveTemplate = viewModel::saveTemplate,
                     onReset = viewModel::resetCalculator,
                     onShareReceipt = ::shareReceipt,
