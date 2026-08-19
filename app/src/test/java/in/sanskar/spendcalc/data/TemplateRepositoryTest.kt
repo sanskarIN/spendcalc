@@ -54,6 +54,19 @@ class TemplateRepositoryTest {
     }
 
     @Test
+    fun `restore reinserts the exact deleted template`() = runTest {
+        val dao = FakeTemplateDao()
+        val repository = TemplateRepository(dao)
+        val original = template("restore-me", "Restored", 123L)
+
+        repository.restore(original)
+        repository.delete(original.id)
+        repository.restore(original)
+
+        assertEquals(original, repository.observeTemplates().first().single())
+    }
+
+    @Test
     fun `replace all clears stale templates and restores backup templates`() = runTest {
         val dao = FakeTemplateDao()
         val repository = TemplateRepository(dao)
