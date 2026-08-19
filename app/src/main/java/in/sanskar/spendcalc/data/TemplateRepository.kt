@@ -6,7 +6,7 @@ import `in`.sanskar.spendcalc.domain.CalculatorEngine
 import `in`.sanskar.spendcalc.domain.model.CalculationInput
 import `in`.sanskar.spendcalc.domain.model.CalculationTemplate
 import `in`.sanskar.spendcalc.domain.model.normalizeSavedName
-import `in`.sanskar.spendcalc.domain.model.requireValidSavedName
+import `in`.sanskar.spendcalc.domain.model.requireValidTemplateEnvelope
 import java.math.BigDecimal
 import java.util.Locale
 import java.util.UUID
@@ -56,31 +56,36 @@ class TemplateRepository(
     }
 
     private fun CalculationTemplate.toEntity(): TemplateEntity {
+        val normalized = copy(
+            currencyCode = currencyCode.trim().uppercase(Locale.ROOT),
+            convertedCurrencyCode = convertedCurrencyCode.trim().uppercase(Locale.ROOT),
+        )
+        requireValidTemplateEnvelope(normalized)
         requireValidTemplateSettings(
             CalculationInput(
                 items = emptyList(),
-                discountPercent = discountPercent,
-                taxPercent = taxPercent,
-                tipPercent = tipPercent,
-                serviceChargePercent = serviceChargePercent,
-                splitCount = splitCount,
-                currencyCode = currencyCode,
-                exchangeRate = exchangeRate,
-                convertedCurrencyCode = convertedCurrencyCode,
+                discountPercent = normalized.discountPercent,
+                taxPercent = normalized.taxPercent,
+                tipPercent = normalized.tipPercent,
+                serviceChargePercent = normalized.serviceChargePercent,
+                splitCount = normalized.splitCount,
+                currencyCode = normalized.currencyCode,
+                exchangeRate = normalized.exchangeRate,
+                convertedCurrencyCode = normalized.convertedCurrencyCode,
             ),
         )
         return TemplateEntity(
-            id = id,
-            name = requireValidSavedName(name),
-            createdAtEpochMillis = createdAtEpochMillis,
-            discountPercent = discountPercent.toPlainString(),
-            taxPercent = taxPercent.toPlainString(),
-            tipPercent = tipPercent.toPlainString(),
-            serviceChargePercent = serviceChargePercent.toPlainString(),
-            splitCount = splitCount,
-            currencyCode = currencyCode.trim().uppercase(Locale.ROOT),
-            exchangeRate = exchangeRate.toPlainString(),
-            convertedCurrencyCode = convertedCurrencyCode.trim().uppercase(Locale.ROOT),
+            id = normalized.id,
+            name = normalized.name,
+            createdAtEpochMillis = normalized.createdAtEpochMillis,
+            discountPercent = normalized.discountPercent.toPlainString(),
+            taxPercent = normalized.taxPercent.toPlainString(),
+            tipPercent = normalized.tipPercent.toPlainString(),
+            serviceChargePercent = normalized.serviceChargePercent.toPlainString(),
+            splitCount = normalized.splitCount,
+            currencyCode = normalized.currencyCode,
+            exchangeRate = normalized.exchangeRate.toPlainString(),
+            convertedCurrencyCode = normalized.convertedCurrencyCode,
         )
     }
 
