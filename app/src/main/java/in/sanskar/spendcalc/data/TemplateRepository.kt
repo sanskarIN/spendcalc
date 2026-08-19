@@ -17,6 +17,9 @@ class TemplateRepository(
     fun observeTemplates(): Flow<List<CalculationTemplate>> =
         dao.observeAll().map { templates -> templates.map { it.toDomain() } }
 
+    suspend fun snapshot(): List<CalculationTemplate> =
+        dao.snapshotAll().map { it.toDomain() }
+
     suspend fun save(name: String, input: CalculationInput): String {
         val id = UUID.randomUUID().toString()
         dao.upsert(
