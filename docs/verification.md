@@ -10,7 +10,7 @@ This checklist is the source of truth for deciding whether an exact SpendCalc co
 - [ ] Common secret-pattern scan passes.
 - [ ] JVM unit and deterministic fuzz/regression tests pass.
 - [ ] Debug instrumentation tests compile with `assembleDebugAndroidTest`.
-- [ ] Android lint passes.
+- [ ] Full Android lint passes.
 - [ ] Debug APK compiles.
 - [ ] Release APK compiles with the repository's current release configuration.
 - [ ] CodeQL Java/Kotlin analysis completes without a release-blocking finding.
@@ -23,13 +23,16 @@ These require a connected Android runtime and are intentionally not claimed by a
 
 - [ ] `connectedDebugAndroidTest` passes.
 - [ ] Room history/template/backup integration tests pass.
-- [ ] Compose smoke tests pass.
+- [ ] Compose calculator and Settings busy-state tests pass.
 - [ ] Real-activity calculate -> save -> History journey passes.
-- [ ] Fresh install launches onboarding.
+- [ ] Fresh install shows the branded SpendCalc launch splash and then onboarding.
 - [ ] Calculator, History, Templates, Settings, and About navigation work.
 - [ ] History search, individual delete + Undo, clear-all confirmation, and retention settings work.
+- [ ] Template save/load/delete + Undo work.
+- [ ] Calculator stops at 100 editable line items, disables Add item, and explains the limit.
 - [ ] Text, CSV, and PDF exports open the expected Android share flow.
 - [ ] Backup export opens the document creator; backup restore opens the document picker and requires confirmation before replacement.
+- [ ] Backup progress is visible during real work and duplicate backup actions remain disabled until completion.
 - [ ] Restored history, templates, theme/accessibility preferences, and retention preference match the selected backup.
 - [ ] Core calculation/history/template behavior works with network disabled.
 
@@ -41,7 +44,8 @@ These require a connected Android runtime and are intentionally not claimed by a
 - [ ] App large-text preference reviewed.
 - [ ] Large Android system font scale reviewed.
 - [ ] Reduced-motion preference verified to remove navigation transitions.
-- [ ] TalkBack order, labels, buttons, dialogs, navigation, and list actions reviewed.
+- [ ] TalkBack order, labels, buttons, dialogs, navigation, progress state, and list actions reviewed.
+- [ ] Primary navigation destinations are announced once rather than duplicating icon + label names.
 - [ ] Small phone layout reviewed.
 - [ ] Tablet/wide layout reviewed.
 - [ ] Touch targets and destructive-action wording reviewed.
