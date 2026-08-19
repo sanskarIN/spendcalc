@@ -350,7 +350,9 @@ class BackupCodec {
         const val MAX_FIELD_BYTES = 16_384
         const val MAX_ENCODED_FIELD_CHARS = 24_000
         const val MAX_DECIMAL_CHARS = 128
-        const val MAX_DECIMAL_INTEGER_DIGITS = 15
+        // A valid 100-item calculation with maximum bounded charges and exchange rate can
+        // legitimately produce a converted total with up to 34 integer digits.
+        const val MAX_DECIMAL_INTEGER_DIGITS = 34
         const val MAX_DECIMAL_SCALE = 12
         const val MAX_SPLIT_COUNT = 1_000_000
         val PLAIN_DECIMAL = Regex("[+-]?\\d+(?:\\.\\d+)?")
