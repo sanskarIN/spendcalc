@@ -2,18 +2,25 @@ package `in`.sanskar.spendcalc.domain.model
 
 fun truncateUtf16Safely(value: String, maxChars: Int): String {
     require(maxChars >= 0) { "maxChars must not be negative" }
-    if (value.length <= maxChars) return value
     if (maxChars == 0) return ""
 
-    var endIndex = maxChars
-    if (
-        Character.isHighSurrogate(value[endIndex - 1]) &&
-        endIndex < value.length &&
-        Character.isLowSurrogate(value[endIndex])
+    val endIndex = if (value.length <= maxChars) {
+        value.length
+    } else if (
+        Character.isHighSurrogate(value[maxChars - 1]) &&
+        Character.isLowSurrogate(value[maxChars])
     ) {
-        endIndex -= 1
+        maxChars - 1
+    } else {
+        maxChars
     }
-    return value.substring(0, endIndex)
+
+    val bounded = value.substring(0, endIndex)
+    return if (bounded.lastOrNull()?.let(Character::isHighSurrogate) == true) {
+        bounded.dropLast(1)
+    } else {
+        bounded
+    }
 }
 
 fun normalizeSavedName(value: String, fallback: String): String {
