@@ -20,24 +20,43 @@ class TemplateRepository(
     suspend fun save(name: String, input: CalculationInput): String {
         val id = UUID.randomUUID().toString()
         dao.upsert(
-            TemplateEntity(
+            CalculationTemplate(
                 id = id,
                 name = name.trim().ifBlank { "Template" },
                 createdAtEpochMillis = clock(),
-                discountPercent = input.discountPercent.toPlainString(),
-                taxPercent = input.taxPercent.toPlainString(),
-                tipPercent = input.tipPercent.toPlainString(),
-                serviceChargePercent = input.serviceChargePercent.toPlainString(),
+                discountPercent = input.discountPercent,
+                taxPercent = input.taxPercent,
+                tipPercent = input.tipPercent,
+                serviceChargePercent = input.serviceChargePercent,
                 splitCount = input.splitCount,
                 currencyCode = input.currencyCode.trim().uppercase(Locale.ROOT),
-                exchangeRate = input.exchangeRate.toPlainString(),
+                exchangeRate = input.exchangeRate,
                 convertedCurrencyCode = input.convertedCurrencyCode.trim().uppercase(Locale.ROOT),
-            ),
+            ).toEntity(),
         )
         return id
     }
 
     suspend fun delete(id: String) = dao.deleteById(id)
+
+    suspend fun replaceAll(templates: List<CalculationTemplate>) {
+        dao.replaceAll(templates.map(CalculationTemplate::toEntity))
+    }
+
+    private fun CalculationTemplate.toEntity(): TemplateEntity =
+        TemplateEntity(
+            id = id,
+            name = name.trim().ifBlank { "Template" },
+            createdAtEpochMillis = createdAtEpochMillis,
+            discountPercent = discountPercent.toPlainString(),
+            taxPercent = taxPercent.toPlainString(),
+            tipPercent = tipPercent.toPlainString(),
+            serviceChargePercent = serviceChargePercent.toPlainString(),
+            splitCount = splitCount,
+            currencyCode = currencyCode.trim().uppercase(Locale.ROOT),
+            exchangeRate = exchangeRate.toPlainString(),
+            convertedCurrencyCode = convertedCurrencyCode.trim().uppercase(Locale.ROOT),
+        )
 
     private fun TemplateEntity.toDomain(): CalculationTemplate =
         CalculationTemplate(
