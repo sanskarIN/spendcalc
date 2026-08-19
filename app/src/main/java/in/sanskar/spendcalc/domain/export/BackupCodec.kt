@@ -5,10 +5,13 @@ import `in`.sanskar.spendcalc.domain.model.AutoDeleteHistory
 import `in`.sanskar.spendcalc.domain.model.CalculationInput
 import `in`.sanskar.spendcalc.domain.model.CalculationTemplate
 import `in`.sanskar.spendcalc.domain.model.HistoryRecord
-import `in`.sanskar.spendcalc.domain.model.MAX_SAVED_NAME_CHARS
+import `in`.sanskar.spendcalc.domain.model.MAX_SAVED_RESULT_INTEGER_DIGITS
+import `in`.sanskar.spendcalc.domain.model.MAX_SAVED_RESULT_SCALE
 import `in`.sanskar.spendcalc.domain.model.SpendCalcBackup
 import `in`.sanskar.spendcalc.domain.model.ThemeMode
 import `in`.sanskar.spendcalc.domain.model.UserPreferences
+import `in`.sanskar.spendcalc.domain.model.isValidHistoryRecord
+import `in`.sanskar.spendcalc.domain.model.isValidTemplateEnvelope
 import java.math.BigDecimal
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
@@ -254,29 +257,11 @@ class BackupCodec {
         template
     }.getOrNull()
 
-    private fun validHistory(record: HistoryRecord): Boolean {
-        if (record.id.isBlank() || record.id.length > MAX_ID_CHARS) return false
-        if (record.createdAtEpochMillis < 0L) return false
-        if (record.label.isBlank() || record.label.length > MAX_SAVED_NAME_CHARS) return false
-        if (!validCurrency(record.currencyCode) || !validCurrency(record.convertedCurrencyCode)) return false
-        if (record.splitCount !in 1..MAX_SPLIT_COUNT) return false
-        return listOf(
-            record.subtotal,
-            record.discountAmount,
-            record.taxAmount,
-            record.tipAmount,
-            record.serviceChargeAmount,
-            record.total,
-            record.convertedTotal,
-            record.perPerson,
-            record.convertedPerPerson,
-        ).all { value -> value >= BigDecimal.ZERO && validDecimalShape(value) }
-    }
+    private fun validHistory(record: HistoryRecord): Boolean =
+        isValidHistoryRecord(record)
 
     private fun validTemplate(template: CalculationTemplate): Boolean {
-        if (template.id.isBlank() || template.id.length > MAX_ID_CHARS) return false
-        if (template.name.isBlank() || template.name.length > MAX_SAVED_NAME_CHARS) return false
-        if (template.createdAtEpochMillis < 0L) return false
+        if (!isValidTemplateEnvelope(template)) return false
         val errors = calculatorEngine.validate(
             CalculationInput(
                 items = emptyList(),
@@ -311,7 +296,8 @@ class BackupCodec {
     }
 
     private fun validDecimalShape(value: BigDecimal): Boolean =
-        value.scale() in 0..MAX_DECIMAL_SCALE && integerDigits(value) <= MAX_DECIMAL_INTEGER_DIGITS
+        value.scale() in 0..MAX_SAVED_RESULT_SCALE &&
+            integerDigits(value) <= MAX_SAVED_RESULT_INTEGER_DIGITS
 
     private fun integerDigits(value: BigDecimal): Int =
         (value.precision() - value.scale()).coerceAtLeast(1)
@@ -337,8 +323,6 @@ class BackupCodec {
         require(ids.toSet().size == ids.size) { "Duplicate $label identifiers" }
     }
 
-    private fun validCurrency(value: String): Boolean = CURRENCY_CODE.matches(value)
-
     private fun sha256(value: String): String =
         MessageDigest.getInstance("SHA-256")
             .digest(value.toByteArray(StandardCharsets.UTF_8))
@@ -355,16 +339,9 @@ class BackupCodec {
         const val MAX_FIELD_CHARS = 4_096
         const val MAX_FIELD_BYTES = 16_384
         const val MAX_ENCODED_FIELD_CHARS = 24_000
-        const val MAX_ID_CHARS = 128
         const val MAX_DECIMAL_CHARS = 128
-        // A valid 100-item calculation with maximum bounded charges and exchange rate can
-        // legitimately produce a converted total with up to 34 integer digits.
-        const val MAX_DECIMAL_INTEGER_DIGITS = 34
-        const val MAX_DECIMAL_SCALE = 12
-        const val MAX_SPLIT_COUNT = 1_000_000
         val PLAIN_DECIMAL = Regex("[+-]?\\d+(?:\\.\\d+)?")
         val SHA256_HEX = Regex("[A-Fa-f0-9]{64}")
-        val CURRENCY_CODE = Regex("[A-Z]{3}")
         val ENCODER: Base64.Encoder = Base64.getUrlEncoder().withoutPadding()
         val DECODER: Base64.Decoder = Base64.getUrlDecoder()
     }
