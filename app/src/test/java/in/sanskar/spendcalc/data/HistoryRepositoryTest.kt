@@ -109,6 +109,31 @@ class HistoryRepositoryTest {
         assertEquals(record, restored)
     }
 
+    @Test
+    fun `restore preserves valid history label whitespace exactly`() = runTest {
+        val dao = FakeHistoryDao()
+        val repository = HistoryRepository(dao)
+        val record = sampleRecord("backup", 901L).copy(label = "  Grocery run  ")
+
+        repository.restore(record)
+
+        assertEquals(record, repository.observeHistory().first().single())
+    }
+
+    @Test
+    fun `restore rejects an oversized history label instead of rewriting it`() = runTest {
+        val dao = FakeHistoryDao()
+        val repository = HistoryRepository(dao)
+        val record = sampleRecord("invalid", 902L).copy(
+            label = "x".repeat(MAX_SAVED_NAME_CHARS + 1),
+        )
+
+        val failure = runCatching { repository.restore(record) }.exceptionOrNull()
+
+        assertTrue(failure is IllegalArgumentException)
+        assertTrue(repository.observeHistory().first().isEmpty())
+    }
+
     private fun sampleRecord(id: String, createdAt: Long) = HistoryRecord(
         id = id,
         createdAtEpochMillis = createdAt,
