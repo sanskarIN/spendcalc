@@ -38,6 +38,7 @@ import `in`.sanskar.spendcalc.R
 import `in`.sanskar.spendcalc.domain.model.CalculationResult
 import `in`.sanskar.spendcalc.ui.CalculatorUiState
 import `in`.sanskar.spendcalc.ui.FormIssue
+import `in`.sanskar.spendcalc.ui.MAX_EXPENSE_ITEMS
 import `in`.sanskar.spendcalc.ui.components.MoneyLine
 import `in`.sanskar.spendcalc.ui.components.ScreenHeader
 import `in`.sanskar.spendcalc.ui.theme.SpendCalcTokens
@@ -250,8 +251,19 @@ private fun CalculatorForm(
             }
         }
 
-        OutlinedButton(onClick = onAddItem, modifier = Modifier.fillMaxWidth()) {
+        OutlinedButton(
+            onClick = onAddItem,
+            enabled = state.items.size < MAX_EXPENSE_ITEMS,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
             Text(stringResource(R.string.add_item))
+        }
+        if (state.items.size >= MAX_EXPENSE_ITEMS) {
+            Text(
+                text = stringResource(R.string.item_limit_reached),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
 
         PercentageField(
