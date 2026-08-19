@@ -49,6 +49,7 @@
     <string name="templates_empty_title">No templates yet</string>
     <string name="templates_empty_body">Save your common tax, tip, service, split, and currency settings for quick reuse.</string>
     <string name="template_name">Template name</string>
+    <string name="template_name_hint">Give this template a short name. Up to 120 characters.</string>
     <string name="load_template">Load template</string>
     <string name="delete_template">Delete template</string>
 
