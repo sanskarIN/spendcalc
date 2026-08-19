@@ -48,7 +48,7 @@ fun AboutScreen(
                 verticalArrangement = Arrangement.spacedBy(SpendCalcTokens.SpaceSm),
             ) {
                 Text(
-                    text = "SpendCalc",
+                    text = stringResource(R.string.app_name),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                 )
