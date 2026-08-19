@@ -1,17 +1,24 @@
 package `in`.sanskar.spendcalc.ui
 
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -27,6 +34,7 @@ import `in`.sanskar.spendcalc.domain.export.ReceiptTextFormatter
 import `in`.sanskar.spendcalc.domain.model.CalculationTemplate
 import `in`.sanskar.spendcalc.domain.model.HistoryRecord
 import `in`.sanskar.spendcalc.domain.model.UserPreferences
+import `in`.sanskar.spendcalc.platform.BackupFileIo
 import `in`.sanskar.spendcalc.platform.ExportManager
 import `in`.sanskar.spendcalc.platform.ExternalLinks
 import `in`.sanskar.spendcalc.platform.PdfReceiptExporter
@@ -37,12 +45,14 @@ import `in`.sanskar.spendcalc.ui.screens.OnboardingScreen
 import `in`.sanskar.spendcalc.ui.screens.SettingsScreen
 import `in`.sanskar.spendcalc.ui.screens.TemplatesScreen
 import `in`.sanskar.spendcalc.ui.theme.SpendCalcTheme
+import kotlinx.coroutines.launch
 
 private const val ROUTE_CALCULATOR = "calculator"
 private const val ROUTE_HISTORY = "history"
 private const val ROUTE_TEMPLATES = "templates"
 private const val ROUTE_SETTINGS = "settings"
 private const val ROUTE_ABOUT = "about"
+private const val BACKUP_MIME_TYPE = "application/vnd.spendcalc.backup"
 
 private data class NavigationDestination(
     val route: String,
@@ -91,6 +101,7 @@ private fun SpendCalcMainScaffold(
     preferences: UserPreferences,
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
@@ -98,6 +109,69 @@ private fun SpendCalcMainScaffold(
     val csvFormatter = remember { CsvExportFormatter() }
     val receiptFormatter = remember { ReceiptTextFormatter() }
     val pdfExporter = remember { PdfReceiptExporter() }
+    var pendingBackupPayload by remember { mutableStateOf<String?>(null) }
+    var pendingRestorePayload by remember { mutableStateOf<String?>(null) }
+    var confirmRestore by remember { mutableStateOf(false) }
+
+    val createBackupLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument(BACKUP_MIME_TYPE),
+    ) { uri ->
+        val payload = pendingBackupPayload
+        pendingBackupPayload = null
+        if (uri != null && payload != null) {
+            runCatching { BackupFileIo.write(context, uri, payload) }
+                .onSuccess { viewModel.reportBackupExported() }
+                .onFailure { viewModel.reportBackupFailure() }
+        }
+    }
+
+    val openBackupLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri != null) {
+            runCatching { BackupFileIo.read(context, uri) }
+                .onSuccess { payload ->
+                    pendingRestorePayload = payload
+                    confirmRestore = true
+                }
+                .onFailure { viewModel.reportBackupFailure() }
+        }
+    }
+
+    if (confirmRestore) {
+        AlertDialog(
+            onDismissRequest = {
+                confirmRestore = false
+                pendingRestorePayload = null
+            },
+            title = { Text(stringResource(R.string.restore_backup_title)) },
+            text = { Text(stringResource(R.string.restore_backup_confirmation)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val payload = pendingRestorePayload
+                        confirmRestore = false
+                        pendingRestorePayload = null
+                        if (payload != null) {
+                            scope.launch { viewModel.restoreBackupPayload(payload) }
+                        }
+                    },
+                ) {
+                    Text(stringResource(R.string.confirm_restore))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        confirmRestore = false
+                        pendingRestorePayload = null
+                    },
+                ) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            },
+        )
+    }
 
     val feedbackText = when (calculator.feedback) {
         ActionFeedback.NONE -> ""
@@ -105,6 +179,9 @@ private fun SpendCalcMainScaffold(
         ActionFeedback.TEMPLATE_SAVED -> stringResource(R.string.template_saved)
         ActionFeedback.DELETED -> stringResource(R.string.entry_deleted)
         ActionFeedback.HISTORY_CLEARED -> stringResource(R.string.history_cleared)
+        ActionFeedback.BACKUP_EXPORTED -> stringResource(R.string.backup_exported)
+        ActionFeedback.BACKUP_RESTORED -> stringResource(R.string.backup_restored)
+        ActionFeedback.BACKUP_FAILED -> stringResource(R.string.backup_failed)
     }
 
     LaunchedEffect(calculator.feedback) {
@@ -120,6 +197,27 @@ private fun SpendCalcMainScaffold(
 
     fun openUrl(url: String) {
         if (!ExternalLinks.openUrl(context, url)) showGenericError()
+    }
+
+    fun exportBackup() {
+        scope.launch {
+            runCatching { viewModel.createBackupPayload() }
+                .onSuccess { payload ->
+                    pendingBackupPayload = payload
+                    createBackupLauncher.launch(context.getString(R.string.backup_file_name))
+                }
+                .onFailure { viewModel.reportBackupFailure() }
+        }
+    }
+
+    fun restoreBackup() {
+        openBackupLauncher.launch(
+            arrayOf(
+                BACKUP_MIME_TYPE,
+                "application/octet-stream",
+                "text/plain",
+            ),
+        )
     }
 
     fun shareReceipt() {
@@ -247,6 +345,8 @@ private fun SpendCalcMainScaffold(
                     onLargeTextChange = viewModel::setLargeText,
                     onReducedMotionChange = viewModel::setReducedMotion,
                     onAutoDeleteChange = viewModel::setAutoDeleteHistory,
+                    onExportBackup = ::exportBackup,
+                    onRestoreBackup = ::restoreBackup,
                     onAbout = { navController.navigate(ROUTE_ABOUT) },
                     onOpenRepository = { openUrl(context.getString(R.string.repository_url)) },
                 )
