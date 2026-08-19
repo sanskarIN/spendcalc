@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="templates_subtitle">Reuse common charge, split, and currency settings.</string>
+    <string name="settings_subtitle">Control appearance, accessibility, privacy, and data retention.</string>
+    <string name="large_text_description">Increase important app text sizes.</string>
+    <string name="reduced_motion_description">Minimize non-essential motion and animation.</string>
+    <string name="auto_delete_description">Automatically remove older saved calculations.</string>
+    <string name="privacy_title">Local-first privacy</string>
+    <string name="project_updates">Project updates</string>
+    <string name="project_updates_description">Open the public repository to review releases and changes.</string>
+    <string name="open_repository">Open repository</string>
+</resources>
