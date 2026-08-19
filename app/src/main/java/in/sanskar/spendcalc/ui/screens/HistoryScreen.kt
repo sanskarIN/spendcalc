@@ -25,6 +25,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import `in`.sanskar.spendcalc.R
 import `in`.sanskar.spendcalc.domain.model.HistoryRecord
+import `in`.sanskar.spendcalc.domain.model.truncateUtf16Safely
 import `in`.sanskar.spendcalc.ui.components.EmptyState
 import `in`.sanskar.spendcalc.ui.components.MoneyLine
 import `in`.sanskar.spendcalc.ui.components.ScreenHeader
@@ -95,7 +96,9 @@ fun HistoryScreen(
             item {
                 OutlinedTextField(
                     value = searchQuery,
-                    onValueChange = { searchQuery = it.take(MAX_HISTORY_SEARCH_CHARS) },
+                    onValueChange = {
+                        searchQuery = truncateUtf16Safely(it, MAX_HISTORY_SEARCH_CHARS)
+                    },
                     label = { Text(stringResource(R.string.history_search_label)) },
                     supportingText = { Text(stringResource(R.string.history_search_supporting)) },
                     singleLine = true,
