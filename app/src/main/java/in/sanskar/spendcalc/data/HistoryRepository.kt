@@ -5,6 +5,7 @@ import `in`.sanskar.spendcalc.data.local.HistoryEntity
 import `in`.sanskar.spendcalc.domain.model.CalculationResult
 import `in`.sanskar.spendcalc.domain.model.HistoryRecord
 import java.math.BigDecimal
+import java.util.Locale
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -56,8 +57,8 @@ class HistoryRepository(
             id = id,
             createdAtEpochMillis = createdAtEpochMillis,
             label = label.trim().ifBlank { "Calculation" },
-            currencyCode = currencyCode.trim().uppercase(),
-            convertedCurrencyCode = convertedCurrencyCode.trim().uppercase(),
+            currencyCode = currencyCode.trim().uppercase(Locale.ROOT),
+            convertedCurrencyCode = convertedCurrencyCode.trim().uppercase(Locale.ROOT),
             subtotal = subtotal.toPlainString(),
             discountAmount = discountAmount.toPlainString(),
             taxAmount = taxAmount.toPlainString(),
