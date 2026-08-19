@@ -10,6 +10,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -27,6 +28,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -67,14 +69,14 @@ private const val NAVIGATION_ANIMATION_MILLIS = 180
 private data class NavigationDestination(
     val route: String,
     val labelResource: Int,
-    val shortLabel: String,
+    val iconResource: Int,
 )
 
 private val primaryDestinations = listOf(
-    NavigationDestination(ROUTE_CALCULATOR, R.string.nav_calculator, "="),
-    NavigationDestination(ROUTE_HISTORY, R.string.nav_history, "H"),
-    NavigationDestination(ROUTE_TEMPLATES, R.string.nav_templates, "T"),
-    NavigationDestination(ROUTE_SETTINGS, R.string.nav_settings, "S"),
+    NavigationDestination(ROUTE_CALCULATOR, R.string.nav_calculator, R.drawable.ic_nav_calculator),
+    NavigationDestination(ROUTE_HISTORY, R.string.nav_history, R.drawable.ic_nav_history),
+    NavigationDestination(ROUTE_TEMPLATES, R.string.nav_templates, R.drawable.ic_nav_templates),
+    NavigationDestination(ROUTE_SETTINGS, R.string.nav_settings, R.drawable.ic_nav_settings),
 )
 
 @Composable
@@ -343,6 +345,7 @@ private fun SpendCalcMainScaffold(
                 primaryDestinations.forEach { destination ->
                     val selected = currentRoute == destination.route ||
                         (currentRoute == ROUTE_ABOUT && destination.route == ROUTE_SETTINGS)
+                    val label = stringResource(destination.labelResource)
                     NavigationBarItem(
                         selected = selected,
                         onClick = {
@@ -354,8 +357,13 @@ private fun SpendCalcMainScaffold(
                                 restoreState = true
                             }
                         },
-                        icon = { Text(destination.shortLabel) },
-                        label = { Text(stringResource(destination.labelResource)) },
+                        icon = {
+                            Icon(
+                                painter = painterResource(destination.iconResource),
+                                contentDescription = label,
+                            )
+                        },
+                        label = { Text(label) },
                     )
                 }
             }
