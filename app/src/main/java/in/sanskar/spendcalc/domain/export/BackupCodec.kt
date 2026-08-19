@@ -5,6 +5,7 @@ import `in`.sanskar.spendcalc.domain.model.AutoDeleteHistory
 import `in`.sanskar.spendcalc.domain.model.CalculationInput
 import `in`.sanskar.spendcalc.domain.model.CalculationTemplate
 import `in`.sanskar.spendcalc.domain.model.HistoryRecord
+import `in`.sanskar.spendcalc.domain.model.MAX_SAVED_NAME_CHARS
 import `in`.sanskar.spendcalc.domain.model.SpendCalcBackup
 import `in`.sanskar.spendcalc.domain.model.ThemeMode
 import `in`.sanskar.spendcalc.domain.model.UserPreferences
@@ -256,7 +257,7 @@ class BackupCodec {
     private fun validHistory(record: HistoryRecord): Boolean {
         if (record.id.isBlank() || record.id.length > MAX_ID_CHARS) return false
         if (record.createdAtEpochMillis < 0L) return false
-        if (record.label.isBlank() || record.label.length > MAX_NAME_CHARS) return false
+        if (record.label.isBlank() || record.label.length > MAX_SAVED_NAME_CHARS) return false
         if (!validCurrency(record.currencyCode) || !validCurrency(record.convertedCurrencyCode)) return false
         if (record.splitCount !in 1..MAX_SPLIT_COUNT) return false
         return listOf(
@@ -274,7 +275,7 @@ class BackupCodec {
 
     private fun validTemplate(template: CalculationTemplate): Boolean {
         if (template.id.isBlank() || template.id.length > MAX_ID_CHARS) return false
-        if (template.name.isBlank() || template.name.length > MAX_NAME_CHARS) return false
+        if (template.name.isBlank() || template.name.length > MAX_SAVED_NAME_CHARS) return false
         if (template.createdAtEpochMillis < 0L) return false
         val errors = calculatorEngine.validate(
             CalculationInput(
@@ -355,7 +356,6 @@ class BackupCodec {
         const val MAX_FIELD_BYTES = 16_384
         const val MAX_ENCODED_FIELD_CHARS = 24_000
         const val MAX_ID_CHARS = 128
-        const val MAX_NAME_CHARS = 120
         const val MAX_DECIMAL_CHARS = 128
         // A valid 100-item calculation with maximum bounded charges and exchange rate can
         // legitimately produce a converted total with up to 34 integer digits.
