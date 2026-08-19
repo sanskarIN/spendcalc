@@ -35,6 +35,7 @@ REQUIRED_FILES = [
     "docs/backup-restore.md",
     "docs/security-backup.md",
     "docs/privacy-backup.md",
+    "docs/persistence-invariants.md",
     "docs/verification.md",
     "docs/release-candidate-final-audit.md",
     "docs/logging.md",
