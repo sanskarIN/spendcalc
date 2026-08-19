@@ -6,7 +6,9 @@ SpendCalc aims for practical WCAG-oriented mobile accessibility rather than trea
 
 - Material text fields expose visible labels.
 - Major actions use text labels rather than icon-only meaning.
-- The named-history save dialog uses a visible dialog title, labeled text input, explicit supporting guidance, a concise `Save` action, and a separate cancel path.
+- The named-history save dialog uses a visible dialog title, labeled text input, explicit 120-character guidance, a concise `Save` action, and a separate cancel path.
+- The template save dialog uses the same visible length guidance and a concise `Save` confirmation that is distinct from the underlying calculator action labeled `Save template`.
+- Saved-name fields use surrogate-safe truncation so an emoji is not split into malformed text at the input boundary.
 - Primary navigation uses vector icons together with persistent text labels; decorative icon content descriptions are suppressed so screen readers do not announce the same destination twice.
 - Radio choices use semantic radio-button roles.
 - Switches include nearby explanatory text.
@@ -32,20 +34,25 @@ Verify the following in logical order:
 4. Percentage, split, currency, and exchange-rate fields.
 5. Save/reset/export actions.
 6. After choosing **Save result**, verify the save-calculation dialog title, optional history-label field, 120-character guidance, `Save`, and `Cancel` are announced in a logical order.
-7. Receipt labels and values.
-8. Bottom navigation destinations are announced once with clear names.
-9. History/template action buttons and Undo feedback.
-10. Settings radio controls/switches.
-11. Backup progress text, disabled backup actions, and restore confirmation dialog.
-12. About contact/funding actions.
+7. After choosing **Save template**, verify the dialog title, template-name field, 120-character guidance, concise `Save`, and `Cancel` are announced in a logical order and the underlying `Save template` action is not confused with the dialog confirmation.
+8. Receipt labels and values.
+9. Bottom navigation destinations are announced once with clear names.
+10. History/template action buttons and Undo feedback.
+11. Settings radio controls/switches.
+12. Backup progress text, disabled backup actions, and restore confirmation dialog.
+13. About contact/funding actions.
 
 ### Font scaling
 
-Test at system font scales including at least 1.0×, 1.3×, and a large accessibility setting. Content must remain scrollable without hiding critical controls. Include the named-history save dialog in the large-font review and confirm its input/supporting text/actions remain readable and reachable.
+Test at system font scales including at least 1.0×, 1.3×, and a large accessibility setting. Content must remain scrollable without hiding critical controls. Include both named-history and template save dialogs in the large-font review and confirm their input/supporting text/actions remain readable and reachable.
 
 ### Orientation and screen size
 
-Test a small phone and a tablet/wide emulator. Ensure the receipt remains reachable and forms do not clip. Open the named-history save dialog in both size classes and confirm it remains usable.
+Test a small phone and a tablet/wide emulator. Ensure the receipt remains reachable and forms do not clip. Open both save dialogs in both size classes and confirm they remain usable.
+
+### Unicode input boundary
+
+Paste a Unicode-heavy history/template name near the 120-character boundary. Confirm the field remains readable, TalkBack does not encounter malformed replacement text, and the saved record can subsequently be backed up/restored.
 
 ### Contrast
 
