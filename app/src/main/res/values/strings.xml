@@ -83,7 +83,7 @@
     <string name="bmc_url">https://buymeacoffee.com/sanskarIN</string>
 
     <string name="validation_amount">Enter a valid non-negative amount.</string>
-    <string name="validation_percent">Enter a percentage from 0 to 1000.</string>
+    <string name="validation_percent">Enter a valid percentage within the allowed range.</string>
     <string name="validation_split">Split count must be at least 1.</string>
     <string name="validation_currency">Use a 3-letter currency code.</string>
     <string name="validation_exchange_rate">Exchange rate must be greater than 0.</string>
