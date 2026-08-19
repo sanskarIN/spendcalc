@@ -31,7 +31,7 @@ class BackupRepository(
         try {
             replaceDatabaseData(backup)
             settingsRepository.replace(backup.preferences)
-        } catch (error: Throwable) {
+        } catch (error: Exception) {
             withContext(NonCancellable) {
                 runCatching {
                     replaceDatabaseData(previous)
