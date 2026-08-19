@@ -4,6 +4,8 @@ import `in`.sanskar.spendcalc.data.local.TemplateDao
 import `in`.sanskar.spendcalc.data.local.TemplateEntity
 import `in`.sanskar.spendcalc.domain.model.CalculationInput
 import `in`.sanskar.spendcalc.domain.model.CalculationTemplate
+import `in`.sanskar.spendcalc.domain.model.ExpenseItem
+import `in`.sanskar.spendcalc.domain.model.MAX_SAVED_ID_CHARS
 import `in`.sanskar.spendcalc.domain.model.MAX_SAVED_NAME_CHARS
 import java.math.BigDecimal
 import kotlinx.coroutines.flow.Flow
@@ -60,12 +62,25 @@ class TemplateRepositoryTest {
     }
 
     @Test
+    fun `save rejects a negative persistence timestamp`() = runTest {
+        val dao = FakeTemplateDao()
+        val repository = TemplateRepository(dao = dao, clock = { -1L })
+
+        val failure = runCatching {
+            repository.save("Invalid time", CalculationInput(items = emptyList()))
+        }.exceptionOrNull()
+
+        assertTrue(failure is IllegalArgumentException)
+        assertTrue(repository.observeTemplates().first().isEmpty())
+    }
+
+    @Test
     fun `save validates only persisted template settings not line items`() = runTest {
         val dao = FakeTemplateDao()
         val repository = TemplateRepository(dao)
         val input = CalculationInput(
             items = listOf(
-                `in`.sanskar.spendcalc.domain.model.ExpenseItem(
+                ExpenseItem(
                     id = "not-persisted",
                     name = "Ignored by template",
                     amount = BigDecimal("-1"),
@@ -148,13 +163,29 @@ class TemplateRepositoryTest {
     }
 
     @Test
+    fun `restore canonicalizes valid template currency codes`() = runTest {
+        val dao = FakeTemplateDao()
+        val repository = TemplateRepository(dao)
+        val original = template("canonical", "Currency", 125L).copy(
+            currencyCode = " inr ",
+            convertedCurrencyCode = "usd",
+        )
+
+        repository.restore(original)
+
+        val restored = repository.observeTemplates().first().single()
+        assertEquals("INR", restored.currencyCode)
+        assertEquals("USD", restored.convertedCurrencyCode)
+    }
+
+    @Test
     fun `restore rejects an oversized template name instead of rewriting it`() = runTest {
         val dao = FakeTemplateDao()
         val repository = TemplateRepository(dao)
         val invalid = template(
             id = "invalid",
             name = "t".repeat(MAX_SAVED_NAME_CHARS + 1),
-            createdAt = 125L,
+            createdAt = 126L,
         )
 
         val failure = runCatching { repository.restore(invalid) }.exceptionOrNull()
@@ -164,10 +195,28 @@ class TemplateRepositoryTest {
     }
 
     @Test
+    fun `restore rejects invalid template envelope fields`() = runTest {
+        val invalidTemplates = listOf(
+            template("timestamp", "Time", -1L),
+            template("x".repeat(MAX_SAVED_ID_CHARS + 1), "Identifier", 127L),
+        )
+
+        invalidTemplates.forEach { invalid ->
+            val dao = FakeTemplateDao()
+            val repository = TemplateRepository(dao)
+
+            val failure = runCatching { repository.restore(invalid) }.exceptionOrNull()
+
+            assertTrue(failure is IllegalArgumentException)
+            assertTrue(repository.observeTemplates().first().isEmpty())
+        }
+    }
+
+    @Test
     fun `restore rejects invalid finance settings before persistence`() = runTest {
         val dao = FakeTemplateDao()
         val repository = TemplateRepository(dao)
-        val invalid = template("invalid-settings", "Invalid", 126L).copy(
+        val invalid = template("invalid-settings", "Invalid", 128L).copy(
             exchangeRate = BigDecimal.ZERO,
         )
 
@@ -182,12 +231,12 @@ class TemplateRepositoryTest {
         val dao = FakeTemplateDao()
         val repository = TemplateRepository(dao)
         repository.save("Existing", CalculationInput(items = emptyList()))
-        val invalid = template("invalid", "Invalid", 127L).copy(splitCount = 0)
+        val invalid = template("invalid", "Invalid", 129L).copy(splitCount = 0)
 
         val failure = runCatching {
             repository.replaceAll(
                 listOf(
-                    template("valid", "Valid", 128L),
+                    template("valid", "Valid", 130L),
                     invalid,
                 ),
             )
