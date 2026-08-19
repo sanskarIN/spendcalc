@@ -8,7 +8,7 @@ SpendCalc is intentionally local-first and small. The current architecture favor
 - Calculator names, numeric text, currency codes, split counts, precision, and scale are bounded before expensive rendering/persistence paths.
 - The calculator UI accepts at most 100 expense items and exposes the limit instead of silently creating an unbounded eager Compose tree.
 - History and templates are observed through Room `Flow`s.
-- History search is local and currently filters the already-observed history list in memory.
+- History search is local, filters the already-observed history list in memory, and caps the interactive query at 120 characters.
 - Settings are small DataStore preferences.
 - Backup decoding has hard payload, line, record, field, decimal, and split limits.
 - Backup document reads/writes, CSV file creation, and PDF generation run on `Dispatchers.IO` rather than the UI thread.
@@ -25,13 +25,15 @@ The calculator accepts at most 100 line items through the current UI state. This
 
 Split counts are limited to 1,000,000. Numeric inputs and persisted backup decimal shapes are bounded so scientific notation cannot create unexpectedly huge plain strings or pathological arithmetic/rendering work. Saved history result fields allow up to 34 integer digits because that is the bounded worst-case magnitude the supported 100-item calculator, charge ranges, and exchange-rate range can legitimately produce.
 
+Saved history labels and template names use a shared 120-character persistence/backup bound. History search queries are also capped at 120 characters so the screen does not retain or repeatedly scan with arbitrarily large user-provided query strings.
+
 The explicit backup format accepts at most 10,000 combined history/template records and approximately 5 million characters, with an additional pre-split newline bound.
 
 These limits are defensive implementation boundaries rather than financial advice or business rules.
 
 ## History search
 
-The current History screen performs case-insensitive substring matching against label, currency codes, subtotal/total, converted total, and per-person values. This is simple and responsive for ordinary local histories. If real profiling shows large histories causing UI latency or memory pressure, move search/filtering into Room queries and expose paged results rather than increasing in-memory work blindly.
+The current History screen performs case-insensitive substring matching against label, currency codes, subtotal/total, converted total, and per-person values. The interactive search query is capped at 120 characters and the UI explains that limit. This is simple and responsive for ordinary local histories. If real profiling shows large histories causing UI latency or memory pressure, move search/filtering into Room queries and expose paged results rather than increasing in-memory work blindly.
 
 ## Export and backup behavior
 
