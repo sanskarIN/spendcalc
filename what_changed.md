@@ -13,9 +13,9 @@
 - License: MIT.
 - Required product credit: `Made by the Sanskar`.
 - Requested Git email observed in GitHub commit metadata: `Sanskar <sanskarin@outlook.in>`.
-- Pre-handoff head for this update: `7a06ab391c9586ae8082a279de429af2d9ce3a1e`.
-- Pull request state at the start of this documentation continuation: open, non-draft, mergeable.
-- Source state: the planned application implementation, persistence/export hardening, regression suite, repository automation, and deep permanent documentation are complete at source level on `complete/v1-finalization`. Every tracked file is now covered by an exhaustive file reference whose coverage is enforced by CI.
+- Pre-handoff head for this update: `2fa5e41fcb1dcae2b87f5181deebe871e772ce84`.
+- Pull request state at the start of this final source-audit continuation: open, non-draft, mergeable.
+- Source state: the planned application implementation, persistence/export hardening, regression suite, repository automation, deep permanent documentation, strict backup byte/currency validation, and Unicode-safe PDF truncation are complete at source level on `complete/v1-finalization`. Every tracked file is covered by the exhaustive file reference whose coverage is enforced by CI.
 - Release state: do not tag or describe `v1.0.0` as verified until the exact final commit has successful CI, CodeQL, Dependency Review, and Repository Audit results plus the manual Android/accessibility/export/backup/signing/screenshot gates in `docs/verification.md`.
 
 ## Continuation starting point
@@ -53,6 +53,15 @@ At head `eaad544f3ed4e5bd9f8658b7a70dac181ee0ccaa`, GitHub reported:
 - Repository Audit — `queued`.
 
 Earlier exact heads in the same continuation also repeatedly registered the same four workflow families as queued/pending. These states are not failures, but they are also not successful release verification. Workflow concurrency cancels superseded pull-request revisions, so no result from an older head should be used as proof for a newer one.
+
+Immediately before this final handoff commit, exact head `2fa5e41fcb1dcae2b87f5181deebe871e772ce84` registered:
+
+- CI — `pending`;
+- Dependency Review — `pending`;
+- CodeQL — `queued`;
+- Repository Audit — `queued`.
+
+Those runs are expected to be superseded by the handoff commit itself. Re-fetch all four workflow families for the new exact head before making any release decision.
 
 The connected execution container still cannot resolve `github.com`, so a clean local Gradle dependency resolution/build cannot be used as release proof in this environment. Do not claim local `gradle test`, lint, debug, release, or instrumentation results unless they are actually run in a network-capable environment. GitHub Actions remains the authoritative automated Android/Gradle verification source here.
 
@@ -220,13 +229,16 @@ Changes include:
 - history validation delegates to `isValidHistoryRecord(...)`;
 - template validation first requires `isValidTemplateEnvelope(...)`, then applies `CalculatorEngine` finance validation;
 - backup decimal-shape checks use the shared saved-result scale/integer-digit constants;
-- structurally invalid/noncanonical in-memory records are rejected during encode rather than silently transformed.
+- structurally invalid/noncanonical in-memory records are rejected during encode rather than silently transformed;
+- decoded history/template currency strings are validated in their exact decoded form instead of being uppercased before validation.
 
-This closes a subtle round-trip semantic issue: a programmatically constructed template with lowercase persisted currency could previously be encoded and decoded into a different uppercase object. Encoding now requires canonical persisted currency form.
+This closes two round-trip semantic issues: a programmatically constructed persisted record with noncanonical currency cannot be encoded, and a checksum-valid edited backup containing lowercase/noncanonical currency cannot be silently repaired during decode. The persistence/export contract now fails closed in both directions.
 
 `BackupCodecPersistedPolicyTest.kt` covers:
 
 - noncanonical template currency rejected during encode;
+- checksum-valid noncanonical history currency rejected during decode;
+- checksum-valid noncanonical template currency rejected during decode;
 - oversized history identifier rejected during encode;
 - negative template timestamp rejected during encode.
 
@@ -234,27 +246,28 @@ Backup decode continues to reject duplicate IDs, unsupported schemas, malformed 
 
 ### 8. Persistence documentation
 
-A dedicated `docs/persistence-invariants.md` now defines:
+A dedicated `docs/persistence-invariants.md` defines:
 
 - the repository/backup compatibility invariant;
 - ID rules;
 - timestamp rules;
 - saved-name rules;
-- canonical currency rules;
+- canonical currency rules, including strict decoded forms;
 - history result/split rules;
 - template setting rules;
 - replacement ordering;
 - duplicate-ID handling;
 - backup relationship;
+- strict UTF-8 document input behavior;
 - future schema/regression expectations.
 
 The repository audit requires this file.
 
 `docs/architecture.md` describes repositories as validation boundaries and links to the persistence contract.
 
-`docs/security-backup.md` documents local repository validation in the backup threat model rather than treating only decoded backup files as untrusted.
+`docs/security-backup.md` documents local repository validation and strict document-byte decoding in the backup threat model rather than treating only decoded backup fields as untrusted.
 
-`docs/testing.md` includes the complete persistence-invariant regression strategy.
+`docs/testing.md` includes the complete persistence-invariant and final platform regression strategy.
 
 `docs/verification.md` includes automated/manual persistence, template-dialog, duplicate-ID, canonical-currency, and backup-alignment gates.
 
@@ -321,9 +334,10 @@ The repository audit requires this file.
 - History labels included.
 - Versioned bounded format.
 - URL-safe Base64 text fields.
-- Valid UTF-8/Unicode requirement.
+- Strict UTF-8 document decoding with malformed/unmappable byte rejection.
+- Valid UTF-8/Unicode requirement for decoded/exported text.
 - SHA-256 accidental-corruption detection.
-- Strict record/schema/checksum/size/line/field/decimal/name/ID/timestamp/currency/split validation.
+- Strict record/schema/checksum/size/line/field/decimal/name/ID/timestamp/canonical-currency/split validation.
 - Duplicate-ID rejection.
 - Shared persisted-record policy with repositories.
 - Template finance revalidation.
@@ -340,6 +354,7 @@ The repository audit requires this file.
 - Plain-text receipt sharing.
 - CSV export with quote/formula neutralization.
 - Offline PDF receipt generation.
+- Unicode-safe PDF line truncation that cannot leave a dangling surrogate at the ellipsis boundary.
 - Private cache export directory.
 - Non-exported `FileProvider`.
 - Temporary URI read permission.
@@ -381,9 +396,12 @@ The repository audit requires this file.
 - Duplicate repository replacement IDs.
 - Backup codec round-trip/corruption/schema/size/semantic validation.
 - Backup persisted-policy encode rejection.
+- Checksum-valid noncanonical history/template currency decode rejection.
+- Strict malformed UTF-8 backup-byte decoder regression.
 - Deterministic backup fuzz/regression tests.
 - CSV safety.
 - Receipt formatter.
+- Unicode-safe PDF truncation including a surrogate crossing the line boundary.
 - Export path containment.
 - Safe logger redaction.
 
@@ -636,7 +654,87 @@ Earlier continuation work had already reconciled `docs/security-backup.md` and `
 - `cf54f48` — `docs: deepen safe logging contract`
 - `7a06ab3` — `docs: record hardened tagged release workflow`
 
-This handoff update creates one additional commit after the list above. Resolve its exact SHA and exact-head workflow state from GitHub before any release decision.
+## Final source audit continuation
+
+A final release-focused static audit was performed against the active PR branch rather than the older `main` checkpoint. It rechecked the master specification, PR state, finance/persistence/backup/export/platform/UI source, workflows, repository guards, permanent documentation, and TODO/FIXME state.
+
+Three concrete release defects were found and closed.
+
+### Unicode-safe PDF export truncation
+
+`PdfReceiptExporter` previously truncated a long rendered line with ordinary UTF-16 `take(...)`. A valid emoji or other supplementary Unicode code point crossing the line boundary could therefore be split into a dangling surrogate before drawing the PDF text.
+
+The exporter now:
+
+- routes line shortening through `ellipsizePdfLine(...)`;
+- reuses `truncateUtf16Safely(...)` from the shared saved-name Unicode policy;
+- preserves the configured 78-code-unit line budget including the ellipsis;
+- rejects impossible line budgets below one character.
+
+Existing `PathSafetyTest.kt` now also covers:
+
+- an emoji crossing the truncation boundary;
+- normal ASCII line-budget behavior;
+- exact preservation of short Unicode text.
+
+No extra tracked test file remains; the temporary focused file created during the audit was removed after its tests were consolidated into the already-documented JVM platform regression file.
+
+### Strict backup document UTF-8 decoding
+
+`BackupFileIo.read(...)` previously created `InputStreamReader` directly with `StandardCharsets.UTF_8`. Java decoder defaults may replace malformed input, which contradicted SpendCalc's fail-closed backup contract.
+
+Backup document input now:
+
+- uses `strictUtf8Decoder()`;
+- configures malformed input with `CodingErrorAction.REPORT`;
+- configures unmappable input with `CodingErrorAction.REPORT`;
+- continues enforcing the 5,000,000-character read bound;
+- fails before codec restore parsing when document bytes are not valid UTF-8.
+
+`PathSafetyTest.kt` includes a direct malformed-byte regression against the strict decoder.
+
+### Exact canonical currency validation during backup decode
+
+`BackupCodec` already required canonical uppercase persisted currency forms during encode, but decoded history/template currency text was uppercased before shared-policy validation. A checksum-valid edited backup containing lowercase currency could therefore be silently normalized instead of rejected.
+
+The codec now:
+
+- validates decoded history currency text exactly as encoded;
+- validates decoded converted-history currency text exactly as encoded;
+- validates decoded template currency text exactly as encoded;
+- validates decoded converted-template currency text exactly as encoded;
+- relies on the shared canonical persisted-record policy to fail closed.
+
+`BackupCodecPersistedPolicyTest.kt` now constructs checksum-valid modified backups and proves that noncanonical history and template currencies are rejected for semantic reasons rather than only because of checksum mismatch.
+
+### Final documentation reconciliation
+
+The final audit reconciled:
+
+- `CHANGELOG.md` — records strict backup byte decoding, strict decoded canonical currencies, Unicode-safe PDF truncation, and regression coverage;
+- `docs/security-backup.md` — documents the strict document-byte decoder and no-repair currency policy;
+- `docs/testing.md` — records the direct regressions and adds the long-Unicode PDF manual release check;
+- `docs/persistence-invariants.md` — defines strict decoded currency and document UTF-8 behavior as persistence/backup invariants;
+- `what_changed.md` — this complete source/release handoff.
+
+### Final-audit commits before this handoff
+
+- `0652203` — `fix: preserve Unicode boundaries in PDF export`
+- `292396d` — `fix: reject malformed UTF-8 backup files`
+- `c59c988` — `fix: reject noncanonical backup currencies`
+- `0bead1a` — `test: reject noncanonical currencies on backup decode`
+- `e1b0900` — `refactor: make PDF truncation directly testable`
+- `296616f` — `test: cover Unicode-safe PDF line truncation`
+- `2297e2e` — `test: cover Unicode-safe PDF line truncation`
+- `98a5534` — `chore: keep platform regressions in documented test file`
+- `41bd195` — `refactor: expose strict backup decoder for regression tests`
+- `be279fb` — `test: reject malformed UTF-8 backup bytes`
+- `4ccd857` — `docs: record final backup and PDF hardening`
+- `a4b7755` — `docs: clarify strict backup byte and currency validation`
+- `3233301` — `docs: add final backup and PDF regression coverage`
+- `2fa5e41` — `docs: align persistence contract with strict backup decode`
+
+The commit containing this handoff is intentionally the final source/documentation change of this audit unless a concrete exact-head workflow failure exposes another defect. Its exact SHA must be read from GitHub after the commit and used for all subsequent automated/manual release evidence.
 
 ## Known verification limitation
 
@@ -645,7 +743,7 @@ The connected execution environment used for these continuations cannot resolve 
 - no local Gradle success is claimed;
 - no local lint success is claimed;
 - no connected Android test success is claimed;
-- the new documentation coverage guard is not claimed successful until the exact-head GitHub workflow runs it;
+- the documentation coverage guard is not claimed successful until the exact-head GitHub workflow runs it;
 - queued/pending GitHub workflows are not treated as green.
 
 This is a verification-environment limitation, not evidence of a source failure.
@@ -674,7 +772,7 @@ This is a verification-environment limitation, not evidence of a source failure.
 - template dialog naming/confirm review;
 - Unicode-heavy history/template name boundary review;
 - 100-item calculator limit review;
-- text/CSV/PDF share-flow review;
+- text/CSV/PDF share-flow review, including a long Unicode item name near the PDF truncation boundary;
 - backup export/progress/restore/replaced-data review;
 - offline/airplane-mode core workflow review;
 - branded launch-splash review.
@@ -699,7 +797,7 @@ This is a verification-environment limitation, not evidence of a source failure.
 
 ## Next exact actions
 
-1. Treat the commit containing this handoff as the new candidate head.
+1. Treat the exact commit containing this handoff as the new candidate head.
 2. Stop speculative feature/source/documentation churn unless a concrete release-blocking defect or verified documentation contradiction is found.
 3. Re-fetch PR `#12` exact head.
 4. Re-fetch CI, CodeQL, Dependency Review, and Repository Audit for that exact head.
