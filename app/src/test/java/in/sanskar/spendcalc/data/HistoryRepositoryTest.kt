@@ -7,7 +7,9 @@ import `in`.sanskar.spendcalc.domain.model.CalculationInput
 import `in`.sanskar.spendcalc.domain.model.CalculationOutcome
 import `in`.sanskar.spendcalc.domain.model.ExpenseItem
 import `in`.sanskar.spendcalc.domain.model.HistoryRecord
+import `in`.sanskar.spendcalc.domain.model.MAX_SAVED_ID_CHARS
 import `in`.sanskar.spendcalc.domain.model.MAX_SAVED_NAME_CHARS
+import `in`.sanskar.spendcalc.domain.model.MAX_SAVED_RESULT_INTEGER_DIGITS
 import java.math.BigDecimal
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,6 +37,33 @@ class HistoryRepositoryTest {
         assertEquals(1234L, records.single().createdAtEpochMillis)
         assertEquals("Coffee run", records.single().label)
         assertEquals(BigDecimal("12.34"), records.single().total)
+    }
+
+    @Test
+    fun `save rejects an invalid calculation result before persistence`() = runTest {
+        val dao = FakeHistoryDao()
+        val repository = HistoryRepository(dao)
+        val valid = (CalculatorEngine().calculate(CalculationInput(items = emptyList())) as CalculationOutcome.Success).result
+        val invalid = valid.copy(total = BigDecimal("-1.00"))
+
+        val failure = runCatching { repository.save(invalid, "Invalid") }.exceptionOrNull()
+
+        assertTrue(failure is IllegalArgumentException)
+        assertTrue(repository.observeHistory().first().isEmpty())
+    }
+
+    @Test
+    fun `save canonicalizes valid currency codes before persistence`() = runTest {
+        val dao = FakeHistoryDao()
+        val repository = HistoryRepository(dao)
+        val valid = (CalculatorEngine().calculate(CalculationInput(items = emptyList())) as CalculationOutcome.Success).result
+        val mixedCase = valid.copy(currencyCode = " inr ", convertedCurrencyCode = "usd")
+
+        repository.save(mixedCase, "Currency")
+
+        val saved = repository.observeHistory().first().single()
+        assertEquals("INR", saved.currencyCode)
+        assertEquals("USD", saved.convertedCurrencyCode)
     }
 
     @Test
@@ -132,6 +161,48 @@ class HistoryRepositoryTest {
 
         assertTrue(failure is IllegalArgumentException)
         assertTrue(repository.observeHistory().first().isEmpty())
+    }
+
+    @Test
+    fun `restore rejects invalid history envelope fields`() = runTest {
+        val invalidRecords = listOf(
+            sampleRecord("timestamp", -1L),
+            sampleRecord("x".repeat(MAX_SAVED_ID_CHARS + 1), 903L),
+            sampleRecord("split", 904L).copy(splitCount = 0),
+            sampleRecord("magnitude", 905L).copy(
+                total = BigDecimal("1" + "0".repeat(MAX_SAVED_RESULT_INTEGER_DIGITS)),
+            ),
+        )
+
+        invalidRecords.forEach { invalid ->
+            val dao = FakeHistoryDao()
+            val repository = HistoryRepository(dao)
+
+            val failure = runCatching { repository.restore(invalid) }.exceptionOrNull()
+
+            assertTrue(failure is IllegalArgumentException)
+            assertTrue(repository.observeHistory().first().isEmpty())
+        }
+    }
+
+    @Test
+    fun `replace all validates every record before replacing existing history`() = runTest {
+        val dao = FakeHistoryDao()
+        val repository = HistoryRepository(dao)
+        repository.restore(sampleRecord("existing", 1000L))
+        val invalid = sampleRecord("invalid", 1001L).copy(convertedTotal = BigDecimal("-1.00"))
+
+        val failure = runCatching {
+            repository.replaceAll(
+                listOf(
+                    sampleRecord("valid", 1002L),
+                    invalid,
+                ),
+            )
+        }.exceptionOrNull()
+
+        assertTrue(failure is IllegalArgumentException)
+        assertEquals(listOf("existing"), repository.observeHistory().first().map { it.id })
     }
 
     private fun sampleRecord(id: String, createdAt: Long) = HistoryRecord(
