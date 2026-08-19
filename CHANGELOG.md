@@ -26,15 +26,17 @@ All notable changes to SpendCalc are documented here. The project follows a sema
 - Offline Android PDF receipt generation.
 - Secure cache-file sharing through a non-exported `FileProvider`.
 - User-driven local backup/export and restore for history, templates, and preferences through Android's document picker.
-- Visible backup progress state with duplicate backup actions disabled while work is active.
+- Visible modal backup progress state while backup reads, writes, serialization, or restore work is active.
 - Versioned backup format with SHA-256 corruption detection, strict record validation, bounded decoding, duplicate-ID rejection, and compensating rollback if a multi-store restore fails.
 - Responsive phone/tablet calculator layout.
 - About/support/funding UI with `Made by the Sanskar` credit.
-- Unit tests for calculation arithmetic, validation, repositories, backup codec, exports, path containment, and safe logging.
+- Sequenced user-feedback events so repeated saves, deletes, backup results, and errors are not collapsed by `StateFlow` equality.
+- Unit tests for calculation arithmetic, validation, repositories, backup codec, exports, path containment, safe logging, and UI-state feedback sequencing.
 - Deterministic seeded fuzz/regression coverage for finance arithmetic and backup serialization/corruption handling.
 - Android integration tests for Room persistence and backup replacement, plus Compose and real-activity journey smoke tests.
 - Settings UI coverage for the backup busy state.
 - CI compilation of instrumentation tests in addition to JVM tests, full Android lint, debug build, and release compilation.
+- Android manifest/FileProvider local-first policy guard in CI.
 - Repository metadata/link audit, secret-pattern scan, CodeQL, and dependency-review workflows.
 - Project policies for privacy, security, support, contribution, and community conduct.
 
@@ -45,18 +47,23 @@ All notable changes to SpendCalc are documented here. The project follows a sema
 - Split counts are bounded to 1 through 1,000,000.
 - Editable expense items are capped at 100 with a visible UI limit state to bound eager Compose work.
 - Calculator item/name/input counts are bounded before expensive conversion or rendering work.
-- Backup and export file I/O is performed off the main thread.
+- Backup document I/O runs on `Dispatchers.IO`, while bounded backup encoding/decoding runs on `Dispatchers.Default` instead of the UI thread.
+- Room history/templates are captured in one transaction for backups and restored with batch DAO inserts.
+- Backup result decimals accept the full bounded magnitude that `CalculatorEngine` can legitimately produce, including converted totals up to 34 integer digits.
+- Returning users remain on the splash screen until stored preferences load, avoiding a false onboarding flash.
+- Corrupted Preferences DataStore files recover to safe default preferences without deleting Room history/templates.
 - Bottom-navigation icon graphics are decorative when a visible text label already provides the accessible name, avoiding duplicate screen-reader announcements.
 - GitHub Actions use maintained major action versions and concurrency cancellation for superseded pull-request runs.
 - CI runs Android lint across configured variants rather than only the debug variant.
 
 ### Security
 
-- Core application requires no Android Internet permission.
-- Export sharing uses app-private `cache/exports` files and temporary URI read permission.
+- Core application requires no Android Internet permission, and CI now fails if that manifest invariant regresses.
+- Export sharing uses app-private `cache/exports` files and temporary URI read permission; CI verifies the FileProvider remains non-exported and exposes only `cache/exports/`.
 - Export path containment uses canonical path semantics rather than vulnerable string-prefix matching.
 - CSV text values are protected from common spreadsheet formula injection prefixes.
-- Backup parser rejects oversized payloads, excessive line counts, malformed checksum fields, exponent-expansion decimal shapes, duplicate identifiers, invalid timestamps, invalid currencies, and unsupported schema versions.
+- Backup parser rejects oversized payloads, excessive line counts, malformed checksum fields, exponent-expansion decimal shapes, duplicate identifiers, invalid timestamps, invalid currencies, unsupported schema versions, oversized saved names, malformed UTF-8 input, and out-of-contract result magnitudes.
+- Backup export rejects malformed Unicode instead of silently replacing invalid surrogate data.
 - Structured logging redacts sensitive keys and performs key normalization with `Locale.ROOT` so redaction is locale independent.
 - Production signing material is intentionally not stored in the repository.
 
