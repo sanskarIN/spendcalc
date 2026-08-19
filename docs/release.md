@@ -2,22 +2,30 @@
 
 ## Release principles
 
-SpendCalc releases must be reproducible from public source without committing private signing material. Signing keys and credentials stay outside Git.
+SpendCalc releases must be reproducible from public source without committing private signing material. Signing keys and credentials stay outside Git. A workflow definition or queued run is not evidence of a passing release; verification is tied to the exact commit being released.
 
 ## Pre-release checklist
 
-1. Confirm `CHANGELOG.md`, `ROADMAP.md`, and `what_changed.md` are current.
-2. Verify versionCode/versionName in `app/build.gradle.kts`.
-3. Run a clean build:
+1. Confirm `README.md`, `CHANGELOG.md`, `ROADMAP.md`, `docs/`, and `what_changed.md` are current.
+2. Verify `versionCode` and `versionName` in `app/build.gradle.kts`.
+3. Run repository/static checks:
 
 ```bash
-gradle clean assembleDebug assembleRelease
+python3 scripts/check_format.py
+python3 scripts/check_kotlin_namespace.py
+python3 scripts/check_repository.py
+python3 scripts/scan_secrets.py
 ```
 
-4. Run JVM tests and lint:
+4. Run a clean build and automated JVM/compile checks:
 
 ```bash
-gradle testDebugUnitTest lintDebug
+gradle clean
+gradle testDebugUnitTest
+gradle assembleDebugAndroidTest
+gradle lint
+gradle assembleDebug
+gradle assembleRelease
 ```
 
 5. Run Android tests on an emulator/device:
@@ -26,12 +34,15 @@ gradle testDebugUnitTest lintDebug
 gradle connectedDebugAndroidTest
 ```
 
-6. Review dependency/security automation results.
+6. Confirm CI, CodeQL, dependency review, and repository-audit results are successful for the exact release commit.
 7. Test fresh install and upgrade from the previous public release when one exists.
-8. Verify history/templates remain intact across supported upgrades.
-9. Verify text, CSV, and PDF export.
-10. Perform accessibility and dark/large-text checks.
-11. Scan the Git diff for secrets, personal data, keystores, and generated local configuration.
+8. Verify the branded splash, onboarding, primary navigation icons/labels, light/dark/system themes, large text, and reduced motion.
+9. Verify calculator validation, the 100-item editor limit, history search/retention/delete+Undo, and template save/load/delete+Undo.
+10. Verify text, CSV, and PDF export.
+11. Verify backup export/restore, progress state, restore confirmation, and restored history/templates/preferences.
+12. Perform TalkBack, large-system-font, phone, and tablet/wide layout checks.
+13. Scan the Git diff for secrets, personal data, keystores, and generated local configuration.
+14. Capture release screenshots from the verified build using fictional data only.
 
 ## Versioning
 
@@ -60,9 +71,11 @@ git push origin v1.0.0
 
 Use an unsigned tag only if signed tagging is not available and document that limitation.
 
+Do not create `v1.0.0` while required automated checks are pending/queued/failed or while the documented manual release gates remain incomplete.
+
 ## Release artifacts
 
-A release workflow may attach verified APK/AAB artifacts. Artifacts should be produced from the tagged commit and identified by version and commit SHA.
+The repository's tag workflow builds an unsigned release candidate. Production signed APK/AAB artifacts must be produced from the exact verified/tagged source with protected signing credentials outside Git.
 
 Before publishing an artifact:
 
@@ -70,7 +83,8 @@ Before publishing an artifact:
 - install it on a test device;
 - confirm About shows the expected version;
 - verify it does not contain debug-only credentials or endpoints;
-- confirm the privacy documentation matches behavior.
+- confirm the privacy documentation matches behavior;
+- confirm the artifact corresponds to the tagged commit SHA.
 
 ## Rollback
 
