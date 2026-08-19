@@ -17,6 +17,9 @@ class HistoryRepository(
     fun observeHistory(): Flow<List<HistoryRecord>> =
         dao.observeAll().map { entries -> entries.map { it.toDomain() } }
 
+    suspend fun snapshot(): List<HistoryRecord> =
+        dao.snapshotAll().map { it.toDomain() }
+
     suspend fun save(result: CalculationResult, label: String = "Calculation"): String {
         val id = UUID.randomUUID().toString()
         dao.upsert(
