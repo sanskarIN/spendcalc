@@ -201,7 +201,7 @@ private fun SpendCalcMainScaffold(
         ActionFeedback.HISTORY_SAVED -> stringResource(R.string.history_saved)
         ActionFeedback.TEMPLATE_SAVED -> stringResource(R.string.template_saved)
         ActionFeedback.HISTORY_DELETED -> stringResource(R.string.history_deleted)
-        ActionFeedback.DELETED -> stringResource(R.string.entry_deleted)
+        ActionFeedback.TEMPLATE_DELETED -> stringResource(R.string.template_deleted)
         ActionFeedback.HISTORY_CLEARED -> stringResource(R.string.history_cleared)
         ActionFeedback.BACKUP_EXPORTED -> stringResource(R.string.backup_exported)
         ActionFeedback.BACKUP_RESTORED -> stringResource(R.string.backup_restored)
@@ -210,13 +210,17 @@ private fun SpendCalcMainScaffold(
 
     LaunchedEffect(calculator.feedback) {
         if (calculator.feedback != ActionFeedback.NONE) {
-            val historyDelete = calculator.feedback == ActionFeedback.HISTORY_DELETED
+            val undoAction: (() -> Unit)? = when (calculator.feedback) {
+                ActionFeedback.HISTORY_DELETED -> viewModel::undoDeleteHistory
+                ActionFeedback.TEMPLATE_DELETED -> viewModel::undoDeleteTemplate
+                else -> null
+            }
             val result = snackbarHostState.showSnackbar(
                 message = feedbackText,
-                actionLabel = if (historyDelete) context.getString(R.string.undo) else null,
+                actionLabel = if (undoAction != null) context.getString(R.string.undo) else null,
             )
-            if (historyDelete && result == SnackbarResult.ActionPerformed) {
-                viewModel.undoDeleteHistory()
+            if (result == SnackbarResult.ActionPerformed) {
+                undoAction?.invoke()
             }
             viewModel.consumeFeedback()
         }
