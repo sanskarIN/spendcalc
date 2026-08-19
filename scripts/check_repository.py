@@ -34,6 +34,7 @@ REQUIRED_FILES = [
     "docs/performance.md",
     "docs/backup-restore.md",
     "docs/logging.md",
+    "scripts/check_android_security.py",
 ]
 README_REQUIREMENTS = [
     "Made by the Sanskar",
