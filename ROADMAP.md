@@ -28,6 +28,7 @@ The roadmap prioritizes correctness, privacy, accessibility, and maintainability
 - [x] Optional history auto-delete.
 - [x] History search/filter.
 - [x] Undo for individual history deletion.
+- [x] Undo for individual template deletion.
 - [x] CSV/text/PDF export paths.
 - [x] User-driven versioned backup/restore for history, templates, and preferences.
 - [x] Onboarding, appearance, accessibility, and About screens.
@@ -38,8 +39,12 @@ The roadmap prioritizes correctness, privacy, accessibility, and maintainability
 - [x] Local-first/no-account core experience.
 - [x] FileProvider-based export sharing with canonical-path containment.
 - [x] Reduced-motion-aware navigation transitions.
+- [x] Repository-owned primary-navigation icons with non-duplicated accessibility semantics.
+- [x] Branded AndroidX launch splash treatment.
 - [x] Backup/CSV/PDF file I/O moved off the main thread.
+- [x] Visible backup busy state prevents duplicate backup operations.
 - [x] Destructive restore and clear-all confirmation flows.
+- [x] Calculator eager-composition budget capped at 100 editable expense items with visible feedback.
 - [ ] Add real release screenshots from verified builds using fictional data.
 - [ ] Profile very large history/template collections if real-device measurements identify a need.
 - [ ] Optional receipt notes/categories remain a post-1.0 enhancement, not a release blocker.
@@ -52,6 +57,7 @@ The roadmap prioritizes correctness, privacy, accessibility, and maintainability
 - [x] Deterministic finance and backup fuzz/regression tests.
 - [x] Room integration and backup replacement tests.
 - [x] Compose smoke tests.
+- [x] Settings backup-busy UI regression coverage.
 - [x] Real-activity calculate/save/history journey smoke test.
 - [x] Instrumentation-test compilation in CI.
 - [ ] Execute the Android instrumentation suite on a connected emulator/device for the final release candidate.
@@ -60,7 +66,7 @@ The roadmap prioritizes correctness, privacy, accessibility, and maintainability
 
 ## Phase 5 — Release engineering
 
-- [x] Debug/release build, lint, unit-test, static-security, dependency-review, and repository-audit workflows are defined.
+- [x] Debug/release build, full Android lint, unit-test, static-security, dependency-review, and repository-audit workflows are defined.
 - [x] Tag-triggered unsigned release-artifact workflow is defined.
 - [x] Production signing material is kept outside source control.
 - [ ] Confirm all current pull-request checks are green on the exact final commit.
@@ -71,8 +77,8 @@ The roadmap prioritizes correctness, privacy, accessibility, and maintainability
 
 ## Phase 6 — Final audit
 
-- [x] Source-level architecture, privacy, backup, export, input-boundary, and logging audits completed.
-- [x] Repository documentation is being reconciled with implemented behavior.
+- [x] Source-level architecture, privacy, backup, export, input-boundary, logging, accessibility-semantics, and performance-budget audits completed.
+- [x] Repository documentation reconciled with implemented behavior for the release-candidate branch.
 - [x] Secret-pattern and repository-link checks are part of CI.
 - [ ] Clean setup using `docs/setup.md` is confirmed by the final CI run.
 - [ ] Final PR unit tests, instrumentation compilation, lint, debug build, release build, CodeQL, dependency review, and repository audit are green.
