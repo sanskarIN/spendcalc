@@ -14,13 +14,17 @@ class BackupRepository(
     private val settingsRepository: SettingsRepository,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
-    suspend fun snapshot(): SpendCalcBackup =
-        SpendCalcBackup(
+    suspend fun snapshot(): SpendCalcBackup {
+        val (history, templates) = database.withTransaction {
+            historyRepository.snapshot() to templateRepository.snapshot()
+        }
+        return SpendCalcBackup(
             exportedAtEpochMillis = clock(),
-            history = historyRepository.observeHistory().first(),
-            templates = templateRepository.observeTemplates().first(),
+            history = history,
+            templates = templates,
             preferences = settingsRepository.preferences.first(),
         )
+    }
 
     suspend fun restore(backup: SpendCalcBackup) {
         require(backup.schemaVersion == SpendCalcBackup.CURRENT_SCHEMA_VERSION) {
