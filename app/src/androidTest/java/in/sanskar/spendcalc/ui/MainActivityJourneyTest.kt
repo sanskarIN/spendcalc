@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNode
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import `in`.sanskar.spendcalc.MainActivity
 import `in`.sanskar.spendcalc.R
@@ -24,8 +25,11 @@ class MainActivityJourneyTest {
 
         val amountLabel = composeRule.activity.getString(R.string.item_amount)
         val saveLabel = composeRule.activity.getString(R.string.save_to_history)
-        val historyLabel = composeRule.activity.getString(R.string.nav_history)
+        val historyInputLabel = composeRule.activity.getString(R.string.history_label)
+        val saveHistoryConfirmLabel = composeRule.activity.getString(R.string.save_history_confirm)
+        val historyNavLabel = composeRule.activity.getString(R.string.nav_history)
         val expectedAmount = "INR 25.00"
+        val savedHistoryName = "Grocery run"
 
         composeRule.onNode(
             hasSetTextAction() and hasText(amountLabel, substring = true),
@@ -37,12 +41,18 @@ class MainActivityJourneyTest {
         }
         composeRule.onNodeWithText(expectedAmount).assertExists()
 
-        composeRule.onNodeWithText(saveLabel).performClick()
-        composeRule.onNodeWithText(historyLabel).performClick()
+        composeRule.onNodeWithText(saveLabel).performScrollTo().performClick()
+        composeRule.onNode(
+            hasSetTextAction() and hasText(historyInputLabel, substring = true),
+            useUnmergedTree = true,
+        ).performTextInput(savedHistoryName)
+        composeRule.onNodeWithText(saveHistoryConfirmLabel).performClick()
+        composeRule.onNodeWithText(historyNavLabel).performClick()
 
         composeRule.waitUntil(timeoutMillis = 5_000) {
             composeRule.onAllNodesWithText(expectedAmount).fetchSemanticsNodes().isNotEmpty()
         }
+        composeRule.onNodeWithText(savedHistoryName).assertExists()
         composeRule.onNodeWithText(expectedAmount).assertExists()
     }
 
