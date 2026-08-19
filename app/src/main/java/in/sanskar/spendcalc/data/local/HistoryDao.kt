@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -22,4 +23,10 @@ interface HistoryDao {
 
     @Query("DELETE FROM calculation_history WHERE createdAtEpochMillis < :cutoffEpochMillis")
     suspend fun deleteOlderThan(cutoffEpochMillis: Long): Int
+
+    @Transaction
+    suspend fun replaceAll(entries: List<HistoryEntity>) {
+        clear()
+        entries.forEach { upsert(it) }
+    }
 }
