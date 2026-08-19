@@ -1,9 +1,9 @@
-package in.sanskar.spendcalc.data
+package `in`.sanskar.spendcalc.data
 
-import in.sanskar.spendcalc.data.local.TemplateDao
-import in.sanskar.spendcalc.data.local.TemplateEntity
-import in.sanskar.spendcalc.domain.model.CalculationInput
-import in.sanskar.spendcalc.domain.model.CalculationTemplate
+import `in`.sanskar.spendcalc.data.local.TemplateDao
+import `in`.sanskar.spendcalc.data.local.TemplateEntity
+import `in`.sanskar.spendcalc.domain.model.CalculationInput
+import `in`.sanskar.spendcalc.domain.model.CalculationTemplate
 import java.math.BigDecimal
 import java.util.Locale
 import java.util.UUID
