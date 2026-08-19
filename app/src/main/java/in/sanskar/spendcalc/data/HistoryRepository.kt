@@ -4,6 +4,7 @@ import `in`.sanskar.spendcalc.data.local.HistoryDao
 import `in`.sanskar.spendcalc.data.local.HistoryEntity
 import `in`.sanskar.spendcalc.domain.model.CalculationResult
 import `in`.sanskar.spendcalc.domain.model.HistoryRecord
+import `in`.sanskar.spendcalc.domain.model.MAX_SAVED_NAME_CHARS
 import java.math.BigDecimal
 import java.util.Locale
 import java.util.UUID
@@ -26,7 +27,7 @@ class HistoryRepository(
             HistoryRecord(
                 id = id,
                 createdAtEpochMillis = clock(),
-                label = label.trim().ifBlank { "Calculation" },
+                label = normalizeSavedName(label, DEFAULT_HISTORY_LABEL),
                 currencyCode = result.currencyCode,
                 convertedCurrencyCode = result.convertedCurrencyCode,
                 subtotal = result.subtotal,
@@ -63,7 +64,7 @@ class HistoryRepository(
         HistoryEntity(
             id = id,
             createdAtEpochMillis = createdAtEpochMillis,
-            label = label.trim().ifBlank { "Calculation" },
+            label = normalizeSavedName(label, DEFAULT_HISTORY_LABEL),
             currencyCode = currencyCode.trim().uppercase(Locale.ROOT),
             convertedCurrencyCode = convertedCurrencyCode.trim().uppercase(Locale.ROOT),
             subtotal = subtotal.toPlainString(),
@@ -96,4 +97,11 @@ class HistoryRepository(
             convertedPerPerson = BigDecimal(convertedPerPerson),
             splitCount = splitCount,
         )
+
+    private fun normalizeSavedName(value: String, fallback: String): String =
+        value.trim().take(MAX_SAVED_NAME_CHARS).ifBlank { fallback }
+
+    private companion object {
+        const val DEFAULT_HISTORY_LABEL = "Calculation"
+    }
 }
