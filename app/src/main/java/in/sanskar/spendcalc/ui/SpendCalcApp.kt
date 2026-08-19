@@ -3,6 +3,11 @@ package `in`.sanskar.spendcalc.ui
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.NavigationBar
@@ -54,6 +59,7 @@ private const val ROUTE_TEMPLATES = "templates"
 private const val ROUTE_SETTINGS = "settings"
 private const val ROUTE_ABOUT = "about"
 private const val BACKUP_MIME_TYPE = "application/vnd.spendcalc.backup"
+private const val NAVIGATION_ANIMATION_MILLIS = 180
 
 private data class NavigationDestination(
     val route: String,
@@ -274,6 +280,13 @@ private fun SpendCalcMainScaffold(
         }
     }
 
+    val enterTransition = if (preferences.reducedMotion) EnterTransition.None else fadeIn(
+        animationSpec = tween(NAVIGATION_ANIMATION_MILLIS),
+    )
+    val exitTransition = if (preferences.reducedMotion) ExitTransition.None else fadeOut(
+        animationSpec = tween(NAVIGATION_ANIMATION_MILLIS),
+    )
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
@@ -303,6 +316,10 @@ private fun SpendCalcMainScaffold(
             navController = navController,
             startDestination = ROUTE_CALCULATOR,
             modifier = Modifier.padding(innerPadding),
+            enterTransition = { enterTransition },
+            exitTransition = { exitTransition },
+            popEnterTransition = { enterTransition },
+            popExitTransition = { exitTransition },
         ) {
             composable(ROUTE_CALCULATOR) {
                 CalculatorScreen(
