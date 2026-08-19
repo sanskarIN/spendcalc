@@ -12,8 +12,14 @@ interface HistoryDao {
     @Query("SELECT * FROM calculation_history ORDER BY createdAtEpochMillis DESC")
     fun observeAll(): Flow<List<HistoryEntity>>
 
+    @Query("SELECT * FROM calculation_history ORDER BY createdAtEpochMillis DESC")
+    suspend fun snapshotAll(): List<HistoryEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entry: HistoryEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertAll(entries: List<HistoryEntity>)
 
     @Query("DELETE FROM calculation_history WHERE id = :id")
     suspend fun deleteById(id: String)
@@ -27,6 +33,6 @@ interface HistoryDao {
     @Transaction
     suspend fun replaceAll(entries: List<HistoryEntity>) {
         clear()
-        entries.forEach { upsert(it) }
+        if (entries.isNotEmpty()) upsertAll(entries)
     }
 }
