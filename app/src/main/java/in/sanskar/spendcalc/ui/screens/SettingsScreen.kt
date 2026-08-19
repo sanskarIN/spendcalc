@@ -13,6 +13,7 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
@@ -43,6 +44,7 @@ fun SettingsScreen(
     onAbout: () -> Unit,
     onOpenRepository: () -> Unit,
     modifier: Modifier = Modifier,
+    backupBusy: Boolean = false,
 ) {
     Column(
         modifier = modifier
@@ -117,10 +119,25 @@ fun SettingsScreen(
                 text = stringResource(R.string.backup_description),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Button(onClick = onExportBackup, modifier = Modifier.fillMaxWidth()) {
+            if (backupBusy) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                Text(
+                    text = stringResource(R.string.backup_in_progress),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Button(
+                onClick = onExportBackup,
+                enabled = !backupBusy,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
                 Text(stringResource(R.string.export_backup))
             }
-            OutlinedButton(onClick = onRestoreBackup, modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(
+                onClick = onRestoreBackup,
+                enabled = !backupBusy,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
                 Text(stringResource(R.string.restore_backup))
             }
         }
