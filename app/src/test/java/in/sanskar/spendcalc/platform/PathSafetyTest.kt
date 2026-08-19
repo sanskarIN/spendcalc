@@ -1,6 +1,7 @@
 package `in`.sanskar.spendcalc.platform
 
 import java.io.File
+import java.nio.ByteBuffer
 import java.nio.file.Files
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -38,6 +39,13 @@ class PathSafetyTest {
         } finally {
             root.deleteRecursively()
         }
+    }
+
+    @Test
+    fun `strict backup decoder rejects malformed utf8 bytes`() {
+        val malformed = ByteBuffer.wrap(byteArrayOf(0xC3.toByte(), 0x28))
+
+        assertTrue(runCatching { strictUtf8Decoder().decode(malformed) }.isFailure)
     }
 
     @Test
