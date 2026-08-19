@@ -4,4 +4,7 @@
     <string name="template_saved">Template saved.</string>
     <string name="entry_deleted">Deleted.</string>
     <string name="history_cleared">History cleared.</string>
+    <string name="backup_exported">Backup exported successfully.</string>
+    <string name="backup_restored">Backup restored successfully.</string>
+    <string name="backup_failed">Backup operation failed. No unsupported data was imported.</string>
 </resources>
