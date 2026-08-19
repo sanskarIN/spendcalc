@@ -14,6 +14,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import `in`.sanskar.spendcalc.domain.CalculatorEngine
 import `in`.sanskar.spendcalc.domain.model.CalculationInput
 import `in`.sanskar.spendcalc.domain.model.CalculationOutcome
+import `in`.sanskar.spendcalc.domain.model.CalculationResult
+import `in`.sanskar.spendcalc.domain.model.MAX_SAVED_NAME_CHARS
 import `in`.sanskar.spendcalc.domain.model.ThemeMode
 import `in`.sanskar.spendcalc.ui.screens.CalculatorScreen
 import `in`.sanskar.spendcalc.ui.theme.SpendCalcTheme
@@ -29,31 +31,7 @@ class CalculatorScreenTest {
 
     @Test
     fun calculatorFormAndReceiptAreInTheComposition() {
-        composeRule.setContent {
-            SpendCalcTheme(themeMode = ThemeMode.LIGHT, largeText = false) {
-                CalculatorScreen(
-                    state = CalculatorUiState(),
-                    onItemNameChange = { _, _ -> },
-                    onItemAmountChange = { _, _ -> },
-                    onAddItem = {},
-                    onRemoveItem = {},
-                    onDiscountChange = {},
-                    onTaxChange = {},
-                    onTipChange = {},
-                    onServiceChargeChange = {},
-                    onSplitCountChange = {},
-                    onCurrencyChange = {},
-                    onExchangeRateChange = {},
-                    onConvertedCurrencyChange = {},
-                    onSaveHistory = { _ -> },
-                    onSaveTemplate = {},
-                    onReset = {},
-                    onShareReceipt = {},
-                    onShareCsv = {},
-                    onSharePdf = {},
-                )
-            }
-        }
+        setCalculatorContent(CalculatorUiState())
 
         composeRule.onNodeWithText("Expense calculator").assertIsDisplayed()
         composeRule.onNodeWithText("Receipt").assertExists()
@@ -61,13 +39,62 @@ class CalculatorScreenTest {
 
     @Test
     fun namedHistoryDialogReturnsTheEnteredLabel() {
-        val result = (CalculatorEngine().calculate(CalculationInput(items = emptyList())) as CalculationOutcome.Success).result
         var savedLabel: String? = null
+        setCalculatorContent(
+            state = CalculatorUiState(result = zeroResult()),
+            onSaveHistory = { savedLabel = it },
+        )
 
+        openHistoryDialog()
+        historyLabelField().performTextInput("Grocery run")
+        composeRule.onNodeWithText("Save").performClick()
+
+        composeRule.runOnIdle {
+            assertEquals("Grocery run", savedLabel)
+        }
+    }
+
+    @Test
+    fun namedHistoryDialogDoesNotSplitEmojiAtBoundary() {
+        var savedLabel: String? = null
+        val prefix = "x".repeat(MAX_SAVED_NAME_CHARS - 1)
+        setCalculatorContent(
+            state = CalculatorUiState(result = zeroResult()),
+            onSaveHistory = { savedLabel = it },
+        )
+
+        openHistoryDialog()
+        historyLabelField().performTextInput(prefix + "😀")
+        composeRule.onNodeWithText("Save").performClick()
+
+        composeRule.runOnIdle {
+            assertEquals(prefix, savedLabel)
+        }
+    }
+
+    private fun openHistoryDialog() {
+        composeRule.onNodeWithText("Save result").performScrollTo().performClick()
+        composeRule.onNodeWithText("Save calculation").assertIsDisplayed()
+    }
+
+    private fun historyLabelField() = composeRule.onNode(
+        hasSetTextAction() and hasText("History label (optional)", substring = true),
+        useUnmergedTree = true,
+    )
+
+    private fun zeroResult(): CalculationResult {
+        val outcome = CalculatorEngine().calculate(CalculationInput(items = emptyList()))
+        return (outcome as CalculationOutcome.Success).result
+    }
+
+    private fun setCalculatorContent(
+        state: CalculatorUiState,
+        onSaveHistory: (String) -> Unit = {},
+    ) {
         composeRule.setContent {
             SpendCalcTheme(themeMode = ThemeMode.LIGHT, largeText = false) {
                 CalculatorScreen(
-                    state = CalculatorUiState(result = result),
+                    state = state,
                     onItemNameChange = { _, _ -> },
                     onItemAmountChange = { _, _ -> },
                     onAddItem = {},
@@ -80,7 +107,7 @@ class CalculatorScreenTest {
                     onCurrencyChange = {},
                     onExchangeRateChange = {},
                     onConvertedCurrencyChange = {},
-                    onSaveHistory = { savedLabel = it },
+                    onSaveHistory = onSaveHistory,
                     onSaveTemplate = {},
                     onReset = {},
                     onShareReceipt = {},
@@ -88,18 +115,6 @@ class CalculatorScreenTest {
                     onSharePdf = {},
                 )
             }
-        }
-
-        composeRule.onNodeWithText("Save result").performScrollTo().performClick()
-        composeRule.onNodeWithText("Save calculation").assertIsDisplayed()
-        composeRule.onNode(
-            hasSetTextAction() and hasText("History label (optional)", substring = true),
-            useUnmergedTree = true,
-        ).performTextInput("Grocery run")
-        composeRule.onNodeWithText("Save").performClick()
-
-        composeRule.runOnIdle {
-            assertEquals("Grocery run", savedLabel)
         }
     }
 }
