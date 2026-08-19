@@ -59,7 +59,7 @@ jobs:
         run: gradle --no-daemon assembleDebugAndroidTest
 
       - name: Android lint
-        run: gradle --no-daemon lintDebug
+        run: gradle --no-daemon lint
 
       - name: Debug build
         run: gradle --no-daemon assembleDebug
