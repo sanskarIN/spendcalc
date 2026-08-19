@@ -34,8 +34,10 @@ When changing calculation behavior:
 ## UI changes
 
 - Keep strings under `app/src/main/res/values/`.
+- Run `python3 scripts/check_android_resources.py` after adding, renaming, moving, or deleting app string resources. It verifies Kotlin/XML references against default strings and rejects duplicate default string names.
 - Use `SpendCalcTokens` for common spacing/radius/touch-target decisions where applicable.
 - Keep the editable calculator within `MAX_EXPENSE_ITEMS`; use a virtualized design if a future requirement genuinely needs substantially larger editable bills.
+- Keep interactive search/input work bounded; History search currently accepts at most 120 characters.
 - Check both phone and wide/tablet layouts.
 - Test light, dark, system, large-text, and reduced-motion modes.
 - Do not hide required meaning behind color or an icon alone.
@@ -82,6 +84,8 @@ gradle assembleDebug
 gradle assembleRelease
 python3 scripts/check_format.py
 python3 scripts/check_kotlin_namespace.py
+python3 scripts/check_android_resources.py
+python3 scripts/check_android_security.py
 python3 scripts/check_repository.py
 python3 scripts/scan_secrets.py
 ```
