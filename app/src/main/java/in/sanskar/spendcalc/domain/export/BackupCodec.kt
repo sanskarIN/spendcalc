@@ -34,12 +34,16 @@ enum class BackupDecodeError {
  * checksum detects accidental corruption; it is an integrity check, not a signature.
  */
 class BackupCodec {
+    private val calculatorEngine = CalculatorEngine()
+
     fun encode(backup: SpendCalcBackup): String {
         require(backup.schemaVersion == CURRENT_SCHEMA_VERSION) { "Unsupported backup schema" }
         require(backup.exportedAtEpochMillis >= 0L) { "Invalid export timestamp" }
         require(backup.history.size + backup.templates.size <= MAX_RECORDS) { "Backup is too large" }
         requireUniqueIds(backup.history.map { it.id }, "history")
         requireUniqueIds(backup.templates.map { it.id }, "templates")
+        backup.history.forEach { require(validHistory(it)) { "Invalid history record" } }
+        backup.templates.forEach { require(validTemplate(it)) { "Invalid template record" } }
 
         val body = buildString {
             appendLine("$MAGIC\t${backup.schemaVersion}\t${backup.exportedAtEpochMillis}")
@@ -62,15 +66,15 @@ class BackupCodec {
                         text(entry.label),
                         text(entry.currencyCode),
                         text(entry.convertedCurrencyCode),
-                        entry.subtotal.toPlainString(),
-                        entry.discountAmount.toPlainString(),
-                        entry.taxAmount.toPlainString(),
-                        entry.tipAmount.toPlainString(),
-                        entry.serviceChargeAmount.toPlainString(),
-                        entry.total.toPlainString(),
-                        entry.convertedTotal.toPlainString(),
-                        entry.perPerson.toPlainString(),
-                        entry.convertedPerPerson.toPlainString(),
+                        safePlain(entry.subtotal),
+                        safePlain(entry.discountAmount),
+                        safePlain(entry.taxAmount),
+                        safePlain(entry.tipAmount),
+                        safePlain(entry.serviceChargeAmount),
+                        safePlain(entry.total),
+                        safePlain(entry.convertedTotal),
+                        safePlain(entry.perPerson),
+                        safePlain(entry.convertedPerPerson),
                         entry.splitCount.toString(),
                     ).joinToString("\t"),
                 )
@@ -82,13 +86,13 @@ class BackupCodec {
                         text(template.id),
                         text(template.name),
                         template.createdAtEpochMillis.toString(),
-                        template.discountPercent.toPlainString(),
-                        template.taxPercent.toPlainString(),
-                        template.tipPercent.toPlainString(),
-                        template.serviceChargePercent.toPlainString(),
+                        safePlain(template.discountPercent),
+                        safePlain(template.taxPercent),
+                        safePlain(template.tipPercent),
+                        safePlain(template.serviceChargePercent),
                         template.splitCount.toString(),
                         text(template.currencyCode),
-                        template.exchangeRate.toPlainString(),
+                        safePlain(template.exchangeRate),
                         text(template.convertedCurrencyCode),
                     ).joinToString("\t"),
                 )
@@ -200,23 +204,12 @@ class BackupCodec {
     }.getOrNull()
 
     private fun decodeHistory(fields: List<String>): HistoryRecord? = runCatching {
-        val id = decodedText(fields[1])
-        val createdAt = fields[2].toLong()
-        val label = decodedText(fields[3])
-        val currency = decodedText(fields[4]).uppercase(Locale.ROOT)
-        val convertedCurrency = decodedText(fields[5]).uppercase(Locale.ROOT)
-        val splitCount = fields[15].toInt()
-        require(id.isNotBlank() && id.length <= MAX_FIELD_CHARS)
-        require(createdAt >= 0L)
-        require(label.length <= MAX_FIELD_CHARS)
-        require(validCurrency(currency) && validCurrency(convertedCurrency))
-        require(splitCount >= 1)
-        HistoryRecord(
-            id = id,
-            createdAtEpochMillis = createdAt,
-            label = label,
-            currencyCode = currency,
-            convertedCurrencyCode = convertedCurrency,
+        val record = HistoryRecord(
+            id = decodedText(fields[1]),
+            createdAtEpochMillis = fields[2].toLong(),
+            label = decodedText(fields[3]),
+            currencyCode = decodedText(fields[4]).uppercase(Locale.ROOT),
+            convertedCurrencyCode = decodedText(fields[5]).uppercase(Locale.ROOT),
             subtotal = decimal(fields[6]),
             discountAmount = decimal(fields[7]),
             taxAmount = decimal(fields[8]),
@@ -226,8 +219,10 @@ class BackupCodec {
             convertedTotal = decimal(fields[12]),
             perPerson = decimal(fields[13]),
             convertedPerPerson = decimal(fields[14]),
-            splitCount = splitCount,
+            splitCount = fields[15].toInt(),
         )
+        require(validHistory(record))
+        record
     }.getOrNull()
 
     private fun decodeTemplate(fields: List<String>): CalculationTemplate? = runCatching {
@@ -244,10 +239,32 @@ class BackupCodec {
             exchangeRate = decimal(fields[10]),
             convertedCurrencyCode = decodedText(fields[11]).uppercase(Locale.ROOT),
         )
-        require(template.id.isNotBlank() && template.id.length <= MAX_FIELD_CHARS)
-        require(template.name.length <= MAX_FIELD_CHARS)
-        require(template.createdAtEpochMillis >= 0L)
-        val errors = CalculatorEngine().validate(
+        require(validTemplate(template))
+        template
+    }.getOrNull()
+
+    private fun validHistory(record: HistoryRecord): Boolean {
+        if (record.id.isBlank() || record.id.length > MAX_FIELD_CHARS) return false
+        if (record.createdAtEpochMillis < 0L || record.label.length > MAX_FIELD_CHARS) return false
+        if (!validCurrency(record.currencyCode) || !validCurrency(record.convertedCurrencyCode)) return false
+        if (record.splitCount !in 1..MAX_SPLIT_COUNT) return false
+        return listOf(
+            record.subtotal,
+            record.discountAmount,
+            record.taxAmount,
+            record.tipAmount,
+            record.serviceChargeAmount,
+            record.total,
+            record.convertedTotal,
+            record.perPerson,
+            record.convertedPerPerson,
+        ).all { value -> value >= BigDecimal.ZERO && validDecimalShape(value) }
+    }
+
+    private fun validTemplate(template: CalculationTemplate): Boolean {
+        if (template.id.isBlank() || template.id.length > MAX_FIELD_CHARS) return false
+        if (template.name.length > MAX_FIELD_CHARS || template.createdAtEpochMillis < 0L) return false
+        val errors = calculatorEngine.validate(
             CalculationInput(
                 items = emptyList(),
                 discountPercent = template.discountPercent,
@@ -260,9 +277,8 @@ class BackupCodec {
                 convertedCurrencyCode = template.convertedCurrencyCode,
             ),
         )
-        require(errors.isEmpty())
-        template
-    }.getOrNull()
+        return errors.isEmpty()
+    }
 
     private fun parseBoolean(value: String): Boolean = when (value) {
         "true" -> true
@@ -272,8 +288,20 @@ class BackupCodec {
 
     private fun decimal(value: String): BigDecimal {
         require(value.length <= MAX_DECIMAL_CHARS)
-        return BigDecimal(value)
+        require(PLAIN_DECIMAL.matches(value))
+        return BigDecimal(value).also { decimal -> require(validDecimalShape(decimal)) }
     }
+
+    private fun safePlain(value: BigDecimal): String {
+        require(validDecimalShape(value))
+        return value.toPlainString()
+    }
+
+    private fun validDecimalShape(value: BigDecimal): Boolean =
+        value.scale() in 0..MAX_DECIMAL_SCALE && integerDigits(value) <= MAX_DECIMAL_INTEGER_DIGITS
+
+    private fun integerDigits(value: BigDecimal): Int =
+        (value.precision() - value.scale()).coerceAtLeast(1)
 
     private fun text(value: String): String {
         require(value.length <= MAX_FIELD_CHARS)
@@ -310,6 +338,10 @@ class BackupCodec {
         const val MAX_FIELD_BYTES = 16_384
         const val MAX_ENCODED_FIELD_CHARS = 24_000
         const val MAX_DECIMAL_CHARS = 128
+        const val MAX_DECIMAL_INTEGER_DIGITS = 15
+        const val MAX_DECIMAL_SCALE = 12
+        const val MAX_SPLIT_COUNT = 1_000_000
+        val PLAIN_DECIMAL = Regex("[+-]?\\d+(?:\\.\\d+)?")
         val CURRENCY_CODE = Regex("[A-Z]{3}")
         val ENCODER: Base64.Encoder = Base64.getUrlEncoder().withoutPadding()
         val DECODER: Base64.Decoder = Base64.getUrlDecoder()
