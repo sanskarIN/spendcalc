@@ -121,11 +121,13 @@ private fun SpendCalcMainScaffold(
     val pdfExporter = remember { PdfReceiptExporter() }
     var pendingRestorePayload by remember { mutableStateOf<String?>(null) }
     var confirmRestore by remember { mutableStateOf(false) }
+    var backupBusy by remember { mutableStateOf(false) }
 
     val createBackupLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument(BACKUP_MIME_TYPE),
     ) { uri ->
-        if (uri != null) {
+        if (uri != null && !backupBusy) {
+            backupBusy = true
             scope.launch {
                 try {
                     val payload = viewModel.createBackupPayload()
@@ -137,6 +139,8 @@ private fun SpendCalcMainScaffold(
                     throw cancelled
                 } catch (_: Exception) {
                     viewModel.reportBackupFailure()
+                } finally {
+                    backupBusy = false
                 }
             }
         }
@@ -145,7 +149,8 @@ private fun SpendCalcMainScaffold(
     val openBackupLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
     ) { uri ->
-        if (uri != null) {
+        if (uri != null && !backupBusy) {
+            backupBusy = true
             scope.launch {
                 try {
                     pendingRestorePayload = withContext(Dispatchers.IO) {
@@ -156,6 +161,8 @@ private fun SpendCalcMainScaffold(
                     throw cancelled
                 } catch (_: Exception) {
                     viewModel.reportBackupFailure()
+                } finally {
+                    backupBusy = false
                 }
             }
         }
@@ -171,12 +178,20 @@ private fun SpendCalcMainScaffold(
             text = { Text(stringResource(R.string.restore_backup_confirmation)) },
             confirmButton = {
                 TextButton(
+                    enabled = !backupBusy,
                     onClick = {
                         val payload = pendingRestorePayload
                         confirmRestore = false
                         pendingRestorePayload = null
-                        if (payload != null) {
-                            scope.launch { viewModel.restoreBackupPayload(payload) }
+                        if (payload != null && !backupBusy) {
+                            backupBusy = true
+                            scope.launch {
+                                try {
+                                    viewModel.restoreBackupPayload(payload)
+                                } finally {
+                                    backupBusy = false
+                                }
+                            }
                         }
                     },
                 ) {
@@ -185,6 +200,7 @@ private fun SpendCalcMainScaffold(
             },
             dismissButton = {
                 TextButton(
+                    enabled = !backupBusy,
                     onClick = {
                         confirmRestore = false
                         pendingRestorePayload = null
@@ -235,17 +251,21 @@ private fun SpendCalcMainScaffold(
     }
 
     fun exportBackup() {
-        createBackupLauncher.launch(context.getString(R.string.backup_file_name))
+        if (!backupBusy) {
+            createBackupLauncher.launch(context.getString(R.string.backup_file_name))
+        }
     }
 
     fun restoreBackup() {
-        openBackupLauncher.launch(
-            arrayOf(
-                BACKUP_MIME_TYPE,
-                "application/octet-stream",
-                "text/plain",
-            ),
-        )
+        if (!backupBusy) {
+            openBackupLauncher.launch(
+                arrayOf(
+                    BACKUP_MIME_TYPE,
+                    "application/octet-stream",
+                    "text/plain",
+                ),
+            )
+        }
     }
 
     fun shareReceipt() {
@@ -404,6 +424,7 @@ private fun SpendCalcMainScaffold(
                     onRestoreBackup = ::restoreBackup,
                     onAbout = { navController.navigate(ROUTE_ABOUT) },
                     onOpenRepository = { openUrl(context.getString(R.string.repository_url)) },
+                    backupBusy = backupBusy,
                 )
             }
             composable(ROUTE_ABOUT) {
