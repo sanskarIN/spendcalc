@@ -1,6 +1,6 @@
 # Testing Strategy
 
-SpendCalc treats financial correctness, restore integrity, privacy boundaries, and user-controlled data handling as high-risk behavior. Tests stay as close as practical to the layer they verify.
+SpendCalc treats financial correctness, restore integrity, privacy boundaries, documentation accuracy, and user-controlled data handling as high-risk behavior. Tests and guards stay as close as practical to the layer they verify.
 
 ## JVM unit tests
 
@@ -19,15 +19,16 @@ Coverage includes:
 - locale-independent currency normalization;
 - history repository save/delete/restore/clear/retention behavior;
 - history-label trimming, blank fallback, shared 120-character persistence bound, exact valid restore behavior, and over-limit restore rejection;
-- history persistence-envelope rejection for invalid IDs, timestamps, split counts, stored result magnitudes, negative stored values, and noncanonical result inputs after normalization;
+- history persistence-envelope rejection for invalid IDs, timestamps, split counts, stored result magnitudes, negative stored values, and invalid canonicalized record input;
 - history replace-all prevalidation that leaves existing records untouched when any candidate record is invalid;
+- history/template duplicate-ID batch rejection before DAO replacement;
 - template repository save/delete/exact-restore/replace behavior;
 - template-name trimming, blank fallback, shared 120-character persistence bound, exact valid restore behavior, and over-limit restore rejection;
 - template repository finance validation for discount/tax/tip/service, split, exchange-rate, and currency settings even when the caller bypasses the ViewModel;
 - template persistence-envelope validation for IDs/timestamps/canonical currencies plus replace-all prevalidation;
 - confirmation that template save validates only settings that are actually persisted, not line items that templates intentionally discard;
 - UTF-16-safe saved-name truncation, malformed-surrogate rejection, and recovery from a previously split trailing surrogate boundary;
-- shared persisted-record policy coverage for IDs, timestamps, canonical currencies, split bounds, saved names, and stored history decimal shapes;
+- shared persisted-record policy coverage for IDs, timestamps, canonical currencies, split bounds, saved names, stored history decimal shapes, and unique batch identifiers;
 - backup round-trip coverage for a saved label whose emoji crosses the saved-name limit boundary;
 - backup encode rejection for invalid persisted-record envelopes, including noncanonical template currency and invalid history identifiers;
 - CSV quoting, embedded quotes, and spreadsheet-formula neutralization;
@@ -35,6 +36,8 @@ Coverage includes:
 - versioned backup round trips, Unicode text, corruption detection, unsupported schemas, duplicate identifiers, structural limits, checksum validation, and exponent-expansion rejection;
 - safe log redaction, including Turkish-locale regression coverage;
 - canonical export path containment, including sibling-prefix bypass prevention.
+
+The exact mapping between each production file and its focused regression files is documented in [`codebase-reference.md`](codebase-reference.md).
 
 ## Deterministic fuzz/regression tests
 
@@ -45,7 +48,8 @@ Current invariants include:
 - valid generated finance input remains deterministic and produces non-negative rounded totals;
 - generated negative item amounts fail validation rather than throwing;
 - generated Unicode backup labels/names round trip exactly;
-- deterministic mutations of a checksummed backup body fail integrity verification.
+- deterministic mutations of a checksummed backup body fail integrity verification;
+- generated CSV text remains safely quoted/neutralized according to the formatter contract.
 
 These are regression-fuzz tests rather than an external randomized test service, so CI receives the same cases on every run.
 
@@ -76,20 +80,31 @@ Android coverage includes:
 - Settings backup busy/progress state and disabled duplicate backup actions;
 - a real-activity journey that completes onboarding when needed, enters an amount, verifies the calculated result, saves it with a meaningful label, navigates to History, and verifies both the saved label and amount.
 
-CI compiles the instrumentation suite on every pull request so Android tests cannot silently stop compiling. Actual emulator/device execution remains a documented release gate.
+CI compiles the instrumentation suite on every pull request so Android tests cannot silently stop compiling. Actual emulator/device execution remains a documented release gate; compile-only CI is not represented as connected-device success.
 
 ## Repository guard tests
 
-Fast Python guards run before the Android build work:
+Fast Python guards run before expensive Android work:
 
-- formatting/whitespace and line-length checks;
-- Kotlin namespace/package checks;
-- Android default string-resource reference and duplicate-name audit;
-- Android local-first manifest/FileProvider security checks;
-- repository required-file/local Markdown-link audit;
-- common secret-pattern scanning.
+- `scripts/check_format.py` — UTF-8/final-newline/trailing-whitespace/tab hygiene;
+- `scripts/check_kotlin_namespace.py` — Kotlin namespace/package syntax and reserved-package guard;
+- `scripts/check_documentation_coverage.py` — exact tracked-file-to-codebase-reference coverage, including stale and duplicate path detection;
+- `scripts/check_android_resources.py` — Android default string-resource references and duplicate default names;
+- `scripts/check_android_security.py` — no-Internet manifest invariant plus non-exported/path-restricted FileProvider policy;
+- `scripts/check_repository.py` — required release/project files, required README identity/contact text, and local Markdown-link integrity;
+- `scripts/scan_secrets.py` — common secret/token/signing-material patterns.
 
 The Android string-resource audit scans Kotlin sources plus manifest/resource XML references against default strings under `app/src/main/res/values/`. This catches missing `R.string.*`/`@string/*` references and duplicate default string names before resource compilation.
+
+The documentation-coverage audit reads the marked index in [`codebase-reference.md`](codebase-reference.md) and compares it with `git ls-files`. It fails when:
+
+- a tracked file is not documented;
+- a documented file has been deleted/renamed and is no longer tracked;
+- the same tracked path is documented more than once;
+- the file-index marker pair is missing or malformed;
+- Git/path data cannot be read reliably.
+
+This makes complete file documentation a continuing CI invariant rather than a one-time release-audit statement.
 
 ## Persistence invariant policy
 
@@ -103,11 +118,12 @@ The persisted-record policy therefore checks:
 - canonical three-letter stored currency codes;
 - supported history split counts;
 - nonnegative bounded stored history result decimals;
-- template finance settings through `CalculatorEngine`.
+- template finance settings through `CalculatorEngine`;
+- unique identifiers in batch replacement.
 
-Repositories normalize only fields that are intentionally canonicalized, such as currency codes and newly entered names. Valid restored names remain exact. `replaceAll` maps and validates every candidate before invoking the DAO replacement operation, so one invalid record cannot clear existing data first.
+Repositories normalize only fields that are intentionally canonicalized, such as currency codes and newly entered names. Valid restored names remain exact. `replaceAll` maps and validates every candidate and checks duplicate IDs before invoking DAO replacement, so invalid input cannot clear existing data first.
 
-The backup codec reuses the same persisted-record policy for history and template envelopes. This prevents repository and backup rules from drifting apart.
+The backup codec reuses the same persisted-record policy for history and template envelopes. This prevents repository and backup rules from drifting apart. See [`persistence-invariants.md`](persistence-invariants.md).
 
 ## Regression policy
 
@@ -118,10 +134,12 @@ Examples:
 - finance formula or validation defect -> pure JVM test/fuzz invariant;
 - backup parser or integrity defect -> codec unit test;
 - repository/backup persistence-contract drift -> persisted-record policy plus repository/codec tests;
+- duplicate replacement identifiers -> repository batch-policy test and codec coverage;
 - saved-name normalization/Unicode-boundary defect -> saved-name policy + repository test, plus UI coverage when the user flow changes;
 - history search/filter defect -> focused Compose History test;
 - Room replacement/migration defect -> Android database test;
 - missing Android string-resource reference -> fast Python resource audit;
+- untracked/missing codebase documentation entry -> documentation coverage guard;
 - path containment/logging defect -> pure JVM platform helper test where possible;
 - rendering/semantics/busy-state defect -> Compose or activity test.
 
@@ -129,11 +147,13 @@ Examples:
 
 Database version 1 has no prior production schema to migrate from. When version 2 is introduced, the schema version must be incremented deliberately and a migration test must create the prior schema, execute the migration, validate preserved data, and verify Room's schema expectations. Destructive fallback is not the default migration strategy.
 
+The exported-schema directory is documented by `app/schemas/README.md`; future generated schema JSON files are tracked artifacts and therefore must also be added to `codebase-reference.md`.
+
 ## CI expectations
 
-The main CI workflow checks formatting, Kotlin package syntax, Android string resources, Android local-first security policy, repository metadata/Markdown links, common secret patterns, JVM unit tests, instrumentation-test compilation, full Android lint, debug compilation, and release compilation. Separate workflows run CodeQL, dependency review, and a lightweight repository audit. The lightweight audit also executes the Android string-resource guard.
+The main CI workflow checks formatting, Kotlin package syntax, tracked-file documentation coverage, Android string resources, Android local-first security policy, repository metadata/Markdown links, common secret patterns, JVM unit tests, instrumentation-test compilation, full Android lint, debug compilation, and release compilation. Separate workflows run CodeQL, dependency review, and a lightweight Repository Audit. The lightweight audit also executes documentation coverage and the Android string-resource guard.
 
-A release candidate should not proceed unless the checks associated with the exact commit being released complete successfully or a documented exception has been explicitly reviewed.
+A release candidate should not proceed unless the checks associated with the **exact commit being released** complete successfully or a documented exception has been explicitly reviewed. Queued/pending/cancelled/superseded runs are not successes.
 
 ## Manual release checks
 
@@ -153,4 +173,7 @@ Before a production release:
 12. export a backup, confirm the busy state, restore it after confirmation, and verify history/templates/preferences;
 13. open GitHub/BMC/email actions from About;
 14. verify the AndroidX branded launch splash on supported OS versions;
-15. verify core workflows in airplane/offline mode.
+15. verify core workflows in airplane/offline mode;
+16. capture real release screenshots from the verified build using fictional data only.
+
+The complete release checklist is [`verification.md`](verification.md). The documentation authority/update map is [`documentation-map.md`](documentation-map.md).
