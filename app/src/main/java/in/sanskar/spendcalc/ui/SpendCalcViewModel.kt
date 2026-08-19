@@ -17,6 +17,7 @@ import `in`.sanskar.spendcalc.domain.model.CalculationInput
 import `in`.sanskar.spendcalc.domain.model.CalculationOutcome
 import `in`.sanskar.spendcalc.domain.model.CalculationTemplate
 import `in`.sanskar.spendcalc.domain.model.ExpenseItem
+import `in`.sanskar.spendcalc.domain.model.HistoryRecord
 import `in`.sanskar.spendcalc.domain.model.ThemeMode
 import `in`.sanskar.spendcalc.domain.model.UserPreferences
 import java.math.BigDecimal
@@ -39,6 +40,7 @@ class SpendCalcViewModel(
 ) : ViewModel() {
     private val _calculator = MutableStateFlow(CalculatorUiState())
     val calculator: StateFlow<CalculatorUiState> = _calculator
+    private var lastDeletedHistory: HistoryRecord? = null
 
     val preferences: StateFlow<UserPreferences> = settingsRepository.preferences.stateIn(
         scope = viewModelScope,
@@ -136,14 +138,25 @@ class SpendCalcViewModel(
     }
 
     fun deleteHistory(id: String) {
+        val record = history.value.firstOrNull { it.id == id } ?: return
         viewModelScope.launch {
             historyRepository.delete(id)
-            showFeedback(ActionFeedback.DELETED)
+            lastDeletedHistory = record
+            showFeedback(ActionFeedback.HISTORY_DELETED)
+        }
+    }
+
+    fun undoDeleteHistory() {
+        val record = lastDeletedHistory ?: return
+        lastDeletedHistory = null
+        viewModelScope.launch {
+            historyRepository.restore(record)
         }
     }
 
     fun clearHistory() {
         viewModelScope.launch {
+            lastDeletedHistory = null
             historyRepository.clear()
             showFeedback(ActionFeedback.HISTORY_CLEARED)
         }
