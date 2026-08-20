@@ -94,7 +94,7 @@ Fast Python guards run before expensive Android work:
 - `scripts/check_documentation_coverage.py` — exact tracked-file-to-codebase-reference coverage, including stale and duplicate path detection;
 - `scripts/check_android_resources.py` — Android default string-resource references and duplicate default names;
 - `scripts/check_android_security.py` — no-Internet manifest invariant plus non-exported/path-restricted FileProvider policy;
-- `scripts/check_repository.py` — required release/project files, required README identity/contact text, and local Markdown-link integrity;
+- `scripts/check_repository.py` — required release/build/project files, required README identity/contact text, local Markdown-link integrity, and release-document metadata alignment against `app/build.gradle.kts`, including stale signed-APK version-example rejection;
 - `scripts/scan_secrets.py` — common secret/token/signing-material patterns.
 
 The Android string-resource audit scans Kotlin sources plus manifest/resource XML references against default strings under `app/src/main/res/values/`. This catches missing `R.string.*`/`@string/*` references and duplicate default string names before resource compilation.
@@ -107,7 +107,9 @@ The documentation-coverage audit reads the marked index in [`codebase-reference.
 - the file-index marker pair is missing or malformed;
 - Git/path data cannot be read reliably.
 
-This makes complete file documentation a continuing CI invariant rather than a one-time release-audit statement.
+The repository audit derives current application `versionName` and `versionCode` from `app/build.gradle.kts` rather than maintaining a second version constant. It requires the documentation index, Android executable guide, and command reference to expose those current values and rejects signed-APK examples that name another semantic application version. This protects release instructions from silently remaining on an older app version after a retarget.
+
+These guards make complete and release-consistent documentation continuing CI invariants rather than one-time release-audit statements.
 
 ## Persistence invariant policy
 
@@ -130,7 +132,7 @@ The backup codec reuses the same persisted-record policy for history and templat
 
 ## Regression policy
 
-Every confirmed bug should receive a regression test at the lowest practical layer before or with the fix.
+Every confirmed bug should receive a regression test or guard at the lowest practical layer before or with the fix.
 
 Examples:
 
@@ -144,6 +146,7 @@ Examples:
 - Room replacement/migration defect -> Android database test;
 - missing Android string-resource reference -> fast Python resource audit;
 - untracked/missing codebase documentation entry -> documentation coverage guard;
+- stale release version/versionCode or signed-artifact example in build documentation -> repository metadata/documentation guard;
 - path containment/logging/PDF text-boundary defect -> pure JVM platform helper test where possible;
 - rendering/semantics/busy-state defect -> Compose or activity test.
 
@@ -155,7 +158,7 @@ The exported-schema directory is documented by `app/schemas/README.md`; future g
 
 ## CI expectations
 
-The main CI workflow checks formatting, Kotlin package syntax, tracked-file documentation coverage, Android string resources, Android local-first security policy, repository metadata/Markdown links, common secret patterns, JVM unit tests, instrumentation-test compilation, full Android lint, debug compilation, and release compilation. Separate workflows run CodeQL, dependency review, and a lightweight Repository Audit. The lightweight audit also executes documentation coverage and the Android string-resource guard.
+The main CI workflow checks formatting, Kotlin package syntax, tracked-file documentation coverage, Android string resources, Android local-first security policy, repository required files/metadata/Markdown links/release-document version alignment, common secret patterns, JVM unit tests, instrumentation-test compilation, full Android lint, debug compilation, and release compilation. Separate workflows run CodeQL, dependency review, and a lightweight Repository Audit. The lightweight audit also executes documentation coverage, repository metadata/link/release-document checks, Android string-resource validation, and the local-first Android security guard.
 
 A release candidate should not proceed unless the checks associated with the **exact commit being released** complete successfully or a documented exception has been explicitly reviewed. Queued/pending/cancelled/superseded runs are not successes.
 
