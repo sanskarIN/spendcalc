@@ -11,7 +11,8 @@ The current application release target is **2.0.12** with Android `versionCode` 
 - [ ] Tracked-file documentation coverage guard passes: every `git ls-files` path appears exactly once in `docs/codebase-reference.md`, with no stale entries.
 - [ ] Android default string-resource reference/duplicate-name audit passes.
 - [ ] Android local-first manifest/FileProvider security audit passes.
-- [ ] Repository required-file/metadata/local Markdown-link audit passes, including the exhaustive codebase reference, documentation map, and documentation-coverage guard.
+- [ ] Repository required-file/metadata/local Markdown-link audit passes, including the documentation index, Android build guide, command reference, exhaustive codebase reference, documentation map, and documentation-coverage guard.
+- [ ] Repository audit derives application `versionName`/`versionCode` from `app/build.gradle.kts`, confirms the build/index/command documents match them, and finds no stale semantic-version name in signed-APK examples.
 - [ ] Common secret-pattern scan passes.
 - [ ] JVM unit and deterministic fuzz/regression tests pass, including UTF-16 saved-name boundary coverage.
 - [ ] Persistence-invariant tests pass for history/template IDs, timestamps, names, currencies, split/result bounds, template finance settings, and duplicate replacement IDs.
@@ -25,17 +26,20 @@ The current application release target is **2.0.12** with Android `versionCode` 
 - [ ] Release APK compiles with the repository's current release configuration.
 - [ ] CodeQL Java/Kotlin analysis completes without a release-blocking finding.
 - [ ] Dependency review completes without a release-blocking finding.
-- [ ] Repository Audit workflow passes, including documentation coverage and Android string-resource checks.
+- [ ] Repository Audit workflow passes, including documentation coverage, required-file/link/release-metadata consistency, Android string-resource checks, and the Android local-first security guard.
 
 ## Documentation consistency checks
 
 These are source/repository checks and do not replace runtime/manual verification.
 
+- [ ] `docs/README.md` is the current documentation index and links the build, command, setup, testing, security/privacy, and release paths without creating a competing source of truth.
+- [ ] `docs/android-build-guide.md` identifies the current `2.0.12` / `versionCode 20012` candidate, uses current signed-artifact examples, and keeps application versioning separate from Room/backup schema compatibility.
+- [ ] `docs/command-reference.md` identifies the current release metadata where relevant and documents every repository guard command used by the engineering workflow.
 - [ ] `docs/codebase-reference.md` describes every tracked root/configuration/GitHub/build/source/test/resource/script/policy/documentation file exactly once.
-- [ ] `docs/documentation-map.md` correctly identifies the authoritative document for public behavior, architecture, persistence/backup/security/privacy, testing, maintenance, release, and active-work continuity.
+- [ ] `docs/documentation-map.md` correctly identifies the authoritative document for public behavior, architecture, build/commands, persistence/backup/security/privacy, testing, maintenance, release, and active-work continuity.
 - [ ] New/renamed/deleted tracked files have matching codebase-reference changes in the same release candidate.
 - [ ] `README.md` and `docs/features.md` describe implemented behavior and limits rather than roadmap-only work.
-- [ ] `docs/architecture.md`, `docs/development.md`, and `docs/testing.md` agree on dependency boundaries, persistence validation, build tooling, and quality commands.
+- [ ] `docs/architecture.md`, `docs/development.md`, and `docs/testing.md` agree on dependency boundaries, persistence validation, build tooling, repository guards, and quality commands.
 - [ ] `docs/persistence-invariants.md`, `docs/security-backup.md`, and backup/repository tests agree on the persisted-record contract, strict UTF-8 document decoding, and canonical persisted-currency behavior.
 - [ ] `PRIVACY.md`, `docs/privacy-backup.md`, manifest backup/data-extraction XML, and explicit-backup docs do not contradict each other.
 - [ ] `CHANGELOG.md`, `ROADMAP.md`, `docs/release.md`, and this checklist all identify `2.0.12` as the current target without treating the app version as a Room/backup schema migration.
@@ -114,7 +118,8 @@ These require a connected Android runtime and are intentionally not claimed by a
 
 ## Release checks
 
-- [ ] `README.md`, `CHANGELOG.md`, `ROADMAP.md`, permanent `docs/`, and `what_changed.md` match actual behavior/status.
+- [ ] `README.md`, `docs/README.md`, `CHANGELOG.md`, `ROADMAP.md`, permanent `docs/`, and `what_changed.md` match actual behavior/status.
+- [ ] `docs/android-build-guide.md` and `docs/command-reference.md` match `app/build.gradle.kts` release metadata and use 2.0.12 signed-artifact examples where a versioned filename is shown.
 - [ ] `docs/codebase-reference.md` and `docs/documentation-map.md` are current for the exact release commit.
 - [ ] `docs/persistence-invariants.md` matches the repository and backup codec implementation.
 - [ ] `app/build.gradle.kts` contains `versionName = "2.0.12"` and `versionCode = 20012`.
@@ -123,10 +128,11 @@ These require a connected Android runtime and are intentionally not claimed by a
 - [ ] Production signing material remains outside source control and is supplied by the release environment only.
 - [ ] Real release screenshots are captured from the verified build and use fictional data only.
 - [ ] The signed artifact is produced from the exact verified/tagged commit.
+- [ ] Built artifact inspection confirms application ID `in.sanskar.spendcalc`, `versionName 2.0.12`, `versionCode 20012`, expected SDK metadata, and intended permissions before distribution.
 - [ ] The signed artifact installs and reports `2.0.12` in About.
 - [ ] Artifact checksum/source-SHA relationship is recorded/verified.
 - [ ] `v2.0.12` is created only after all release-blocking automated and manual items above are complete.
 
 ## Current status
 
-The feature implementation, persistence/export hardening, final platform fixes, and deep source-level documentation work are present on the release-candidate branch. This checklist intentionally leaves automated boxes unchecked until exact-head GitHub runs report results, and leaves Android/accessibility/signing/screenshot boxes unchecked until those real external/manual activities occur. Source audit completion is not a substitute for those remaining gates.
+The feature implementation, persistence/export hardening, final platform fixes, complete Android build/command documentation, release-document drift guards, and deep source-level documentation work are present on the release-candidate branch. This checklist intentionally leaves automated boxes unchecked until exact-head GitHub runs report results, and leaves Android/accessibility/signing/screenshot boxes unchecked until those real external/manual activities occur. Source audit completion is not a substitute for those remaining gates.
