@@ -28,12 +28,17 @@ All notable changes to SpendCalc are documented here. The project follows a sema
 - Unit tests for calculation arithmetic, rounding, validation, repositories, and exports.
 - Android integration tests for Room persistence and a Compose calculator smoke test.
 - Project policies for privacy, security, support, contribution, and community conduct.
+- Complete Android build/executable documentation covering debug APK, release APK, AAB generation, output locations, ADB installation, Gradle diagnostics, release signing, `zipalign`, `apksigner`, `jarsigner`, checksum verification, and release testing.
+- Central `docs/README.md` documentation index with setup, development, testing, architecture, release, troubleshooting, accessibility, performance, security, and privacy reading paths.
+- Detailed `docs/command-reference.md` explaining Git, Java, Gradle, ADB, Android SDK signing/packaging tools, repository scripts, command options, and expected behavior.
+- Expanded Windows/macOS/Linux setup, release, and troubleshooting documentation.
 
 ### Security
 
 - Core application currently requires no Android Internet permission.
 - Export sharing uses app-private cache files and temporary URI read permission.
 - CSV text values are protected from common spreadsheet formula injection prefixes.
+- Release documentation explicitly keeps production keystores, private keys, signing passwords, and credentials outside Git.
 
 ## [1.0.0] - Planned
 
