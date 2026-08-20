@@ -1,6 +1,8 @@
 # SpendCalc Command Reference
 
-This reference explains the commands used to download, inspect, build, test, package, install, sign, and troubleshoot SpendCalc.
+This reference explains the commands used to download, inspect, build, test, package, install, sign, verify, and troubleshoot SpendCalc.
+
+Current release-candidate metadata is `versionName = "2.0.12"` and `versionCode = 20012`. The application release number is independent from the Room database version and explicit backup schema version, which both remain at version `1` until their compatibility contracts actually change.
 
 The project currently documents a local Gradle 8.9 installation because the repository does not commit a Gradle wrapper JAR. If a Gradle Wrapper is added later, use `gradlew.bat` on Windows or `./gradlew` on macOS/Linux instead of the global `gradle` command.
 
@@ -109,7 +111,7 @@ git log --oneline -10
 git rev-parse --short HEAD
 ```
 
-Prints the abbreviated commit SHA currently checked out. Useful when recording exactly which source revision produced an APK/AAB.
+Prints the abbreviated commit SHA currently checked out. Use it when recording exactly which source revision produced an APK/AAB.
 
 ### Configure commit email
 
@@ -168,10 +170,10 @@ Downloads and integrates upstream changes only when the update can be performed 
 ### Push
 
 ```bash
-git push origin main
+git push origin <branch-name>
 ```
 
-Pushes local `main` commits to the remote named `origin`.
+Pushes the named local branch to the remote named `origin`. Replace `<branch-name>` with the branch you intentionally want to publish; do not assume `main` when working in a pull-request branch.
 
 ---
 
@@ -455,8 +457,6 @@ Restricts output to the debug runtime classpath.
 
 ### Dependency insight
 
-Example:
-
 ```bash
 gradle :app:dependencyInsight --dependency kotlin --configuration debugRuntimeClasspath
 ```
@@ -546,7 +546,7 @@ adb logcat -c
 adb shell dumpsys package in.sanskar.spendcalc
 ```
 
-Runs Android's package dump service and prints detailed installed package state.
+Runs Android's package dump service and prints detailed installed package state. For the 2.0.12 release candidate, verify the installed package reports application versionName `2.0.12` and versionCode `20012` before release.
 
 ### Start application launcher activity indirectly
 
@@ -706,7 +706,7 @@ Run alignment before manual `apksigner` signing.
 ### Sign an APK
 
 ```bash
-apksigner sign --ks spendcalc-release.jks --ks-key-alias spendcalc --out SpendCalc-1.0.0-release.apk SpendCalc-release-aligned.apk
+apksigner sign --ks spendcalc-release.jks --ks-key-alias spendcalc --out SpendCalc-2.0.12-release.apk SpendCalc-release-aligned.apk
 ```
 
 - `sign` = signing operation.
@@ -720,7 +720,7 @@ Prefer password prompts or protected secret injection instead of putting passwor
 ### Verify signed APK
 
 ```bash
-apksigner verify --verbose --print-certs SpendCalc-1.0.0-release.apk
+apksigner verify --verbose --print-certs SpendCalc-2.0.12-release.apk
 ```
 
 - `verify` = verify APK signature.
@@ -755,21 +755,57 @@ Checks archive signatures and certificate data.
 
 ## Project utility commands
 
-The repository includes Python-based quality scripts.
+The repository includes Python-based quality scripts. Run them from the repository root.
 
-### Formatting guard
+On Windows where Python is exposed as `python` instead of `python3`, replace `python3` with `python` in the examples below.
+
+### Formatting / text-hygiene guard
 
 ```bash
 python3 scripts/check_format.py
 ```
 
-Runs the repository's lightweight formatting/source hygiene checks.
+Checks repository text files for UTF-8/format hygiene such as final newlines, trailing whitespace, and tab-policy violations.
 
-On Windows where Python is exposed as `python` instead of `python3`, use:
+### Kotlin namespace guard
 
-```powershell
-python scripts/check_format.py
+```bash
+python3 scripts/check_kotlin_namespace.py
 ```
+
+Checks Kotlin package/namespace declarations for invalid or reserved namespace regressions before Android compilation.
+
+### Tracked-file documentation coverage
+
+```bash
+python3 scripts/check_documentation_coverage.py
+```
+
+Compares the marked file inventory in `docs/codebase-reference.md` with `git ls-files`. It fails if a tracked file is undocumented, documented more than once, or still listed after deletion/rename.
+
+### Android string-resource audit
+
+```bash
+python3 scripts/check_android_resources.py
+```
+
+Parses default Android string resources and scans Kotlin/XML usage for missing references and duplicate default string names.
+
+### Android local-first/security audit
+
+```bash
+python3 scripts/check_android_security.py
+```
+
+Checks manifest/FileProvider/local-first security invariants, including the intentional absence of a core Android Internet permission and the restricted cache export provider configuration.
+
+### Repository/documentation/link audit
+
+```bash
+python3 scripts/check_repository.py
+```
+
+Checks required repository/release documentation, local Markdown links, and required project identity/contact information.
 
 ### Secret-pattern scan
 
@@ -777,13 +813,44 @@ python scripts/check_format.py
 python3 scripts/scan_secrets.py
 ```
 
-Scans tracked/repository content for conservative common secret patterns. It supplements, but does not replace, secure secret management and human review.
+Scans repository content for conservative common secret/token/signing-material patterns. It supplements, but does not replace, secure secret management and human review.
 
-Windows alternative:
+### Run all fast repository guards
+
+#### macOS/Linux shells
+
+```bash
+python3 scripts/check_format.py && \
+python3 scripts/check_kotlin_namespace.py && \
+python3 scripts/check_documentation_coverage.py && \
+python3 scripts/check_android_resources.py && \
+python3 scripts/check_android_security.py && \
+python3 scripts/check_repository.py && \
+python3 scripts/scan_secrets.py
+```
+
+`&&` means the next command runs only if the previous command succeeded. The backslash continues the shell command onto the next line.
+
+#### Windows PowerShell
 
 ```powershell
+python scripts/check_format.py
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+python scripts/check_kotlin_namespace.py
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+python scripts/check_documentation_coverage.py
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+python scripts/check_android_resources.py
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+python scripts/check_android_security.py
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+python scripts/check_repository.py
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 python scripts/scan_secrets.py
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 ```
+
+`$LASTEXITCODE` is PowerShell's exit code from the last native command. The checks stop immediately when a guard fails.
 
 ---
 
@@ -796,6 +863,8 @@ git clone https://github.com/sanskarIN/spendcalc.git
 cd spendcalc
 java -version
 gradle --version
+python3 scripts/check_format.py
+python3 scripts/check_documentation_coverage.py
 gradle testDebugUnitTest
 gradle lintDebug
 gradle assembleDebug
@@ -805,11 +874,16 @@ gradle assembleDebug
 
 ```bash
 git status
+python3 scripts/check_format.py
+python3 scripts/check_kotlin_namespace.py
+python3 scripts/check_documentation_coverage.py
+python3 scripts/check_android_resources.py
+python3 scripts/check_android_security.py
+python3 scripts/check_repository.py
+python3 scripts/scan_secrets.py
 gradle testDebugUnitTest
 gradle lintDebug
 gradle assembleDebug
-python3 scripts/check_format.py
-python3 scripts/scan_secrets.py
 git diff
 ```
 
@@ -826,11 +900,18 @@ gradle installDebug
 ```bash
 git status
 git rev-parse --short HEAD
+python3 scripts/check_format.py
+python3 scripts/check_kotlin_namespace.py
+python3 scripts/check_documentation_coverage.py
+python3 scripts/check_android_resources.py
+python3 scripts/check_android_security.py
+python3 scripts/check_repository.py
+python3 scripts/scan_secrets.py
 gradle clean testDebugUnitTest lintDebug assembleDebug assembleRelease bundleRelease
 gradle connectedDebugAndroidTest
 ```
 
-Then securely sign/verify the intended production artifact and perform real-device functional testing.
+Then securely sign/verify the intended production artifact, complete real-device/accessibility/export/backup/offline checks, capture genuine screenshots, and satisfy `docs/verification.md` for the exact source head.
 
 ---
 
@@ -895,7 +976,7 @@ Most command-line tools return an exit code to the shell:
 - `0` usually means success.
 - non-zero usually means failure or another non-success condition.
 
-In CI, a failed build/test/lint command normally stops the job because its process exits non-zero.
+In CI, a failed build/test/lint/guard command normally stops the job because its process exits non-zero.
 
 ---
 
@@ -917,10 +998,12 @@ Prefer secure prompts, environment-specific secret stores, or protected CI secre
 
 ## Related guides
 
+- [`README.md`](README.md) — documentation index and reading paths.
 - [`android-build-guide.md`](android-build-guide.md) — full APK/AAB/sign/install workflow.
 - [`setup.md`](setup.md) — environment setup.
 - [`development.md`](development.md) — development practices.
 - [`testing.md`](testing.md) — testing approach.
+- [`verification.md`](verification.md) — authoritative release-candidate gates.
 - [`release.md`](release.md) — release process.
 - [`troubleshooting.md`](troubleshooting.md) — failure diagnosis.
 
