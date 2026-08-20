@@ -19,8 +19,8 @@ Repository administrators may retain an emergency bypass for critical recovery, 
 
 ## Workflow responsibilities
 
-- `CI` performs the complete source/build gate: formatting, namespace, tracked-file documentation coverage, Android resources/security, repository/link audit, secret patterns, JVM tests, instrumentation compilation, lint, debug build, and release compilation.
-- `Repository Audit` is intentionally lightweight and fast. It checks required files/links, exhaustive tracked-file documentation, and Android string resources without waiting for the Android build.
+- `CI` performs the complete source/build gate: formatting, namespace, tracked-file documentation coverage, Android resources/security, repository/link/release-document metadata audit, secret patterns, JVM tests, instrumentation compilation, lint, debug build, and release compilation.
+- `Repository Audit` is intentionally lightweight and fast. It checks required files/links, application-version consistency in build/command documentation, exhaustive tracked-file documentation, Android string resources, and Android local-first security invariants without waiting for the full Android build.
 - `CodeQL` performs Java/Kotlin static analysis.
 - `Dependency Review` evaluates dependency changes introduced by pull requests.
 - `Release Candidate` runs from a release tag and produces an unsigned artifact only after its configured verification/build work.
@@ -29,15 +29,19 @@ Workflow concurrency cancels superseded pull-request revisions. A cancelled olde
 
 ## Documentation maintenance
 
-Complete documentation is an enforced repository property:
+Complete, release-consistent documentation is an enforced repository property:
 
 1. every tracked file appears exactly once in `docs/codebase-reference.md`;
 2. `scripts/check_documentation_coverage.py` compares that index with `git ls-files`;
 3. adding, deleting, or renaming any tracked file therefore requires updating the index in the same pull request;
-4. `scripts/check_repository.py` also requires the codebase reference, documentation map, release-critical docs, and coverage guard to exist;
-5. permanent behavioral changes are reconciled according to the change-to-document matrix in `docs/documentation-map.md`.
+4. `scripts/check_repository.py` requires the documentation index, Android build guide, command reference, codebase reference, documentation map, release-critical docs, and coverage guard to exist;
+5. `scripts/check_repository.py` parses the current application `versionName` and `versionCode` from `app/build.gradle.kts` and requires the build/index/command documentation to expose those current values;
+6. the same repository guard rejects stale semantic-version names in signed-APK examples, preventing a release retarget from leaving dangerous copy/paste signing instructions behind;
+7. permanent behavioral and workflow changes are reconciled according to the change-to-document matrix in `docs/documentation-map.md`.
 
 Do not satisfy the coverage guard with a path-only placeholder. The file reference description should explain ownership and the invariant/workflow that file supports.
+
+Do not duplicate application version constants inside guard code. `app/build.gradle.kts` is the source parsed by the repository audit; release documents should follow it. Room database and explicit backup schema versions remain separate compatibility concepts and must not be changed merely to satisfy an application release-number update.
 
 When generated Room schema files begin appearing under `app/schemas/`, they are tracked release/migration evidence and must receive individual entries just like hand-written source files.
 
@@ -76,6 +80,19 @@ Dependabot checks Gradle and GitHub Actions dependencies on its configured sched
 5. update setup/development/troubleshooting/release documentation when the required toolchain changes;
 6. never weaken validation or security controls solely to make an upgrade pass.
 
+## Application release retarget maintenance
+
+When changing the application release version:
+
+1. update `versionName` and monotonically increasing `versionCode` in `app/build.gradle.kts`;
+2. do not change Room database or explicit backup schema versions unless their actual compatibility contracts change;
+3. update `CHANGELOG.md`, `ROADMAP.md`, release/verification/source-audit docs, README/public documentation, and the active handoff as required by `documentation-map.md`;
+4. update Android signing/output examples to the new application version where a filename intentionally includes it;
+5. run `python3 scripts/check_repository.py` before expensive build work so stale build-document metadata is caught immediately;
+6. rerun all exact-head automation because any documentation/source commit invalidates prior release evidence.
+
+A passing repository audit proves version-document consistency only for what it checks. It does not prove APK runtime metadata, signing identity, connected-device behavior, screenshots, or store readiness; those remain release verification gates.
+
 ## Milestone guidance
 
 Use milestones only when they improve planning. Suggested milestones:
@@ -110,7 +127,7 @@ For a release-candidate PR, merge only an exact head whose required automated ga
 - Attach only artifacts produced by the release workflow or a documented equivalent build.
 - Capture release screenshots from the verified build using fictional data only; never fabricate screenshots to satisfy documentation.
 - Record user-visible/security/reliability changes in `CHANGELOG.md`.
-- Reconcile `README.md`, `ROADMAP.md`, `docs/verification.md`, and permanent docs before tagging.
+- Reconcile `README.md`, `docs/README.md`, `docs/android-build-guide.md`, `docs/command-reference.md`, `ROADMAP.md`, `docs/verification.md`, and permanent docs before tagging.
 - Keep `what_changed.md` synchronized with the latest exact-head verification state during active finalization.
 - Do not describe queued, pending, skipped, cancelled, or superseded runs as successful.
 
