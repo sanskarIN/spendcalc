@@ -7,6 +7,9 @@ The companion [`documentation-map.md`](documentation-map.md) explains which docu
 ## How to use this reference
 
 - Start with `README.md` for the public product overview.
+- Use `docs/README.md` for the documentation index and recommended reading paths.
+- Use `docs/android-build-guide.md` for end-to-end Android APK/AAB build, installation, packaging, and signing guidance.
+- Use `docs/command-reference.md` when you need the meaning, purpose, and expected behavior of project/tooling commands.
 - Use `docs/architecture.md` for dependency direction and system boundaries.
 - Use this file when locating ownership for a concrete source/resource/test/configuration file.
 - Use `docs/testing.md` to understand the verification layer paired with a source change.
@@ -182,16 +185,19 @@ The companion [`documentation-map.md`](documentation-map.md) explains which docu
 
 ### Permanent product and engineering documentation
 
+- `docs/README.md` — Central documentation index and reading map linking setup, development, testing, architecture, security/privacy, accessibility, troubleshooting, Android build, command reference, release, and verification material.
 - `docs/accessibility.md` — Accessibility implementation decisions plus TalkBack, font-scale, motion, contrast, touch, dialog, and device-size manual verification guidance.
 - `docs/adr/0001-use-bigdecimal-for-finance.md` — ADR establishing `BigDecimal` rather than binary floating point for finance arithmetic.
 - `docs/adr/0002-local-first-core.md` — ADR establishing no-account/no-required-network local-first core behavior.
 - `docs/adr/0003-room-and-datastore.md` — ADR establishing Room for structured records and DataStore for user preferences.
 - `docs/adr/0004-versioned-local-backup.md` — ADR for the explicit versioned bounded backup format, integrity checksum, validation, and restore model.
+- `docs/android-build-guide.md` — Comprehensive Android executable guide covering environment verification, Gradle tasks, debug/release APK and AAB outputs, ADB installation, signing tools, artifact inspection, checksums, and release-oriented troubleshooting.
 - `docs/architecture.md` — Layer responsibilities, dependency direction, calculation order, persistence/export architecture, error handling, dependency wiring, and links to detailed invariants.
 - `docs/assets/screenshots/README.md` — Policy/checklist for capturing real verified release screenshots using fictional data rather than fabricated imagery.
 - `docs/assets/spendcalc-logo.svg` — Editable repository-owned SVG logo source used in project documentation/branding.
 - `docs/backup-restore.md` — User/developer behavior of explicit backup/restore, scope, format, SAF flow, confirmation, rollback, and compatibility boundaries.
 - `docs/codebase-reference.md` — This exhaustive tracked-file inventory; source of truth for file ownership/purpose and documentation-coverage enforcement.
+- `docs/command-reference.md` — Detailed command catalog explaining the purpose and practical use of Git, Java, Gradle, ADB, Android SDK packaging/signing tools, repository scripts, command options, and common diagnostics.
 - `docs/design-system.md` — Compose/Material design tokens, typography/theme, spacing, responsiveness, interaction, and accessibility design conventions.
 - `docs/development.md` — Day-to-day contributor guide for source layout, finance/UI/persistence/export/logging changes, dependencies, quality commands, and Git workflow.
 - `docs/documentation-map.md` — Documentation information architecture: audience, authority, update triggers, duplication rules, and source-of-truth relationships.
