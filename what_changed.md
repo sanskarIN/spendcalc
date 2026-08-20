@@ -2,11 +2,11 @@
 
 ## Current milestone
 
-- Date: 2026-08-19
+- Date: 2026-08-20
 - Repository: `sanskarIN/spendcalc`
 - Default branch: `main`
-- Target: Android, Kotlin, Jetpack Compose, offline-first.
-- Current implementation state: Phase 0 through Phase 5 features/documentation are substantially implemented; final Phase 6 verification is in progress.
+- Runtime target: Android API 26+, Kotlin, Jetpack Compose, offline-first.
+- Current implementation state: core product, tests, repository automation, security/privacy docs, release docs, and deep Android APK/AAB command documentation are substantially implemented; final CI/device/release verification remains an execution step.
 
 ## Source prompt analyzed
 
@@ -18,6 +18,8 @@ The repository is implemented against `15_spendcalc_master_prompt.md`. The requi
 
 - Added Gradle settings/root build configuration and Android app module.
 - Configured Android API 26 minimum, API 35 target/compile SDK, Java 17 bytecode, Kotlin, Jetpack Compose, KSP, Room, DataStore, and Android test dependencies.
+- Root build currently uses Android Gradle Plugin `8.7.3`, Kotlin `2.0.21`, and KSP `2.0.21-1.0.28`.
+- Local/CI documentation standardizes on Gradle `8.9` while the repository does not commit a Gradle wrapper JAR.
 - Added manifest, launch theme, vector icon, backup/device-transfer policy, and private `FileProvider` export paths.
 - Added `.gitignore`, `.editorconfig`, `.gitattributes`, `.env.example`, and MIT license.
 
@@ -80,13 +82,59 @@ The repository is implemented against `15_spendcalc_master_prompt.md`. The requi
 - Added Dependabot for Gradle and GitHub Actions dependencies.
 - Added issue forms, support/security issue configuration, pull-request checklist, and funding configuration.
 
-### Documentation
+### General documentation
 
 - Added comprehensive `README.md` with logo, feature overview, platform support, tech stack, setup, testing, release, architecture, security/privacy, accessibility, performance, contribution, support, BMC, MIT license, and `Made by the Sanskar`.
 - Added `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `SUPPORT.md`, `PRIVACY.md`, `CHANGELOG.md`, and `ROADMAP.md`.
-- Added `docs/architecture.md`, `docs/setup.md`, `docs/development.md`, `docs/testing.md`, `docs/release.md`, `docs/troubleshooting.md`, `docs/accessibility.md`, and `docs/performance.md`.
+- Added architecture, setup, development, testing, release, troubleshooting, accessibility, and performance documentation.
 - Added ADRs for BigDecimal finance arithmetic, local-first core behavior, and Room/DataStore persistence.
 - Added editable SVG brand artwork and a verified-screenshot capture policy.
+
+### Deep Android build/executable documentation — 2026-08-20
+
+A complete Android build documentation pass was added so contributors can understand not only which commands to run, but what they mean and what files they produce.
+
+New documents:
+
+- `docs/README.md` — central documentation index and learning/build/release paths.
+- `docs/android-build-guide.md` — deep source-to-APK/AAB guide.
+- `docs/command-reference.md` — command dictionary for Git, Java, Gradle, ADB, Android SDK packaging/signing tools, and repository scripts.
+
+Expanded documents:
+
+- `docs/setup.md` — full environment setup for Windows/macOS/Linux, JDK 17, Android SDK 35, Gradle 8.9, ADB, first build/install, release artifacts, and quality commands.
+- `docs/release.md` — APK/AAB distinctions, versioning, release gates, manual signing, signature verification, checksums, fresh-install/upgrade tests, accessibility/privacy/security verification, and rollback.
+- `docs/troubleshooting.md` — detailed Gradle/JDK/SDK/dependency/ADB/APK/AAB/signing/Room/KSP/test/release diagnosis.
+
+The Android executable guide now documents:
+
+- what APK and AAB mean;
+- debug versus release artifacts;
+- current package/application ID and Android SDK levels;
+- exact `app/build.gradle.kts` configuration meanings;
+- Git/JDK/Android Studio/SDK/Gradle prerequisites;
+- Windows/macOS/Linux SDK paths;
+- Gradle task syntax and diagnostic flags;
+- `gradle assembleDebug` and expected debug APK path;
+- `gradle assembleRelease` and release APK directory;
+- `gradle bundleRelease` and AAB directory;
+- grouped clean/test/lint/build commands;
+- `gradle installDebug`;
+- `adb devices`, `adb install`, `adb install -r`, `adb uninstall`, package inspection, Logcat, and selected-device syntax;
+- connected instrumentation tests;
+- `keytool` keystore creation and option meanings;
+- `zipalign` APK alignment and verification;
+- `apksigner` APK signing and certificate verification;
+- `jarsigner` AAB signing/verification;
+- release artifact security rules;
+- versionCode/versionName rules;
+- dependency reports and Gradle diagnostic flags;
+- offline Gradle build behavior;
+- artifact locations;
+- common installation/signature failure causes;
+- recommended development and release command sequences.
+
+No production signing secret was added to source control. Documentation explicitly instructs maintainers to keep keystores and passwords outside Git.
 
 ## Important files/modules
 
@@ -105,41 +153,104 @@ The repository is implemented against `15_spendcalc_master_prompt.md`. The requi
 - `.github/workflows/dependency-review.yml`
 - `.github/workflows/release.yml`
 - `README.md`
+- `docs/README.md`
+- `docs/android-build-guide.md`
+- `docs/command-reference.md`
+- `docs/setup.md`
+- `docs/release.md`
+- `docs/troubleshooting.md`
+
+## Android executable quick reference
+
+Build debug APK:
+
+```bash
+gradle assembleDebug
+```
+
+Expected file:
+
+```text
+app/build/outputs/apk/debug/app-debug.apk
+```
+
+Build release APK:
+
+```bash
+gradle assembleRelease
+```
+
+Release output directory:
+
+```text
+app/build/outputs/apk/release/
+```
+
+Build release AAB:
+
+```bash
+gradle bundleRelease
+```
+
+AAB output directory:
+
+```text
+app/build/outputs/bundle/release/
+```
+
+Install debug build on a connected device/emulator:
+
+```bash
+gradle installDebug
+```
+
+or:
+
+```bash
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+Full details: `docs/android-build-guide.md`.
 
 ## Commands/checks run and results
 
 - Confirmed repository exists, is public, default branch is `main`, and connected GitHub account has admin/push access.
-- Direct local `git clone` from the execution container was attempted but failed because that container cannot resolve `github.com`; this is an execution-environment network limitation, not a repository result.
-- GitHub commit status endpoint returned no legacy commit statuses for the latest commit; GitHub Actions uses check runs rather than those legacy statuses, so this did not verify the build.
-- Source-level compile-risk review identified and fixed two issues before final CI verification:
-  - changed settings card content receiver from invalid `Column` receiver to `ColumnScope`;
-  - safely finished nullable PDF pages;
-  - adapted the optional-argument history-save method to the no-argument UI callback;
-  - added explicit Android test-core dependency.
-- Final clean Android build/test/lint verification is still pending through a pull-request-triggered Actions run so workflow runs can be inspected with the connected GitHub tool.
+- Confirmed `app/build.gradle.kts`: application ID `in.sanskar.spendcalc`, `minSdk 26`, `targetSdk/compileSdk 35`, version `1.0.0`/code `1`, Java/Kotlin JVM target 17, release minification/resource shrinking.
+- Confirmed root `build.gradle.kts`: Android Gradle Plugin `8.7.3`, Kotlin `2.0.21`, KSP `2.0.21-1.0.28`.
+- Confirmed settings contain the single `:app` module and Google/Maven Central/plugin portal repository configuration.
+- Confirmed no committed `gradle/wrapper/gradle-wrapper.properties` at the checked path; documentation therefore continues to use local Gradle 8.9 rather than pretending wrapper commands currently exist.
+- Direct local `git clone` from the earlier execution container was attempted but failed because that container could not resolve `github.com`; this was an execution-environment network limitation, not a repository result.
+- Source-level compile-risk review previously identified/fixed UI/PDF/callback/test dependency issues.
+- This documentation session changed documentation through the connected GitHub API; it did not execute an Android SDK build locally.
+
+## Documentation commits from the 2026-08-20 build-guide pass
+
+- `e1f5440` — `docs: add complete Android build and executable guide`
+- `c014f32` — `docs: add complete command reference`
+- `7d6c878` — `docs: add documentation index and learning path`
+- `f0d68aa` — `docs: expand complete development environment setup`
+- `5398e26` — `docs: expand release packaging and signing workflow`
+- `37d8a97` — `docs: expand Android build and install troubleshooting`
 
 ## Known limitations / not-yet-verified items
 
-- The connected GitHub file/commit API does not expose a commit-author-email argument. Commits therefore use the authenticated GitHub identity. Documentation records `git config user.email "sanskarin@outlook.in"` for local contributions.
-- A Gradle wrapper JAR is not committed; documented local setup uses Gradle 8.9, while GitHub Actions explicitly installs Gradle 8.9 through `gradle/actions/setup-gradle`.
-- Real Android screenshots are intentionally not fabricated. `docs/assets/screenshots/README.md` defines the release screenshot capture checklist; captures should be added only from a verified real build with fictional data.
-- No production signing keys are committed. The release workflow builds an unsigned release candidate by design.
-- Database schema version is 1, so there is no historical migration to test yet; future schema version changes must add explicit migrations and migration tests.
+- The connected GitHub file/commit API does not expose a commit-author-email argument. Commits use the authenticated GitHub identity. Documentation records `git config user.email "sanskarin@outlook.in"` for local contributions.
+- A Gradle wrapper JAR is not committed; local docs use Gradle 8.9, while GitHub Actions can explicitly install/configure Gradle.
+- Real Android screenshots are intentionally not fabricated. `docs/assets/screenshots/README.md` defines the release screenshot capture checklist.
+- No production signing keys are committed. Release production signing remains intentionally external to source control.
+- Database schema version is 1, so there is no historical production migration path to test yet.
+- Final clean Android build/test/lint/device verification still needs to be executed in an Android SDK environment/CI and recorded when available.
 
-## Open issues
+## Open verification work
 
-- Final CI verification and any resulting compile/lint/test fixes.
-- Final repository audit after CI is green.
-- Real release screenshots and production signing remain release/distribution tasks rather than source-code secrets.
-
-## Next exact tasks
-
-1. Create a final verification branch from current `main`.
-2. Open a pull request to trigger CI/CodeQL/dependency-review workflows in a way inspectable by the connected GitHub workflow-run tools.
-3. Inspect failed workflow jobs/logs if any, patch every reproducible code/configuration issue, and rerun failed jobs.
-4. When checks are green, merge the verification PR.
-5. Update this file with actual verification results and final commit/PR hashes.
-6. Perform final repository tree/documentation audit and close any remaining blocker issue.
+1. Run/inspect CI for current `main` or a dedicated verification PR.
+2. Fix any reproducible compile/lint/test errors discovered by actual Gradle/Android tooling.
+3. Run connected Android instrumentation tests on a real device/emulator.
+4. Generate actual debug APK and release APK/AAB artifacts from a verified commit.
+5. Securely sign a production candidate outside Git and verify its certificate.
+6. Perform clean-install and upgrade testing when a previous public release exists.
+7. Capture real release screenshots only from a verified build with fictional data.
+8. Record final verification commit/run/artifact identities here.
 
 ## Migration notes
 
@@ -157,26 +268,6 @@ The repository is implemented against `15_spendcalc_master_prompt.md`. The requi
 - Text, CSV, and PDF receipt export/sharing.
 - Light/dark/system themes, large-text option, reduced-motion setting, onboarding, and responsive phone/tablet UI.
 - Local-first privacy model with no required account or Internet permission for core functionality.
-- Comprehensive repository documentation, testing baseline, CI, CodeQL, dependency review, Dependabot, issue templates, and release workflow.
+- Comprehensive repository documentation, testing baseline, CI, CodeQL, dependency review, Dependabot, issue templates, release workflow, and deep APK/AAB build/sign/install command documentation.
 
-## Recent meaningful commits
-
-- `9dd55fd` — `test: add Android test core dependency`
-- `320aa7e` — `docs: add complete SpendCalc README`
-- `325660a` — `design: add editable SpendCalc logo artwork`
-- `cece0be` — `docs: configure project funding links`
-- `2cac309` — `docs: add pull request quality checklist`
-- `d5aff753` — `ci: configure Dependabot updates`
-- `752bf5d` — `ci: add release candidate build workflow`
-- `d06fa42` — `ci: add dependency review workflow`
-- `5405b51` — `ci: add CodeQL Java Kotlin analysis`
-- `94710c2` — `ci: add Android build test lint security workflow`
-- `06deab3` — `fix: align app navigation callbacks and error handling`
-- `2be5f21` — `fix: safely finish nullable PDF page`
-- `14ecb79` — `fix: use ColumnScope for settings card content`
-- `332118d` — `feat: add Compose main activity`
-- `729c7dc` — `feat: build responsive calculator and receipt UI`
-- `c64a3d1` — `feat: implement app view model and calculator workflow`
-- `1489737` — `feat: implement precision-safe calculator engine`
-- `a2123ab` — `test: cover finance arithmetic and validation`
-- `0ebaa9e` — `docs: add implementation handoff plan`
+**Made by the Sanskar**
