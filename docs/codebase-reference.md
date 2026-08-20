@@ -222,7 +222,7 @@ The companion [`documentation-map.md`](documentation-map.md) explains which docu
 - `scripts/check_documentation_coverage.py` — Compares `git ls-files` with this file index so every tracked file is documented exactly once and stale/deleted paths cannot remain in the reference.
 - `scripts/check_format.py` — Lightweight repository text hygiene guard for UTF-8, final newline, trailing whitespace, and tab characters.
 - `scripts/check_kotlin_namespace.py` — Detects invalid/reserved Kotlin package/namespace regressions in source files.
-- `scripts/check_repository.py` — Verifies required repository/release documentation and local Markdown links plus required project identity/contact text.
+- `scripts/check_repository.py` — Verifies required repository/release/build documentation, project identity/contact text, local Markdown links, and current `versionName`/`versionCode` alignment between `app/build.gradle.kts` and the build/index/command guides; also rejects stale signed-APK version examples.
 - `scripts/scan_secrets.py` — Fast common secret-pattern scan intended to catch accidental credential/token/signing-material commits; complements, rather than replaces, platform secret scanning.
 
 <!-- FILE-INDEX:END -->
