@@ -48,9 +48,12 @@ All notable changes to SpendCalc are documented here. The project follows a sema
 - Android string-resource reference/duplicate-name audit in CI and the lightweight Repository Audit workflow.
 - Exhaustive `docs/codebase-reference.md` documenting every tracked root/configuration/GitHub/build/source/test/resource/script/policy/documentation file and its ownership/invariant role.
 - `docs/documentation-map.md` defining documentation authority, update triggers, anti-drift rules, and a change-to-document matrix.
+- `docs/README.md` as the central task-oriented documentation index for build, contribution, persistence/security/privacy, and release workflows.
+- `docs/android-build-guide.md` with end-to-end Android APK/AAB generation, output discovery, ADB installation, signing, artifact/version inspection, checksum, and release-oriented troubleshooting guidance.
+- `docs/command-reference.md` explaining Git, Java, Gradle, ADB, Android SDK packaging/signing utilities, repository guard commands, command options, and cross-platform invocation examples.
 - `scripts/check_documentation_coverage.py` comparing the codebase file index with `git ls-files` and rejecting missing, stale, or duplicated documentation entries.
 - Documentation coverage enforcement in both the main CI workflow and the lightweight Repository Audit workflow.
-- Repository required-file enforcement for the exhaustive codebase reference, documentation map, and documentation coverage guard.
+- Repository required-file enforcement for the exhaustive codebase reference, documentation map, documentation index, Android build guide, command reference, and documentation coverage guard.
 - Project policies for privacy, security, support, contribution, and community conduct.
 
 ### Changed
@@ -81,11 +84,13 @@ All notable changes to SpendCalc are documented here. The project follows a sema
 - Bottom-navigation icon graphics are decorative when a visible text label already provides the accessible name, avoiding duplicate screen-reader announcements.
 - GitHub Actions use maintained major action versions and concurrency cancellation for superseded pull-request runs.
 - CI runs Android lint across configured variants rather than only the debug variant.
-- Development, testing, architecture, setup, contribution, maintenance, release, verification, and source-audit documentation now cross-reference one explicit documentation source-of-truth model instead of duplicating ambiguous status.
+- Development, testing, architecture, setup, contribution, maintenance, release, verification, build, command, and source-audit documentation now cross-reference one explicit documentation source-of-truth model instead of duplicating ambiguous status.
 - The repository's intentional absence of a committed Gradle wrapper is documented explicitly; command-line setup uses compatible local Gradle 8.9 while CI pins Gradle 8.9 through the setup action.
 - Future tracked Room schema files are explicitly treated as migration/release evidence that must be individually covered by the exhaustive file reference.
 - The tag-triggered release workflow now runs the same fast formatting/namespace/documentation/resource/security/repository/secret guards, JVM tests, instrumentation compilation, and full Android lint before release compilation/uploading an unsigned artifact.
-- Repository required-file auditing now covers the complete permanent documentation/ADR/brand-screenshot-policy set rather than only a smaller release subset.
+- Repository required-file auditing now covers the complete permanent documentation/ADR/brand-screenshot-policy set plus the documentation index, Android executable guide, and command reference rather than only a smaller release subset.
+- The repository audit derives current application `versionName` and `versionCode` from `app/build.gradle.kts`, requires the build/index/command documents to match them, and rejects stale semantic-version names in signed-APK examples so release retargets cannot leave dangerous copy/paste packaging instructions behind.
+- The Android build/signing documentation has been reconciled with the `2.0.12` release candidate, including `SpendCalc-2.0.12-release.apk` examples and an explicit warning that application, Room database, and backup schema versions are separate concepts.
 
 ### Security
 
