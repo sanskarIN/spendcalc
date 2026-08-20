@@ -12,8 +12,9 @@ The goal is to prevent documentation drift. A longer document is not automatical
 4. **Privacy and security claims are intentionally conservative.** Do not imply encryption, authentication, network isolation, or atomicity guarantees stronger than the implementation provides.
 5. **Every tracked file is documented.** [`codebase-reference.md`](codebase-reference.md) is checked against `git ls-files` by `scripts/check_documentation_coverage.py`.
 6. **User-visible behavior changes require changelog consideration.** Internal refactors that preserve behavior may not need a user-facing changelog entry, but permanent engineering docs still need reconciliation when contracts move.
+7. **Command documentation has a clear hierarchy.** Short commands may be repeated where they help a workflow, but [`command-reference.md`](command-reference.md) owns detailed command meaning and [`android-build-guide.md`](android-build-guide.md) owns the end-to-end Android executable workflow.
 
-## Public product documentation
+## Documentation entry points
 
 ### `README.md`
 
@@ -22,6 +23,16 @@ The goal is to prevent documentation drift. A longer document is not automatical
 **Authoritative for:** concise public positioning, supported platform, high-level features, quick-start commands, project links, funding/support, and links into deeper documentation.
 
 **Not authoritative for:** detailed parser/security invariants, exact release checklist state, or implementation ownership of every file.
+
+### `docs/README.md`
+
+**Audience:** anyone who already knows they need documentation beyond the root README.
+
+**Authoritative for:** the documentation index, recommended reading paths, and navigation between setup, development, architecture, testing, security/privacy, accessibility, build/package, command, troubleshooting, release, and verification documents.
+
+It should remain compact and navigational. Detailed procedures belong in their specialized documents rather than being duplicated into this index.
+
+## Public product documentation
 
 ### `docs/features.md`
 
@@ -151,21 +162,37 @@ Repository or backup validation changes must reconcile this document and its tes
 
 **Authoritative for:** source-level completeness audit of the current `2.0.12` candidate. Its checked source items mean “implemented/audited in source,” not “all runtime/release gates passed.”
 
-## Build, setup, and operations documentation
+## Build, setup, commands, and operations documentation
 
 ### `docs/setup.md`
 
 **Audience:** new contributors.
 
-**Authoritative for:** local prerequisites and getting the Android project building/running.
+**Authoritative for:** prerequisites and the shortest supported path from a clean development machine to an Android project that can sync, build, and run.
 
-The current repository does not commit a Gradle wrapper; commands therefore assume a compatible local Gradle installation or Android Studio-managed Gradle environment as documented.
+The repository currently does not commit a Gradle wrapper; commands therefore assume a compatible local Gradle installation or Android Studio-managed Gradle environment as documented.
+
+### `docs/android-build-guide.md`
+
+**Audience:** developers and release operators who need to create, install, inspect, or package Android executables.
+
+**Authoritative for:** end-to-end Android build/output workflows, including environment verification, Gradle tasks, debug/release APKs, Android App Bundles, output locations, ADB installation, release signing/verification tools, checksums, artifact inspection, and build/release troubleshooting.
+
+This is the primary deep guide for the user-facing question “how do I make the Android executable file?” `setup.md` may link to it but should not duplicate the entire packaging/signing procedure.
+
+### `docs/command-reference.md`
+
+**Audience:** learners, contributors, and release operators who want to understand individual commands rather than only copy them.
+
+**Authoritative for:** command meanings, important options, expected behavior, and practical use of Git, Java, Gradle, ADB, Android SDK packaging/signing tools, and repository guard scripts.
+
+Workflow documents may contain commands in context; this reference owns the deeper command-by-command explanation.
 
 ### `docs/troubleshooting.md`
 
 **Audience:** contributors encountering setup/build/runtime issues.
 
-**Authoritative for:** known JDK/SDK/Gradle/KSP/Room/emulator/export/release troubleshooting paths.
+**Authoritative for:** known JDK/SDK/Gradle/KSP/Room/emulator/export/release troubleshooting paths and links to the deeper Android build/command references where applicable.
 
 ### `docs/github-maintenance.md`
 
@@ -178,6 +205,8 @@ The current repository does not commit a Gradle wrapper; commands therefore assu
 **Audience:** release operators/maintainers.
 
 **Authoritative for:** versioning, exact-commit verification, tag workflow, unsigned artifact handling, external signing, screenshot requirements, and publication sequence.
+
+It owns the release decision and evidence boundary; `android-build-guide.md` owns the detailed Android packaging/tool commands used within that process.
 
 ## Architecture Decision Records
 
@@ -232,8 +261,10 @@ Compatibility files retained for older handoffs. They must point to the canonica
 | UI/UX workflow | `features.md`, `accessibility.md`, `design-system.md` when conventions change, `testing.md`, `CHANGELOG.md` |
 | Performance/bounds/threading | `performance.md`, `development.md`, `testing.md`, `CHANGELOG.md` when user-visible |
 | Logging/redaction | `logging.md`, `SECURITY.md` if reporting posture changes, `testing.md` |
-| Build/dependency/toolchain | `setup.md`, `development.md`, `troubleshooting.md`, `github-maintenance.md`, `CHANGELOG.md` when release/user impact exists |
-| CI/repository guard | `development.md`, `testing.md`, `github-maintenance.md`, `verification.md`, `codebase-reference.md` |
+| Build/dependency/toolchain | `setup.md`, `android-build-guide.md`, `command-reference.md` when commands change, `development.md`, `troubleshooting.md`, `github-maintenance.md`, `CHANGELOG.md` when release/user impact exists |
+| APK/AAB/install/signing workflow | `android-build-guide.md`, `command-reference.md` for command semantics, `release.md`, `troubleshooting.md`, `verification.md` |
+| CI/repository guard | `development.md`, `testing.md`, `github-maintenance.md`, `verification.md`, `codebase-reference.md`, `command-reference.md` when invocation changes |
+| Documentation navigation/authority | `docs/README.md`, `documentation-map.md`, `codebase-reference.md` |
 | New/renamed/deleted tracked file | `codebase-reference.md` is mandatory; nearest architecture/testing/docs should also be reviewed |
 | Release status/version metadata | `CHANGELOG.md`, `ROADMAP.md`, `release.md`, `verification.md`, `release-candidate-final-audit.md`, `what_changed.md`; keep Room/backup schema versions independent unless compatibility actually changes |
 
@@ -243,9 +274,13 @@ Compatibility files retained for older handoffs. They must point to the canonica
 
 Workflow run IDs, exact PR heads, queued/pending states, and transient runner conditions belong primarily in `what_changed.md`. Permanent documentation should describe the rule, not repeatedly copy volatile IDs.
 
+### Do not create competing command sources
+
+`command-reference.md` explains individual commands, `android-build-guide.md` explains the complete Android executable workflow, and workflow-oriented documents (`setup.md`, `testing.md`, `release.md`, `troubleshooting.md`) include only the commands needed in their contexts. When a command changes, update the authoritative deep reference and every workflow whose copied invocation would become incorrect.
+
 ### Do not hide a source-of-truth conflict
 
-If the source, tests, README, feature docs, privacy/security docs, and release checklist disagree, resolve the disagreement. Do not add a new document that merely explains both contradictory versions.
+If the source, tests, README, feature docs, privacy/security docs, build guides, and release checklist disagree, resolve the disagreement. Do not add a new document that merely explains both contradictory versions.
 
 ### Do not turn manual gates into source checkboxes
 
