@@ -24,6 +24,8 @@ SpendCalc is built for everyday expense calculations rather than demo arithmetic
 
 > **Current release candidate:** `2.0.12` (`versionCode 20012`). Room database and explicit backup schema versions are maintained separately from the application release number. See [`docs/verification.md`](docs/verification.md) for the exact-head release gates.
 
+> **Build/documentation entry point:** [`docs/README.md`](docs/README.md). For Android executable files use the complete [`Android build/APK/AAB/signing guide`](docs/android-build-guide.md); for command meanings and options use the [`command reference`](docs/command-reference.md).
+
 ## Screenshots
 
 Verified screenshots are intentionally captured from real release-candidate builds rather than presented as fake production images. The capture checklist is in [`docs/assets/screenshots/README.md`](docs/assets/screenshots/README.md). Until those captures are added, the editable brand artwork at [`docs/assets/spendcalc-logo.svg`](docs/assets/spendcalc-logo.svg) is the repository's visual placeholder.
@@ -129,7 +131,7 @@ See [`PRIVACY.md`](PRIVACY.md) and [`SECURITY.md`](SECURITY.md).
 | Android API 26+ | Primary supported target |
 | Android phone | Supported |
 | Android tablet / wide screen | Responsive layout supported |
-| iOS / desktop / web | Not part of this repository |
+| iOS / desktop / web | Not part of the 2.0.12 Android release candidate |
 
 ## Tech stack
 
@@ -179,14 +181,21 @@ Persistence contract: [`docs/persistence-invariants.md`](docs/persistence-invari
 
 SpendCalc treats documentation coverage as a repository invariant rather than a one-time release task.
 
+- [`docs/README.md`](docs/README.md) is the central documentation index and provides task-based reading paths.
+- [`docs/android-build-guide.md`](docs/android-build-guide.md) is the complete Android executable guide for environment verification, APK/AAB generation, output locations, ADB installation, signing, version inspection, checksums, and release artifact preparation.
+- [`docs/command-reference.md`](docs/command-reference.md) explains Git, Java, Gradle, ADB, Android packaging/signing, and all repository guard commands instead of requiring users to copy commands without understanding them.
 - [`docs/codebase-reference.md`](docs/codebase-reference.md) documents **every tracked file individually**, including root/build/configuration, `.github` automation/templates, production Kotlin, Android resources, JVM/instrumentation tests, scripts, policies, assets, and permanent/compatibility documentation.
-- [`docs/documentation-map.md`](docs/documentation-map.md) defines which document is authoritative for product behavior, architecture, persistence/backup/security/privacy, testing, maintenance, release, ADRs, planning, and active-work continuity.
+- [`docs/documentation-map.md`](docs/documentation-map.md) defines which document is authoritative for product behavior, architecture, build/commands, persistence/backup/security/privacy, testing, maintenance, release, ADRs, planning, and active-work continuity.
 - `scripts/check_documentation_coverage.py` compares the marked file index with `git ls-files` and fails when a tracked file is missing, a stale path remains documented, or a path is listed more than once.
-- Main CI and the lightweight Repository Audit both run this coverage guard.
+- `scripts/check_repository.py` requires the core documentation suite, validates local Markdown links/project identity, and checks the build/index/command documents against application release metadata parsed from `app/build.gradle.kts`.
+- Main CI and the lightweight Repository Audit run the repository/documentation guards.
 - Adding, deleting, or renaming a tracked file therefore requires updating the codebase reference in the same pull request.
 
 Useful documentation entry points:
 
+- [Documentation index](docs/README.md)
+- [Android APK/AAB/build/sign/install guide](docs/android-build-guide.md)
+- [Complete command reference](docs/command-reference.md)
 - [Features](docs/features.md)
 - [Architecture](docs/architecture.md)
 - [Codebase file reference](docs/codebase-reference.md)
@@ -199,6 +208,7 @@ Useful documentation entry points:
 - [Backup security](docs/security-backup.md)
 - [Backup privacy](docs/privacy-backup.md)
 - [Persistence invariants](docs/persistence-invariants.md)
+- [Release-candidate source audit](docs/release-candidate-final-audit.md)
 - [Release guide](docs/release.md)
 - [Release verification](docs/verification.md)
 - [Troubleshooting](docs/troubleshooting.md)
@@ -242,9 +252,18 @@ Build the debug APK:
 gradle assembleDebug
 ```
 
+Expected debug executable:
+
+```text
+app/build/outputs/apk/debug/app-debug.apk
+```
+
 For Android Studio, open the repository, use JDK 17 for Gradle, allow sync to complete, select an API 26+ device/emulator, and run the `app` configuration.
 
-Detailed platform-specific setup: [`docs/setup.md`](docs/setup.md)
+- Environment/setup: [`docs/setup.md`](docs/setup.md)
+- Complete APK/AAB/build/install/signing steps: [`docs/android-build-guide.md`](docs/android-build-guide.md)
+- Meaning of every project/tool command: [`docs/command-reference.md`](docs/command-reference.md)
+- Build failure diagnosis: [`docs/troubleshooting.md`](docs/troubleshooting.md)
 
 ## Development checks
 
@@ -269,7 +288,7 @@ With an emulator/device:
 gradle connectedDebugAndroidTest
 ```
 
-See [`docs/development.md`](docs/development.md).
+See [`docs/development.md`](docs/development.md) and [`docs/command-reference.md`](docs/command-reference.md).
 
 ## Testing
 
@@ -290,7 +309,7 @@ The repository includes:
 - Room history/template/backup integration tests;
 - Compose calculator, named-history-save/Unicode-boundary, template-name/Unicode-boundary, History label-filter, and Settings busy-state tests;
 - a real-activity calculate/named-save/history journey test;
-- fast repository guards for formatting, namespace, exhaustive tracked-file documentation, string resources, Android local-first security, links/required files, and common secret patterns.
+- fast repository guards for formatting, namespace, exhaustive tracked-file documentation, required-document/release-metadata alignment, string resources, Android local-first security, links/required files, and common secret patterns.
 
 CI compiles the instrumentation suite; final release verification still requires executing it on a connected emulator/device.
 
@@ -310,20 +329,29 @@ Release compilation:
 gradle assembleRelease
 ```
 
+Release App Bundle:
+
+```bash
+gradle bundleRelease
+```
+
 Production signing material is **not** committed to the repository. Tagged release-candidate workflow runs produce an unsigned release artifact after repository/test/lint/release-build verification. Signing and store distribution use protected credentials outside source control.
 
 A configured, queued, pending, cancelled, or superseded workflow is not treated as a successful release check. The exact commit being released must satisfy [`docs/verification.md`](docs/verification.md), including connected-device/accessibility/export/backup/signing/screenshot gates that source CI cannot prove.
 
 Current tag target after all blocking gates pass: `v2.0.12`.
 
-Release guide: [`docs/release.md`](docs/release.md)
+- Android artifact/build/signing guide: [`docs/android-build-guide.md`](docs/android-build-guide.md)
+- Command meanings: [`docs/command-reference.md`](docs/command-reference.md)
+- Release procedure: [`docs/release.md`](docs/release.md)
+- Blocking release checklist: [`docs/verification.md`](docs/verification.md)
 
 ## CI and repository automation
 
-- `CI`: format, Kotlin namespace, exhaustive tracked-file documentation coverage, Android string-resource audit, Android local-first security policy, repository/link audit, secret scan, JVM tests, instrumentation-test compilation, full Android lint, debug build, release build.
+- `CI`: format, Kotlin namespace, exhaustive tracked-file documentation coverage, Android string-resource audit, Android local-first security policy, repository/link/release-document audit, secret scan, JVM tests, instrumentation-test compilation, full Android lint, debug build, release build.
 - `CodeQL`: Java/Kotlin static analysis.
 - `Dependency Review`: pull-request dependency change review.
-- `Repository Audit`: required-file/local-link audit plus tracked-file documentation coverage and Android string-resource reference/duplicate-name guard.
+- `Repository Audit`: required-document/local-link/release-metadata audit plus tracked-file documentation coverage and Android string-resource/reference/security guards.
 - `Dependabot`: weekly Gradle and GitHub Actions updates.
 - `Release Candidate`: tag-triggered unsigned release build.
 - Superseded PR workflow runs use concurrency cancellation so the newest revision receives runner priority.
@@ -358,7 +386,7 @@ Read [`docs/performance.md`](docs/performance.md).
 
 ## Troubleshooting
 
-JDK, Android SDK, local Gradle/no-wrapper setup, documentation/resource/security guards, KSP/Room, emulator, persistence, export/backup, and release troubleshooting is documented in [`docs/troubleshooting.md`](docs/troubleshooting.md).
+JDK, Android SDK, local Gradle/no-wrapper setup, documentation/resource/security guards, KSP/Room, emulator, persistence, export/backup, and release troubleshooting is documented in [`docs/troubleshooting.md`](docs/troubleshooting.md). Build/signing-specific troubleshooting is also cross-referenced from [`docs/android-build-guide.md`](docs/android-build-guide.md).
 
 ## Contributing
 
