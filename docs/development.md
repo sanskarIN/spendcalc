@@ -19,7 +19,7 @@ app/src/main/java/in/sanskar/spendcalc/
 └── SpendCalcApplication.kt
 ```
 
-For ownership of every tracked file—not only Kotlin production code—use [`codebase-reference.md`](codebase-reference.md). It covers build/configuration files, `.github` automation, Android resources, source/test files, scripts, policies, assets, and documentation. [`documentation-map.md`](documentation-map.md) defines which document is authoritative for each kind of engineering or release question.
+For ownership of every tracked file—not only Kotlin production code—use [`codebase-reference.md`](codebase-reference.md). It covers build/configuration files, `.github` automation, Android resources, source/test files, scripts, policies, assets, and documentation. [`documentation-map.md`](documentation-map.md) defines which document is authoritative for each kind of engineering or release question. [`README.md`](README.md) is the documentation index, [`android-build-guide.md`](android-build-guide.md) owns the end-to-end APK/AAB/install/signing workflow, and [`command-reference.md`](command-reference.md) owns detailed command meanings.
 
 ## Finance changes
 
@@ -86,6 +86,16 @@ Dependency updates should be isolated when practical and verified with build, te
 
 The repository currently does not commit a Gradle wrapper. Developer commands use a compatible local Gradle installation (CI pins Gradle 8.9 through `gradle/actions/setup-gradle`). If a wrapper is introduced later, document every new wrapper file in `codebase-reference.md` and update setup/CI guidance deliberately.
 
+Application release metadata lives in `app/build.gradle.kts`. When `versionName` or `versionCode` changes:
+
+1. keep `versionCode` monotonically increasing for distributable releases;
+2. do not change Room database or explicit backup schema versions unless those actual compatibility contracts changed;
+3. update `CHANGELOG.md`, `ROADMAP.md`, README/public docs, `android-build-guide.md`, `command-reference.md`, release/verification/source-audit documentation, and the current handoff as required by `documentation-map.md`;
+4. update any signed-artifact filename examples that intentionally include the application version;
+5. run `python3 scripts/check_repository.py` before expensive Gradle work. The guard derives the current `versionName`/`versionCode` from `app/build.gradle.kts` and checks the documentation index, Android build guide, command reference, and signed-APK examples for drift.
+
+The repository metadata guard is a source-consistency check only. It does not prove the built APK reports the correct version or that a production artifact is signed/tested; artifact inspection and manual release gates remain required.
+
 ## Logging
 
 Use `SafeLogger` for structured event metadata when logging is justified. Never log secrets, authentication headers, signing data, backup payloads, receipt contents, or raw sensitive user content. Keep release logging minimal and update redaction tests when new sensitive categories are introduced. See [`logging.md`](logging.md).
@@ -97,6 +107,7 @@ Documentation is a maintained repository invariant, not a cleanup-only activity.
 - Every tracked path must appear exactly once inside the marked file index in [`codebase-reference.md`](codebase-reference.md).
 - Adding, deleting, or renaming a tracked file requires updating that index in the same change.
 - Run `python3 scripts/check_documentation_coverage.py`; it compares the reference against `git ls-files` and rejects missing, stale, or duplicate entries.
+- Run `python3 scripts/check_repository.py` after changing release/build documentation; it verifies required docs, local links, identity/contact requirements, and release metadata alignment with the app Gradle source.
 - Use [`documentation-map.md`](documentation-map.md) to decide which permanent documents must change when behavior/architecture/testing/security/privacy/release rules change.
 - Do not place volatile workflow IDs or temporary runner states throughout permanent docs; those belong in `what_changed.md`.
 - Do not claim manual device/accessibility/signing/screenshot gates in source documentation unless they were actually performed.
@@ -124,7 +135,7 @@ With an emulator/device:
 gradle connectedDebugAndroidTest
 ```
 
-See [`testing.md`](testing.md) for what each layer proves and what still requires a real Android runtime.
+See [`testing.md`](testing.md) for what each layer proves and what still requires a real Android runtime. See [`command-reference.md`](command-reference.md) for detailed command meanings and cross-platform invocation notes.
 
 ## Git workflow
 
