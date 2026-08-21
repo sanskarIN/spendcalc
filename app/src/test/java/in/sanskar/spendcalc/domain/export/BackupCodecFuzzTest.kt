@@ -35,7 +35,7 @@ class BackupCodecFuzzTest {
         val codec = BackupCodec()
 
         repeat(100) { iteration ->
-            val encoded = codec.encode(backup(iteration, randomText(random, alphabet)))
+            val encoded = codec.encode(backup(iteration, "x" + randomText(random, alphabet)))
             val checksumStart = encoded.lastIndexOf("SHA256\t")
             val body = encoded.substring(0, checksumStart).toCharArray()
             val mutationIndex = body.indices.firstOrNull { body[it].isLetterOrDigit() } ?: 0
