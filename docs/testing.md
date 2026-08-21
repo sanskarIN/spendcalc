@@ -50,7 +50,7 @@ Current invariants include:
 
 - valid generated finance input remains deterministic and produces non-negative rounded totals;
 - generated negative item amounts fail validation rather than throwing;
-- generated Unicode backup labels/names round trip exactly;
+- generated Unicode backup labels/names round trip exactly while remaining inside the saved-record name invariant;
 - deterministic mutations of a checksummed backup body fail integrity verification;
 - generated CSV text remains safely quoted/neutralized according to the formatter contract.
 
@@ -83,7 +83,9 @@ Android coverage includes:
 - Settings backup busy/progress state and disabled duplicate backup actions;
 - a real-activity journey that completes onboarding when needed, enters an amount, verifies the calculated result, saves it with a meaningful label, navigates to History, and verifies both the saved label and amount.
 
-CI compiles the instrumentation suite on every pull request so Android tests cannot silently stop compiling. Actual emulator/device execution remains a documented release gate; compile-only CI is not represented as connected-device success.
+The main CI workflow compiles the instrumentation suite on every pull request so Android tests cannot silently stop compiling. The separate `Android Instrumentation` workflow goes further: it boots a hardware-accelerated API 35 `google_apis` x86_64 emulator on Ubuntu, disables animations, and runs `connectedDebugAndroidTest` against the exact pull-request head. Failed connected runs upload the Android instrumentation reports for diagnosis.
+
+Automated emulator success is strong runtime evidence, but it does not replace human review of TalkBack, real font scaling, phone/tablet presentation, system share/document pickers, splash behavior, or a representative physical-device check before production release.
 
 ## Repository guard tests
 
@@ -158,7 +160,7 @@ The exported-schema directory is documented by `app/schemas/README.md`; future g
 
 ## CI expectations
 
-The main CI workflow checks formatting, Kotlin package syntax, tracked-file documentation coverage, Android string resources, Android local-first security policy, repository required files/metadata/Markdown links/release-document version alignment, common secret patterns, JVM unit tests, instrumentation-test compilation, full Android lint, debug compilation, and release compilation. Separate workflows run CodeQL, dependency review, and a lightweight Repository Audit. The lightweight audit also executes documentation coverage, repository metadata/link/release-document checks, Android string-resource validation, and the local-first Android security guard.
+The main CI workflow checks formatting, Kotlin package syntax, tracked-file documentation coverage, Android string resources, Android local-first security policy, repository required files/metadata/Markdown links/release-document version alignment, common secret patterns, JVM unit tests, instrumentation-test compilation, full Android lint, debug compilation, and release compilation. Separate workflows run CodeQL, dependency review, a lightweight Repository Audit, and connected Android instrumentation tests on an API 35 emulator. The lightweight audit also executes documentation coverage, repository metadata/link/release-document checks, Android string-resource validation, and the local-first Android security guard.
 
 A release candidate should not proceed unless the checks associated with the **exact commit being released** complete successfully or a documented exception has been explicitly reviewed. Queued/pending/cancelled/superseded runs are not successes.
 
@@ -166,7 +168,7 @@ A release candidate should not proceed unless the checks associated with the **e
 
 Before a production release:
 
-1. run `connectedDebugAndroidTest` on a representative emulator/device;
+1. re-run `connectedDebugAndroidTest` on a representative local emulator or physical device in addition to the automated API 35 emulator workflow;
 2. review phone and tablet/wide layouts;
 3. review light, dark, and system theme behavior;
 4. enable large system font scale and the app large-text preference;
