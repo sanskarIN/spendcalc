@@ -27,4 +27,28 @@ class BackupCodecValidationTest {
             codec.decode(payload),
         )
     }
+
+    @Test
+    fun `rejects excessive line counts before splitting records`() {
+        val payload = "\n".repeat(10_004)
+
+        assertEquals(
+            BackupDecodeResult.Failure(BackupDecodeError.TOO_LARGE),
+            codec.decode(payload),
+        )
+    }
+
+    @Test
+    fun `rejects malformed checksum fields before hashing`() {
+        val payload = buildString {
+            appendLine("SPENDCALC_BACKUP\t1\t1")
+            appendLine("P\tSYSTEM\tfalse\tfalse\tNEVER\ttrue")
+            appendLine("SHA256\t${"z".repeat(64)}")
+        }
+
+        assertEquals(
+            BackupDecodeResult.Failure(BackupDecodeError.INVALID_FORMAT),
+            codec.decode(payload),
+        )
+    }
 }

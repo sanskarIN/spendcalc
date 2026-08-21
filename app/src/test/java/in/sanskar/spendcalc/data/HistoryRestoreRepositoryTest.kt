@@ -69,8 +69,16 @@ class HistoryRestoreRepositoryTest {
 
         override fun observeAll(): Flow<List<HistoryEntity>> = entries
 
+        override suspend fun snapshotAll(): List<HistoryEntity> = entries.value
+
         override suspend fun upsert(entry: HistoryEntity) {
             entries.value = (entries.value.filterNot { it.id == entry.id } + entry)
+                .sortedByDescending { it.createdAtEpochMillis }
+        }
+
+        override suspend fun upsertAll(entries: List<HistoryEntity>) {
+            val ids = entries.mapTo(mutableSetOf()) { it.id }
+            this.entries.value = (this.entries.value.filterNot { it.id in ids } + entries)
                 .sortedByDescending { it.createdAtEpochMillis }
         }
 

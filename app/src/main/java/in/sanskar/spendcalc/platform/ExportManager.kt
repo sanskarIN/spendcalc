@@ -19,6 +19,17 @@ object ExportManager {
         context.startActivity(Intent.createChooser(intent, title))
     }
 
+    fun createTextFile(
+        context: Context,
+        fileName: String,
+        text: String,
+    ): File {
+        val directory = File(context.cacheDir, "exports").apply { mkdirs() }
+        return File(directory, safeFileName(fileName)).also { file ->
+            file.writeText(text, Charsets.UTF_8)
+        }
+    }
+
     fun shareTextFile(
         context: Context,
         chooserTitle: String,
@@ -26,10 +37,12 @@ object ExportManager {
         mimeType: String,
         text: String,
     ) {
-        val directory = File(context.cacheDir, "exports").apply { mkdirs() }
-        val file = File(directory, safeFileName(fileName))
-        file.writeText(text, Charsets.UTF_8)
-        shareFile(context, chooserTitle, file, mimeType)
+        shareFile(
+            context = context,
+            chooserTitle = chooserTitle,
+            file = createTextFile(context, fileName, text),
+            mimeType = mimeType,
+        )
     }
 
     fun shareFile(
@@ -38,7 +51,8 @@ object ExportManager {
         file: File,
         mimeType: String,
     ) {
-        require(file.canonicalPath.startsWith(File(context.cacheDir, "exports").canonicalPath)) {
+        val exportDirectory = File(context.cacheDir, "exports")
+        require(file.isWithinDirectory(exportDirectory)) {
             "Only SpendCalc cache exports may be shared"
         }
         val uri = FileProvider.getUriForFile(

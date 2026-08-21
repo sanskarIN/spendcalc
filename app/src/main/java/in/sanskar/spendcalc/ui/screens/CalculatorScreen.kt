@@ -36,8 +36,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import `in`.sanskar.spendcalc.R
 import `in`.sanskar.spendcalc.domain.model.CalculationResult
+import `in`.sanskar.spendcalc.domain.model.MAX_SAVED_NAME_CHARS
+import `in`.sanskar.spendcalc.domain.model.truncateUtf16Safely
 import `in`.sanskar.spendcalc.ui.CalculatorUiState
 import `in`.sanskar.spendcalc.ui.FormIssue
+import `in`.sanskar.spendcalc.ui.MAX_EXPENSE_ITEMS
 import `in`.sanskar.spendcalc.ui.components.MoneyLine
 import `in`.sanskar.spendcalc.ui.components.ScreenHeader
 import `in`.sanskar.spendcalc.ui.theme.SpendCalcTokens
@@ -57,7 +60,7 @@ fun CalculatorScreen(
     onCurrencyChange: (String) -> Unit,
     onExchangeRateChange: (String) -> Unit,
     onConvertedCurrencyChange: (String) -> Unit,
-    onSaveHistory: () -> Unit,
+    onSaveHistory: (String) -> Unit,
     onSaveTemplate: (String) -> Unit,
     onReset: () -> Unit,
     onShareReceipt: () -> Unit,
@@ -65,18 +68,69 @@ fun CalculatorScreen(
     onSharePdf: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var showHistoryDialog by rememberSaveable { mutableStateOf(false) }
+    var historyLabel by rememberSaveable { mutableStateOf("") }
     var showTemplateDialog by rememberSaveable { mutableStateOf(false) }
     var templateName by rememberSaveable { mutableStateOf("") }
 
+    if (showHistoryDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                historyLabel = ""
+                showHistoryDialog = false
+            },
+            title = { Text(stringResource(R.string.history_label_title)) },
+            text = {
+                OutlinedTextField(
+                    value = historyLabel,
+                    onValueChange = {
+                        historyLabel = truncateUtf16Safely(it, MAX_SAVED_NAME_CHARS)
+                    },
+                    label = { Text(stringResource(R.string.history_label)) },
+                    supportingText = { Text(stringResource(R.string.history_label_hint)) },
+                    singleLine = true,
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onSaveHistory(historyLabel)
+                        historyLabel = ""
+                        showHistoryDialog = false
+                    },
+                    enabled = state.result != null,
+                ) {
+                    Text(stringResource(R.string.save_history_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        historyLabel = ""
+                        showHistoryDialog = false
+                    },
+                ) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            },
+        )
+    }
+
     if (showTemplateDialog) {
         AlertDialog(
-            onDismissRequest = { showTemplateDialog = false },
+            onDismissRequest = {
+                templateName = ""
+                showTemplateDialog = false
+            },
             title = { Text(stringResource(R.string.save_template)) },
             text = {
                 OutlinedTextField(
                     value = templateName,
-                    onValueChange = { templateName = it },
+                    onValueChange = {
+                        templateName = truncateUtf16Safely(it, MAX_SAVED_NAME_CHARS)
+                    },
                     label = { Text(stringResource(R.string.template_name)) },
+                    supportingText = { Text(stringResource(R.string.template_name_hint)) },
                     singleLine = true,
                 )
             },
@@ -89,11 +143,16 @@ fun CalculatorScreen(
                     },
                     enabled = state.result != null,
                 ) {
-                    Text(stringResource(R.string.save_template))
+                    Text(stringResource(R.string.save_template_confirm))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showTemplateDialog = false }) {
+                TextButton(
+                    onClick = {
+                        templateName = ""
+                        showTemplateDialog = false
+                    },
+                ) {
                     Text(stringResource(android.R.string.cancel))
                 }
             },
@@ -124,7 +183,7 @@ fun CalculatorScreen(
                     onCurrencyChange = onCurrencyChange,
                     onExchangeRateChange = onExchangeRateChange,
                     onConvertedCurrencyChange = onConvertedCurrencyChange,
-                    onSaveHistory = onSaveHistory,
+                    onSaveHistory = { showHistoryDialog = true },
                     onSaveTemplate = { showTemplateDialog = true },
                     onReset = onReset,
                     modifier = Modifier
@@ -163,7 +222,7 @@ fun CalculatorScreen(
                     onCurrencyChange = onCurrencyChange,
                     onExchangeRateChange = onExchangeRateChange,
                     onConvertedCurrencyChange = onConvertedCurrencyChange,
-                    onSaveHistory = onSaveHistory,
+                    onSaveHistory = { showHistoryDialog = true },
                     onSaveTemplate = { showTemplateDialog = true },
                     onReset = onReset,
                 )
@@ -250,8 +309,19 @@ private fun CalculatorForm(
             }
         }
 
-        OutlinedButton(onClick = onAddItem, modifier = Modifier.fillMaxWidth()) {
+        OutlinedButton(
+            onClick = onAddItem,
+            enabled = state.items.size < MAX_EXPENSE_ITEMS,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
             Text(stringResource(R.string.add_item))
+        }
+        if (state.items.size >= MAX_EXPENSE_ITEMS) {
+            Text(
+                text = stringResource(R.string.item_limit_reached),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
 
         PercentageField(

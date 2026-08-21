@@ -1,5 +1,6 @@
 package `in`.sanskar.spendcalc.platform
 
+import java.util.Locale
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -21,6 +22,23 @@ class SafeLoggerTest {
         assertTrue(message.contains("token=[REDACTED]"))
         assertTrue(message.contains("backup=[REDACTED]"))
         assertTrue(message.contains("stage=share"))
+    }
+
+    @Test
+    fun `redaction keys are locale independent`() {
+        val previousLocale = Locale.getDefault()
+        try {
+            Locale.setDefault(Locale.forLanguageTag("tr-TR"))
+            val message = SafeLogger.format(
+                event = "event",
+                fields = mapOf("API_KEY" to "must-not-leak"),
+            )
+
+            assertFalse(message.contains("must-not-leak"))
+            assertTrue(message.contains("API_KEY=[REDACTED]"))
+        } finally {
+            Locale.setDefault(previousLocale)
+        }
     }
 
     @Test

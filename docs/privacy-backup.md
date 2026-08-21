@@ -1,29 +1,31 @@
-# Privacy Addendum — Explicit Backup Files
+# Privacy — Backup Paths
 
-This document supplements [`../PRIVACY.md`](../PRIVACY.md) for the explicit user-driven backup/restore feature.
+SpendCalc has two distinct backup/transfer paths. They should not be confused.
 
-## Data included
+## Explicit user-driven backup
 
-A SpendCalc backup can contain:
+The **Settings > Backup and restore** controls use Android's Storage Access Framework. SpendCalc asks the system picker for a destination when exporting and for a document when restoring. The app does not require broad storage permission and does not upload the selected file itself.
 
-- calculation history, including user-entered labels and monetary results;
-- saved calculation templates;
-- theme, accessibility, retention, and onboarding preferences.
+The explicit backup contains saved history summaries, templates, and preferences. It can contain user-entered labels and financial values. It is not encrypted by SpendCalc, so the user controls confidentiality by choosing where the file is stored and who can access that location.
 
-## When data leaves app-private storage
+Restore is destructive replacement and therefore requires an explicit confirmation dialog before current saved data is replaced.
 
-SpendCalc creates a backup only after the user selects **Export backup** and then chooses a destination through Android's system document picker. The app does not automatically upload the backup and does not require an account or network connection.
+## Android system-managed backup/device transfer
 
-Once exported, the backup is outside SpendCalc's private app sandbox. Its privacy then depends on the destination and any application or service the user chooses to use with that file.
+The Android manifest enables platform backup. The repository's backup/data-extraction rules limit the included app data to the Room database and DataStore directory. Depending on Android version, device configuration, account settings, OEM behavior, and user backup settings, Android may copy that private app data through its system backup/device-transfer mechanism.
 
-## Confidentiality
+This path is controlled by Android rather than by a SpendCalc account or SpendCalc server.
 
-The current backup format is not encrypted. Its SHA-256 checksum is for accidental-corruption detection, not secrecy or proof of who created the file. Anyone with access to the file may be able to inspect its contents.
+## Network behavior
 
-## Restore
+The current application manifest does not request Android's `INTERNET` permission. Core calculation, history, templates, settings, explicit backup encoding/decoding, and receipt generation are local operations.
 
-Restoring is explicit and requires confirmation because current local history, templates, and preferences are replaced by the selected backup. SpendCalc validates format, limits, schema, and checksum before accepting the file.
+Opening repository/funding links or composing an email hands an intent to another installed application. What that external application does is governed by that application's permissions and privacy terms.
 
-## Deletion
+## Cache exports
 
-Deleting app history/templates does not automatically delete backup files that the user previously exported to another location. Those files must be removed from their chosen destination separately.
+CSV/PDF export files are created inside the app-private cache export directory and shared through a non-exported `FileProvider` with temporary read permission. They are not part of the explicit backup format. Android may clear cache files at any time.
+
+## Maintainer rule
+
+Any future feature that adds direct networking, telemetry, analytics, cloud sync, authentication, or a SpendCalc-operated backend must update the manifest, privacy/security documentation, UI disclosure, tests, and release review before shipping.

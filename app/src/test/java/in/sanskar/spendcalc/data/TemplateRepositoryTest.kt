@@ -3,12 +3,17 @@ package `in`.sanskar.spendcalc.data
 import `in`.sanskar.spendcalc.data.local.TemplateDao
 import `in`.sanskar.spendcalc.data.local.TemplateEntity
 import `in`.sanskar.spendcalc.domain.model.CalculationInput
+import `in`.sanskar.spendcalc.domain.model.CalculationTemplate
+import `in`.sanskar.spendcalc.domain.model.ExpenseItem
+import `in`.sanskar.spendcalc.domain.model.MAX_SAVED_ID_CHARS
+import `in`.sanskar.spendcalc.domain.model.MAX_SAVED_NAME_CHARS
 import java.math.BigDecimal
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TemplateRepositoryTest {
@@ -42,6 +47,87 @@ class TemplateRepositoryTest {
     }
 
     @Test
+    fun `save rejects invalid template settings before persistence`() = runTest {
+        val dao = FakeTemplateDao()
+        val repository = TemplateRepository(dao)
+        val invalid = CalculationInput(
+            items = emptyList(),
+            taxPercent = BigDecimal("1001"),
+        )
+
+        val failure = runCatching { repository.save("Invalid", invalid) }.exceptionOrNull()
+
+        assertTrue(failure is IllegalArgumentException)
+        assertTrue(repository.observeTemplates().first().isEmpty())
+    }
+
+    @Test
+    fun `save rejects a negative persistence timestamp`() = runTest {
+        val dao = FakeTemplateDao()
+        val repository = TemplateRepository(dao = dao, clock = { -1L })
+
+        val failure = runCatching {
+            repository.save("Invalid time", CalculationInput(items = emptyList()))
+        }.exceptionOrNull()
+
+        assertTrue(failure is IllegalArgumentException)
+        assertTrue(repository.observeTemplates().first().isEmpty())
+    }
+
+    @Test
+    fun `save validates only persisted template settings not line items`() = runTest {
+        val dao = FakeTemplateDao()
+        val repository = TemplateRepository(dao)
+        val input = CalculationInput(
+            items = listOf(
+                ExpenseItem(
+                    id = "not-persisted",
+                    name = "Ignored by template",
+                    amount = BigDecimal("-1"),
+                ),
+            ),
+            taxPercent = BigDecimal("18"),
+        )
+
+        repository.save("Tax preset", input)
+
+        assertEquals("Tax preset", repository.observeTemplates().first().single().name)
+    }
+
+    @Test
+    fun `normalizes and bounds saved template names`() = runTest {
+        val dao = FakeTemplateDao()
+        val repository = TemplateRepository(dao)
+        val oversized = "  ${"t".repeat(MAX_SAVED_NAME_CHARS + 25)}  "
+
+        repository.save(oversized, CalculationInput(items = emptyList()))
+
+        assertEquals("t".repeat(MAX_SAVED_NAME_CHARS), repository.observeTemplates().first().single().name)
+    }
+
+    @Test
+    fun `blank template names use a stable fallback`() = runTest {
+        val dao = FakeTemplateDao()
+        val repository = TemplateRepository(dao)
+
+        repository.save("   ", CalculationInput(items = emptyList()))
+
+        assertEquals("Template", repository.observeTemplates().first().single().name)
+    }
+
+    @Test
+    fun `snapshot returns a stable mapped template list`() = runTest {
+        val dao = FakeTemplateDao()
+        val repository = TemplateRepository(dao)
+        repository.restore(template("b", "Beta", 20L))
+        repository.restore(template("a", "Alpha", 10L))
+
+        val snapshot = repository.snapshot()
+
+        assertEquals(listOf("Alpha", "Beta"), snapshot.map { it.name })
+    }
+
+    @Test
     fun `delete removes template`() = runTest {
         val dao = FakeTemplateDao()
         val repository = TemplateRepository(dao)
@@ -52,18 +138,167 @@ class TemplateRepositoryTest {
         assertEquals(emptyList<TemplateEntity>(), dao.observeAll().first())
     }
 
+    @Test
+    fun `restore reinserts the exact deleted template`() = runTest {
+        val dao = FakeTemplateDao()
+        val repository = TemplateRepository(dao)
+        val original = template("restore-me", "Restored", 123L)
+
+        repository.restore(original)
+        repository.delete(original.id)
+        repository.restore(original)
+
+        assertEquals(original, repository.observeTemplates().first().single())
+    }
+
+    @Test
+    fun `restore preserves valid template name whitespace exactly`() = runTest {
+        val dao = FakeTemplateDao()
+        val repository = TemplateRepository(dao)
+        val original = template("backup", "  Dinner preset  ", 124L)
+
+        repository.restore(original)
+
+        assertEquals(original, repository.observeTemplates().first().single())
+    }
+
+    @Test
+    fun `restore canonicalizes valid template currency codes`() = runTest {
+        val dao = FakeTemplateDao()
+        val repository = TemplateRepository(dao)
+        val original = template("canonical", "Currency", 125L).copy(
+            currencyCode = " inr ",
+            convertedCurrencyCode = "usd",
+        )
+
+        repository.restore(original)
+
+        val restored = repository.observeTemplates().first().single()
+        assertEquals("INR", restored.currencyCode)
+        assertEquals("USD", restored.convertedCurrencyCode)
+    }
+
+    @Test
+    fun `restore rejects an oversized template name instead of rewriting it`() = runTest {
+        val dao = FakeTemplateDao()
+        val repository = TemplateRepository(dao)
+        val invalid = template(
+            id = "invalid",
+            name = "t".repeat(MAX_SAVED_NAME_CHARS + 1),
+            createdAt = 126L,
+        )
+
+        val failure = runCatching { repository.restore(invalid) }.exceptionOrNull()
+
+        assertTrue(failure is IllegalArgumentException)
+        assertTrue(repository.observeTemplates().first().isEmpty())
+    }
+
+    @Test
+    fun `restore rejects invalid template envelope fields`() = runTest {
+        val invalidTemplates = listOf(
+            template("timestamp", "Time", -1L),
+            template("x".repeat(MAX_SAVED_ID_CHARS + 1), "Identifier", 127L),
+        )
+
+        invalidTemplates.forEach { invalid ->
+            val dao = FakeTemplateDao()
+            val repository = TemplateRepository(dao)
+
+            val failure = runCatching { repository.restore(invalid) }.exceptionOrNull()
+
+            assertTrue(failure is IllegalArgumentException)
+            assertTrue(repository.observeTemplates().first().isEmpty())
+        }
+    }
+
+    @Test
+    fun `restore rejects invalid finance settings before persistence`() = runTest {
+        val dao = FakeTemplateDao()
+        val repository = TemplateRepository(dao)
+        val invalid = template("invalid-settings", "Invalid", 128L).copy(
+            exchangeRate = BigDecimal.ZERO,
+        )
+
+        val failure = runCatching { repository.restore(invalid) }.exceptionOrNull()
+
+        assertTrue(failure is IllegalArgumentException)
+        assertTrue(repository.observeTemplates().first().isEmpty())
+    }
+
+    @Test
+    fun `replace all validates every template before replacing existing data`() = runTest {
+        val dao = FakeTemplateDao()
+        val repository = TemplateRepository(dao)
+        repository.save("Existing", CalculationInput(items = emptyList()))
+        val invalid = template("invalid", "Invalid", 129L).copy(splitCount = 0)
+
+        val failure = runCatching {
+            repository.replaceAll(
+                listOf(
+                    template("valid", "Valid", 130L),
+                    invalid,
+                ),
+            )
+        }.exceptionOrNull()
+
+        assertTrue(failure is IllegalArgumentException)
+        assertEquals(listOf("Existing"), repository.observeTemplates().first().map { it.name })
+    }
+
+    @Test
+    fun `replace all clears stale templates and restores backup templates`() = runTest {
+        val dao = FakeTemplateDao()
+        val repository = TemplateRepository(dao)
+        repository.save("Old", CalculationInput(items = emptyList()))
+        val restored = listOf(
+            template("b", "Beta", 20L),
+            template("a", "Alpha", 10L),
+        )
+
+        repository.replaceAll(restored)
+
+        assertEquals(listOf("Alpha", "Beta"), repository.observeTemplates().first().map { it.name })
+    }
+
+    private fun template(id: String, name: String, createdAt: Long) = CalculationTemplate(
+        id = id,
+        name = name,
+        createdAtEpochMillis = createdAt,
+        discountPercent = BigDecimal("5"),
+        taxPercent = BigDecimal("18"),
+        tipPercent = BigDecimal("3"),
+        serviceChargePercent = BigDecimal("2"),
+        splitCount = 4,
+        currencyCode = "INR",
+        exchangeRate = BigDecimal("0.0119"),
+        convertedCurrencyCode = "USD",
+    )
+
     private class FakeTemplateDao : TemplateDao {
         private val templates = MutableStateFlow<List<TemplateEntity>>(emptyList())
 
         override fun observeAll(): Flow<List<TemplateEntity>> = templates
+
+        override suspend fun snapshotAll(): List<TemplateEntity> = templates.value
 
         override suspend fun upsert(template: TemplateEntity) {
             templates.value = (templates.value.filterNot { it.id == template.id } + template)
                 .sortedBy { it.name.lowercase() }
         }
 
+        override suspend fun upsertAll(templates: List<TemplateEntity>) {
+            val ids = templates.mapTo(mutableSetOf()) { it.id }
+            this.templates.value = (this.templates.value.filterNot { it.id in ids } + templates)
+                .sortedBy { it.name.lowercase() }
+        }
+
         override suspend fun deleteById(id: String) {
             templates.value = templates.value.filterNot { it.id == id }
+        }
+
+        override suspend fun clear() {
+            templates.value = emptyList()
         }
     }
 }

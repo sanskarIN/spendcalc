@@ -18,7 +18,7 @@ It is intentionally detailed. A new contributor should be able to start with a c
 >
 > UI toolkit: Jetpack Compose + Material 3
 >
-> Current app version: `1.0.0` (`versionCode = 1`)
+> Current release candidate: `2.0.12` (`versionCode = 20012`)
 
 ---
 
@@ -55,7 +55,7 @@ Use:
 
 The Android configuration is defined in `app/build.gradle.kts`.
 
-Important values are:
+Important values for the current 2.0.12 release candidate are:
 
 ```kotlin
 android {
@@ -66,8 +66,8 @@ android {
         applicationId = "in.sanskar.spendcalc"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 20012
+        versionName = "2.0.12"
     }
 }
 ```
@@ -81,8 +81,10 @@ Meaning:
 | `minSdk = 26` | The app is declared compatible with Android API 26 and newer. |
 | `targetSdk = 35` | The Android behavior level against which the app declares that it has been tested. |
 | `compileSdk = 35` | Android SDK API level used to compile the source. |
-| `versionCode = 1` | Internal monotonically increasing integer used by Android/store upgrade logic. |
-| `versionName = "1.0.0"` | Human-readable release version. |
+| `versionCode = 20012` | Current internal monotonically increasing Android/store upgrade version for app release 2.0.12. |
+| `versionName = "2.0.12"` | Current human-readable application release version. |
+
+These application release values are intentionally independent from the Room database version and SpendCalc explicit backup-schema version. Both compatibility schemas remain version `1` until their actual stored/serialized contracts require a migration.
 
 The release build also enables:
 
@@ -476,7 +478,7 @@ Meaning, in order:
 5. `assembleRelease` — build release APK.
 6. `bundleRelease` — build release AAB.
 
-This is a useful pre-release local verification command, but it does not replace connected-device tests.
+This is a useful pre-release local verification command, but it does not replace connected-device tests or the complete release checklist in `verification.md`.
 
 ---
 
@@ -681,7 +683,7 @@ zipalign -c -v 4 SpendCalc-release-aligned.apk
 ### Step 4 — sign with `apksigner`
 
 ```bash
-apksigner sign --ks spendcalc-release.jks --ks-key-alias spendcalc --out SpendCalc-1.0.0-release.apk SpendCalc-release-aligned.apk
+apksigner sign --ks spendcalc-release.jks --ks-key-alias spendcalc --out SpendCalc-2.0.12-release.apk SpendCalc-release-aligned.apk
 ```
 
 Meaning:
@@ -697,7 +699,7 @@ The tool may securely prompt for passwords instead of placing them directly in t
 ### Step 5 — verify signing
 
 ```bash
-apksigner verify --verbose --print-certs SpendCalc-1.0.0-release.apk
+apksigner verify --verbose --print-certs SpendCalc-2.0.12-release.apk
 ```
 
 This checks APK signatures and prints signing certificate information.
@@ -705,13 +707,13 @@ This checks APK signatures and prints signing certificate information.
 ### Step 6 — install the signed APK
 
 ```bash
-adb install SpendCalc-1.0.0-release.apk
+adb install SpendCalc-2.0.12-release.apk
 ```
 
 If replacing an already installed build signed with the same key:
 
 ```bash
-adb install -r SpendCalc-1.0.0-release.apk
+adb install -r SpendCalc-2.0.12-release.apk
 ```
 
 A debug build and production release build generally use different signing keys, so Android may require uninstalling the debug-signed package before installing a production-signed package with the same application ID.
@@ -815,6 +817,8 @@ aapt dump badging app/build/outputs/apk/debug/app-debug.apk
 
 This can show package name, SDK requirements, version values, permissions, and related package metadata.
 
+For the 2.0.12 candidate, artifact inspection should agree with `versionCode = 20012` and `versionName = 2.0.12` before distribution.
+
 You can also inspect a device package with ADB:
 
 ```bash
@@ -835,21 +839,23 @@ Never add permissions merely to silence unrelated tooling warnings. Every permis
 
 ---
 
-## 23. Version a new Android release
+## 23. Version a future Android release
 
-Edit in `app/build.gradle.kts`:
+For a future release, edit `app/build.gradle.kts` only after choosing the real next application version. For example, if the next release were 2.0.13, the application metadata could be:
 
 ```kotlin
-versionCode = 2
-versionName = "1.0.1"
+versionCode = 20013
+versionName = "2.0.13"
 ```
+
+The example is illustrative; do not change the current 2.0.12 candidate merely because this guide shows a possible next value.
 
 Rules:
 
 - `versionCode` must increase for each published upgrade accepted by Android stores.
 - `versionName` is the user-facing version string.
-- update `CHANGELOG.md`.
-- update release documentation when behavior changes.
+- application versioning does not automatically change the Room database schema or explicit backup schema.
+- update `CHANGELOG.md` and release-state documentation.
 - create artifacts only from the exact reviewed release commit/tag.
 
 Check the change:
@@ -1055,10 +1061,11 @@ Then:
 3. verify signatures;
 4. install/test the signed APK on a real device;
 5. test upgrade behavior from the previous release when applicable;
-6. verify About/version information;
+6. verify About/version information is 2.0.12 for this candidate;
 7. verify calculations, history, templates, text export, CSV export, PDF export, themes, large text, and reduced motion;
 8. review privacy/security documentation;
-9. publish only the artifact created from the approved release commit.
+9. complete every applicable gate in `verification.md`;
+10. publish only the artifact created from the approved release commit.
 
 ---
 
@@ -1126,7 +1133,7 @@ Production release hygiene:
 
 - never commit `.jks` or `.keystore` files;
 - never commit signing passwords;
-- never store raw secrets in `gradle.properties` if that file is tracked;
+- never store raw secrets in tracked configuration;
 - use protected local/CI secret storage;
 - do not upload unreviewed debug builds as production releases;
 - verify the final signing certificate;
@@ -1229,7 +1236,7 @@ adb uninstall in.sanskar.spendcalc
 ### APK signature verification
 
 ```bash
-apksigner verify --verbose --print-certs SpendCalc-1.0.0-release.apk
+apksigner verify --verbose --print-certs SpendCalc-2.0.12-release.apk
 ```
 
 ---
@@ -1258,16 +1265,18 @@ adb install ...
 
 **Publish** distributes a reviewed, signed release to users, for example through an app store or approved release channel.
 
-Do not treat a successful compilation alone as proof that a production release is ready. SpendCalc release readiness also requires tests, lint, device verification, signing verification, privacy/security review, version checks, and final functional testing.
+Do not treat a successful compilation alone as proof that a production release is ready. SpendCalc release readiness also requires exact-head automation, tests, lint, connected-device verification, signing verification, privacy/security review, version checks, screenshots, artifact/source checks, and final functional testing documented in `verification.md`.
 
 ---
 
 ## Related documentation
 
+- [`README.md`](README.md) — documentation index and recommended reading paths.
 - [`setup.md`](setup.md) — initial workstation/project setup.
 - [`command-reference.md`](command-reference.md) — detailed command dictionary.
 - [`development.md`](development.md) — development architecture and quality workflow.
 - [`testing.md`](testing.md) — testing strategy.
+- [`verification.md`](verification.md) — authoritative release-candidate gates.
 - [`release.md`](release.md) — release policy/checklist.
 - [`troubleshooting.md`](troubleshooting.md) — common failures and diagnostics.
 - [`../SECURITY.md`](../SECURITY.md) — security policy.

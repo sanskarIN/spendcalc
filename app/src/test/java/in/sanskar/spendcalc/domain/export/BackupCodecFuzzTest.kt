@@ -17,50 +17,9 @@ class BackupCodecFuzzTest {
         val alphabet = listOf('a', 'Z', '0', ' ', '\t', '\n', '₹', 'é', '你', '界', ',', '"', '=')
         val codec = BackupCodec()
 
-        repeat(100) { iteration ->
-            val label = buildString {
-                repeat(random.nextInt(0, 80)) {
-                    append(alphabet[random.nextInt(alphabet.size)])
-                }
-            }
-            val backup = SpendCalcBackup(
-                exportedAtEpochMillis = iteration.toLong(),
-                history = listOf(
-                    HistoryRecord(
-                        id = "h-$iteration",
-                        createdAtEpochMillis = iteration.toLong(),
-                        label = label,
-                        currencyCode = "INR",
-                        convertedCurrencyCode = "INR",
-                        subtotal = BigDecimal("1.00"),
-                        discountAmount = BigDecimal.ZERO,
-                        taxAmount = BigDecimal.ZERO,
-                        tipAmount = BigDecimal.ZERO,
-                        serviceChargeAmount = BigDecimal.ZERO,
-                        total = BigDecimal("1.00"),
-                        convertedTotal = BigDecimal("1.00"),
-                        perPerson = BigDecimal("1.00"),
-                        convertedPerPerson = BigDecimal("1.00"),
-                        splitCount = 1,
-                    ),
-                ),
-                templates = listOf(
-                    CalculationTemplate(
-                        id = "t-$iteration",
-                        name = label,
-                        createdAtEpochMillis = iteration.toLong(),
-                        discountPercent = BigDecimal.ZERO,
-                        taxPercent = BigDecimal.ZERO,
-                        tipPercent = BigDecimal.ZERO,
-                        serviceChargePercent = BigDecimal.ZERO,
-                        splitCount = 1,
-                        currencyCode = "INR",
-                        exchangeRate = BigDecimal.ONE,
-                        convertedCurrencyCode = "INR",
-                    ),
-                ),
-                preferences = UserPreferences(onboardingCompleted = true),
-            )
+        repeat(150) { iteration ->
+            val label = "x" + randomText(random, alphabet)
+            val backup = backup(iteration, label)
 
             val decoded = codec.decode(codec.encode(backup))
 
@@ -68,4 +27,70 @@ class BackupCodecFuzzTest {
             assertEquals(backup, (decoded as BackupDecodeResult.Success).backup)
         }
     }
+
+    @Test
+    fun `deterministic body mutations fail checksum verification`() {
+        val random = Random(19082026)
+        val alphabet = listOf('a', 'b', 'c', '₹', '你', '界', ',', '"', '=')
+        val codec = BackupCodec()
+
+        repeat(100) { iteration ->
+            val encoded = codec.encode(backup(iteration, "x" + randomText(random, alphabet)))
+            val checksumStart = encoded.lastIndexOf("SHA256\t")
+            val body = encoded.substring(0, checksumStart).toCharArray()
+            val mutationIndex = body.indices.firstOrNull { body[it].isLetterOrDigit() } ?: 0
+            body[mutationIndex] = if (body[mutationIndex] == 'X') 'Y' else 'X'
+            val tampered = String(body) + encoded.substring(checksumStart)
+
+            assertEquals(
+                BackupDecodeResult.Failure(BackupDecodeError.CHECKSUM_MISMATCH),
+                codec.decode(tampered),
+            )
+        }
+    }
+
+    private fun randomText(random: Random, alphabet: List<Char>): String = buildString {
+        repeat(random.nextInt(0, 80)) {
+            append(alphabet[random.nextInt(alphabet.size)])
+        }
+    }
+
+    private fun backup(iteration: Int, label: String) = SpendCalcBackup(
+        exportedAtEpochMillis = iteration.toLong(),
+        history = listOf(
+            HistoryRecord(
+                id = "h-$iteration",
+                createdAtEpochMillis = iteration.toLong(),
+                label = label,
+                currencyCode = "INR",
+                convertedCurrencyCode = "INR",
+                subtotal = BigDecimal("1.00"),
+                discountAmount = BigDecimal.ZERO,
+                taxAmount = BigDecimal.ZERO,
+                tipAmount = BigDecimal.ZERO,
+                serviceChargeAmount = BigDecimal.ZERO,
+                total = BigDecimal("1.00"),
+                convertedTotal = BigDecimal("1.00"),
+                perPerson = BigDecimal("1.00"),
+                convertedPerPerson = BigDecimal("1.00"),
+                splitCount = 1,
+            ),
+        ),
+        templates = listOf(
+            CalculationTemplate(
+                id = "t-$iteration",
+                name = label,
+                createdAtEpochMillis = iteration.toLong(),
+                discountPercent = BigDecimal.ZERO,
+                taxPercent = BigDecimal.ZERO,
+                tipPercent = BigDecimal.ZERO,
+                serviceChargePercent = BigDecimal.ZERO,
+                splitCount = 1,
+                currencyCode = "INR",
+                exchangeRate = BigDecimal.ONE,
+                convertedCurrencyCode = "INR",
+            ),
+        ),
+        preferences = UserPreferences(onboardingCompleted = true),
+    )
 }

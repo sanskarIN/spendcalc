@@ -1,522 +1,158 @@
-# SpendCalc Release Guide
+# Release Guide
 
-This guide defines how SpendCalc release candidates and production Android artifacts should be prepared, checked, signed, verified, and published.
+## Release principles
 
-For command-by-command APK/AAB instructions, see [`android-build-guide.md`](android-build-guide.md). For individual command meanings and flags, see [`command-reference.md`](command-reference.md).
+SpendCalc releases must be reproducible from public source without committing private signing material. Signing keys and credentials stay outside Git. A workflow definition, mergeable pull request, or queued/pending run is not evidence of a passing release; verification is tied to the exact commit being released.
 
-## 1. Release principles
+The release process has four distinct evidence classes:
 
-SpendCalc releases should be reproducible from reviewed public source without committing private signing material.
+1. **source completeness** — implementation, tests, docs, workflows, and repository guards exist and agree;
+2. **automated exact-head verification** — CI/CodeQL/dependency/repository checks actually report acceptable successful conclusions for the candidate SHA;
+3. **manual Android verification** — connected-device tests, accessibility, real picker/share/export/restore, layout/theme/offline checks are actually performed;
+4. **distribution evidence** — real screenshots, protected signing, artifact verification, and publication happen from the verified source.
 
-Core rules:
+Do not collapse these classes into one “done” statement.
 
-- release source must be identifiable by commit/tag;
-- `versionCode` must increase for distributed Android upgrades;
-- production keystores/passwords must never be committed;
-- tests/lint/build verification must happen before distribution;
-- release APK/AAB signatures must be verified;
-- the final signed APK should be installed/tested on Android hardware or a representative emulator;
-- user-visible/privacy/security documentation must match actual behavior;
-- existing release tags/artifacts should not be silently rewritten.
+## Current target
 
-## 2. Current Android release configuration
+The active release candidate targets app version **2.0.12** with Android `versionCode` **20012**. This is application/distribution metadata only: Room database version and explicit backup schema version remain independent compatibility versions and are not bumped merely to match the app version.
 
-Defined in `app/build.gradle.kts`:
+## Pre-release checklist
 
-```kotlin
-applicationId = "in.sanskar.spendcalc"
-minSdk = 26
-targetSdk = 35
-versionCode = 1
-versionName = "1.0.0"
-```
-
-Release builds currently enable:
-
-```kotlin
-isMinifyEnabled = true
-isShrinkResources = true
-```
-
-This enables R8 code optimization/shrinking and Android resource shrinking for the release variant.
-
-## 3. APK versus AAB
-
-### APK
-
-An `.apk` is directly installable on compatible Android devices.
-
-Build debug APK:
-
-```bash
-gradle assembleDebug
-```
-
-Build release APK:
-
-```bash
-gradle assembleRelease
-```
-
-### AAB
-
-An `.aab` is an Android App Bundle used primarily for app-store publishing. It is not normally installed directly with `adb install`.
-
-Build:
-
-```bash
-gradle bundleRelease
-```
-
-## 4. Pre-release documentation checks
-
-Before building the release candidate, confirm these are current:
-
-- `README.md`;
-- `CHANGELOG.md`;
-- `ROADMAP.md`;
-- `what_changed.md`;
-- `PRIVACY.md`;
-- `SECURITY.md`;
-- `docs/setup.md`;
-- `docs/android-build-guide.md`;
-- `docs/release.md`;
-- user-facing version/about information.
-
-## 5. Versioning
-
-Use semantic versioning for public versions:
-
-- **MAJOR** — incompatible behavior/data-contract changes;
-- **MINOR** — backwards-compatible features;
-- **PATCH** — backwards-compatible fixes.
-
-Android `versionCode` is separate from semantic `versionName` and must monotonically increase for store upgrades.
-
-Example update:
-
-```kotlin
-versionCode = 2
-versionName = "1.0.1"
-```
-
-Inspect before committing:
-
-```bash
-git diff -- app/build.gradle.kts
-```
-
-## 6. Record the exact release source
-
-Check repository state:
-
-```bash
-git status
-```
-
-Record commit:
-
-```bash
-git rev-parse --short HEAD
-```
-
-A production artifact should be traceable to this exact reviewed revision.
-
-## 7. Clean local verification
-
-Delete old generated build output:
-
-```bash
-gradle clean
-```
-
-Run JVM unit tests:
-
-```bash
-gradle testDebugUnitTest
-```
-
-Run Android lint:
-
-```bash
-gradle lintDebug
-```
-
-Build debug APK:
-
-```bash
-gradle assembleDebug
-```
-
-Build release APK:
-
-```bash
-gradle assembleRelease
-```
-
-Build release AAB:
-
-```bash
-gradle bundleRelease
-```
-
-Equivalent grouped command:
-
-```bash
-gradle clean testDebugUnitTest lintDebug assembleDebug assembleRelease bundleRelease
-```
-
-## 8. Connected Android verification
-
-With a physical device/emulator:
-
-```bash
-adb devices
-gradle connectedDebugAndroidTest
-```
-
-The device must be API 26 or newer to match the supported minimum.
-
-Do not consider unit tests alone a complete Android release verification because Room/framework/UI behavior also requires Android runtime coverage.
-
-## 9. Repository utility checks
-
-Run formatting/source guard:
+1. Confirm `README.md`, `CHANGELOG.md`, `ROADMAP.md`, permanent `docs/`, and `what_changed.md` match actual behavior/status.
+2. Confirm [`docs/codebase-reference.md`](codebase-reference.md) documents every tracked file and [`docs/documentation-map.md`](documentation-map.md) reflects current source-of-truth relationships.
+3. Verify `versionCode = 20012` and `versionName = "2.0.12"` in `app/build.gradle.kts` for this release candidate.
+4. Run all fast repository/static checks:
 
 ```bash
 python3 scripts/check_format.py
-```
-
-Run conservative secret-pattern scan:
-
-```bash
+python3 scripts/check_kotlin_namespace.py
+python3 scripts/check_documentation_coverage.py
+python3 scripts/check_android_resources.py
+python3 scripts/check_android_security.py
+python3 scripts/check_repository.py
 python3 scripts/scan_secrets.py
 ```
 
-Review the actual Git diff too; automated scanners are not a substitute for human secret/privacy review.
-
-## 10. Expected build outputs
-
-Debug APK:
-
-```text
-app/build/outputs/apk/debug/app-debug.apk
-```
-
-Release APK directory:
-
-```text
-app/build/outputs/apk/release/
-```
-
-Release AAB directory:
-
-```text
-app/build/outputs/bundle/release/
-```
-
-Inspect actual filenames before signing because generated names may change with build configuration.
-
-## 11. Production signing policy
-
-Never place these in Git:
-
-- `.jks`/`.keystore` files;
-- keystore passwords;
-- key passwords;
-- signing environment dumps;
-- base64-encoded private signing material;
-- production CI signing credentials.
-
-Signing material belongs in secure local storage or protected CI/store secret infrastructure.
-
-The repository default release build intentionally does not embed a production signing configuration.
-
-## 12. Create a signing key when establishing a new signing identity
-
-Example:
+5. Run a clean build and automated JVM/compile checks:
 
 ```bash
-keytool -genkeypair -v -keystore spendcalc-release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias spendcalc
+gradle clean
+gradle testDebugUnitTest
+gradle assembleDebugAndroidTest
+gradle lint
+gradle assembleDebug
+gradle assembleRelease
 ```
 
-This is explained in detail in [`android-build-guide.md`](android-build-guide.md).
-
-Back up the production signing identity securely. Do not lose it and do not commit it.
-
-## 13. Manual release APK signing
-
-Assuming Gradle generated:
-
-```text
-app/build/outputs/apk/release/app-release-unsigned.apk
-```
-
-First align it:
+6. Run Android tests on an emulator/device:
 
 ```bash
-zipalign -v -p 4 app/build/outputs/apk/release/app-release-unsigned.apk SpendCalc-release-aligned.apk
+gradle connectedDebugAndroidTest
 ```
 
-Check alignment:
+7. Confirm CI, CodeQL, dependency review, and Repository Audit results are successful for the **same exact release commit**.
+8. Test fresh install and upgrade from the previous public release when one exists.
+9. Verify the branded splash, onboarding, primary navigation icons/labels, light/dark/system themes, large text, and reduced motion.
+10. Verify calculator validation, 100-item editor limit, named-history save/search/retention/delete+Undo/clear, and template save/load/delete+Undo.
+11. Exercise saved-name/search input at the 120-character Unicode boundary and confirm the resulting saved record remains backup-exportable/restorable.
+12. Verify text, CSV, and PDF export through real Android share flows.
+13. Verify explicit backup export/restore through Android document pickers, visible progress state, duplicate-action blocking, confirmation, and restored history/templates/preferences.
+14. Perform TalkBack, large-system-font, phone, and tablet/wide layout checks, including both save-name dialogs and backup progress/confirmation.
+15. Scan the Git diff for secrets, personal data, keystores, generated local configuration, and fabricated assets.
+16. Capture release screenshots from the verified build using fictional data only.
+17. Complete the exact checklist in [`verification.md`](verification.md); unresolved release-blocking boxes remain blockers.
+
+## Documentation verification
+
+`codebase-reference.md` contains a marked file index. `scripts/check_documentation_coverage.py` compares it with `git ls-files` and must pass for the release commit. This catches tracked implementation/test/resource/configuration/workflow/document files that otherwise could be skipped by narrative documentation.
+
+`documentation-map.md` defines which permanent docs should change for finance, persistence, backup/security/privacy, UI/accessibility, performance, build/CI, and release changes. Use it before declaring documentation reconciled.
+
+`what_changed.md` may contain volatile PR/head/check state, but it does not replace permanent architecture/feature/security/test documentation.
+
+## Versioning
+
+Use semantic versioning for public releases:
+
+- MAJOR: incompatible behavior/data-contract changes;
+- MINOR: backwards-compatible features;
+- PATCH: backwards-compatible fixes.
+
+Android `versionCode` must always increase for a store/distribution release. Backup schema and Room database versions are separate compatibility dimensions and must not be changed casually to match the marketing/app version.
+
+## Source and schema checks
+
+Before a release that changes persistence:
+
+- ensure Room schema version/migrations are correct;
+- preserve/export schema history as required by the Room migration policy;
+- ensure any newly tracked schema files are individually documented by `codebase-reference.md`;
+- run migration tests once version 2+ exists;
+- ensure repository and backup persisted-record contracts remain aligned.
+
+Before a release that changes backup format:
+
+- preserve bounded parsing and fail-closed behavior;
+- update/supersede ADR 0004 deliberately if the fundamental design changes;
+- update `backup-restore.md`, `security-backup.md`, `privacy-backup.md`, `persistence-invariants.md`, tests, and changelog as applicable;
+- never claim the SHA-256 checksum authenticates backup authorship—it detects accidental corruption, not a malicious recomputation.
+
+## Signing
+
+Do not place signing passwords, keystore files, encoded signing material, or store credentials in the repository.
+
+A maintainer can provide signing configuration through local protected properties or a protected CI secret store. The repository's default release build intentionally does not embed production signing credentials.
+
+The public/tag workflow may prove that source compiles into an unsigned release candidate. It does **not** prove the final store artifact was signed correctly unless the protected signing process is separately executed and verified.
+
+## Tagging
+
+After the verified candidate is merged to the protected default branch and all release-blocking automated/manual gates are complete:
 
 ```bash
-zipalign -c -v 4 SpendCalc-release-aligned.apk
+git tag -s v2.0.12 -m "SpendCalc 2.0.12"
+git push origin v2.0.12
 ```
 
-Sign:
+Use an unsigned tag only if signed tagging is unavailable and document that limitation.
 
-```bash
-apksigner sign --ks spendcalc-release.jks --ks-key-alias spendcalc --out SpendCalc-1.0.0-release.apk SpendCalc-release-aligned.apk
-```
+Do not create `v2.0.12` while required automated checks are pending/queued/failed/cancelled, while a newer unverified commit supersedes the checked SHA, or while documented manual release gates remain incomplete.
 
-Verify:
+## Release artifacts
 
-```bash
-apksigner verify --verbose --print-certs SpendCalc-1.0.0-release.apk
-```
+The repository's tag workflow builds an unsigned release candidate. Production signed APK/AAB artifacts must be produced from the exact verified/tagged source with protected signing credentials outside Git.
 
-Do not put passwords directly into public scripts/logs. Prefer secure prompts or protected secret injection.
+Before publishing an artifact:
 
-## 14. Manual AAB signing
+- record/verify the source commit SHA;
+- verify artifact checksum(s);
+- install the exact artifact on a test device;
+- confirm About shows `2.0.12` for this release;
+- verify it does not contain debug-only credentials/endpoints or private test data;
+- confirm privacy/security documentation matches behavior;
+- confirm the artifact corresponds to the tagged commit SHA;
+- capture/store release notes and screenshots from the same verified version.
 
-Build:
+## Screenshots
 
-```bash
-gradle bundleRelease
-```
+Follow [`assets/screenshots/README.md`](assets/screenshots/README.md). Release screenshots must be captured from a real verified build and use fictional/non-private data. Do not generate or fabricate application screenshots merely to make the repository appear release-ready.
 
-Assuming output:
+## Rollback
 
-```text
-app/build/outputs/bundle/release/app-release.aab
-```
-
-Sign with JDK `jarsigner` when using a manual signing flow:
-
-```bash
-jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore spendcalc-release.jks app/build/outputs/bundle/release/app-release.aab spendcalc
-```
-
-Verify:
-
-```bash
-jarsigner -verify -verbose -certs app/build/outputs/bundle/release/app-release.aab
-```
-
-For app-store publishing, follow the current store's app-signing/upload-key requirements.
-
-## 15. Install the final signed APK
-
-List devices:
-
-```bash
-adb devices
-```
-
-Install:
-
-```bash
-adb install SpendCalc-1.0.0-release.apk
-```
-
-For an upgrade signed with the same identity:
-
-```bash
-adb install -r SpendCalc-1.0.0-release.apk
-```
-
-If a debug-signed package with the same application ID is installed, a production-signed release may require uninstalling the debug version because Android rejects incompatible signatures.
-
-## 16. Functional release checks
-
-Before publishing, verify at least:
-
-- app launches successfully;
-- onboarding works on a clean-data install;
-- itemized expense addition/removal;
-- subtotal calculation;
-- discount;
-- tax;
-- tip;
-- service charge;
-- split-bill calculation;
-- manual exchange-rate conversion;
-- decimal precision and rounding behavior;
-- calculation validation/error messages;
-- history save/delete/clear;
-- history retention settings;
-- template save/load/delete;
-- text receipt export/share;
-- CSV export/share;
-- PDF receipt export/share;
-- light theme;
-- dark theme;
-- system theme;
-- large-text preference;
-- reduced-motion preference;
-- phone layout;
-- tablet/wide-screen layout;
-- About screen version/license/support/repository/funding data;
-- no required account/network for core operation.
-
-## 17. Accessibility release checks
-
-Follow [`accessibility.md`](accessibility.md), including:
-
-- TalkBack traversal;
-- meaningful labels/semantics;
-- large font scale;
-- touch target review;
-- non-color-only validation;
-- light/dark theme contrast;
-- small and wide screen behavior.
-
-## 18. Privacy/security release checks
-
-Confirm:
-
-- no unintended Internet permission was introduced;
-- no analytics/ads SDK was accidentally added without documentation/review;
-- app-local history/templates/preferences behavior still matches `PRIVACY.md`;
-- FileProvider remains non-exported;
-- temporary read permissions are used for shared export files;
-- CSV formula-prefix protections remain covered by tests;
-- no secrets/credentials are present in source/artifacts;
-- logging does not expose sensitive user data.
-
-## 19. Upgrade testing
-
-When a previous public release exists:
-
-1. install previous signed release;
-2. create representative history/templates/settings;
-3. install the new release signed with the same identity;
-4. verify upgrade succeeds;
-5. verify user data remains correct;
-6. verify Room migrations when schema versions change;
-7. verify app launches and core calculations after upgrade.
-
-Never use destructive database migration as a shortcut for normal production upgrades.
-
-## 20. Fresh-install testing
-
-On a test device:
-
-```bash
-adb uninstall in.sanskar.spendcalc
-```
-
-Then install the final signed release APK and verify first-run behavior from a genuinely clean app-data state.
-
-## 21. Tagging a verified release
-
-After verification and merge to the intended release commit:
-
-```bash
-git tag -s v1.0.0 -m "SpendCalc 1.0.0"
-git push origin v1.0.0
-```
-
-- `git tag -s` creates a cryptographically signed Git tag when Git signing is configured.
-- `-m` supplies the tag message.
-- `git push origin v1.0.0` publishes that tag to GitHub.
-
-Use an unsigned tag only when signed tagging is unavailable and document that limitation.
-
-## 22. Release artifacts
-
-A release may contain:
-
-- signed production APK where direct APK distribution is intended;
-- signed AAB for store upload;
-- checksums;
-- release notes/changelog reference;
-- commit/tag identity.
-
-Do not publish an unsigned release APK as though it were a production-installable artifact.
-
-## 23. Artifact verification
-
-Before publishing:
-
-- verify signature/certificate;
-- verify APK alignment if manually signed;
-- install it on a test target;
-- check the displayed app version;
-- run representative calculations;
-- verify export functions;
-- inspect permission expectations;
-- confirm no debug credentials/endpoints/logging are present;
-- confirm artifact came from approved release source.
-
-## 24. Checksums
-
-A release process may publish cryptographic hashes so downloaded artifacts can be verified.
-
-### Windows PowerShell
-
-```powershell
-Get-FileHash .\SpendCalc-1.0.0-release.apk -Algorithm SHA256
-```
-
-### macOS/Linux
-
-```bash
-shasum -a 256 SpendCalc-1.0.0-release.apk
-```
-
-or on many Linux distributions:
-
-```bash
-sha256sum SpendCalc-1.0.0-release.apk
-```
-
-Publish only the checksum for the exact final artifact being distributed.
-
-## 25. Release failure/rollback
-
-If a release contains a blocker defect:
+If a release has a blocker defect:
 
 1. stop promotion/distribution where possible;
-2. document the regression in a tracked issue;
-3. branch/fix from the correct source point;
-4. add a regression test;
-5. increase the version appropriately;
-6. build/sign/verify a new patch release;
-7. do not silently replace an already published tag/artifact with different bytes.
+2. open a tracked regression issue without exposing private/security-sensitive information;
+3. fix on a short-lived branch;
+4. add a regression test at the lowest practical layer;
+5. rerun the exact-commit automated/manual gates appropriate to the fix;
+6. issue a new patch version rather than rewriting an existing tag/artifact.
 
-## 26. Complete release command checklist
+## Release status sources
 
-Typical local command sequence:
-
-```bash
-git status
-git rev-parse --short HEAD
-gradle clean
-gradle testDebugUnitTest
-gradle lintDebug
-gradle assembleDebug
-gradle assembleRelease
-gradle bundleRelease
-python3 scripts/check_format.py
-python3 scripts/scan_secrets.py
-adb devices
-gradle connectedDebugAndroidTest
-```
-
-Then perform secure release signing and verification as documented above.
-
-## 27. Related documentation
-
-- [`android-build-guide.md`](android-build-guide.md) — complete Android executable/build/sign/install guide.
-- [`command-reference.md`](command-reference.md) — meanings of every major command/flag.
-- [`setup.md`](setup.md) — workstation setup.
-- [`testing.md`](testing.md) — testing strategy.
-- [`accessibility.md`](accessibility.md) — accessibility release gates.
-- [`troubleshooting.md`](troubleshooting.md) — build/install diagnosis.
-- [`../SECURITY.md`](../SECURITY.md) — security policy.
-- [`../PRIVACY.md`](../PRIVACY.md) — privacy model.
-- [`../CHANGELOG.md`](../CHANGELOG.md) — release history.
-
-**Made by the Sanskar**
+- [`verification.md`](verification.md) — authoritative gate checklist;
+- [`release-candidate-final-audit.md`](release-candidate-final-audit.md) — source-completeness audit, not runtime evidence;
+- [`ROADMAP.md`](../ROADMAP.md) — planning/open release work;
+- [`what_changed.md`](../what_changed.md) — current active branch/PR/check handoff;
+- GitHub Actions for the exact candidate SHA — authoritative automated outcomes.

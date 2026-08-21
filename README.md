@@ -10,7 +10,7 @@
   <a href="https://github.com/sanskarIN/spendcalc/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/sanskarIN/spendcalc/actions/workflows/ci.yml/badge.svg" /></a>
   <a href="https://github.com/sanskarIN/spendcalc/actions/workflows/codeql.yml"><img alt="CodeQL" src="https://github.com/sanskarIN/spendcalc/actions/workflows/codeql.yml/badge.svg" /></a>
   <img alt="Android API 26+" src="https://img.shields.io/badge/Android-API%2026%2B-3DDC84?logo=android&logoColor=white" />
-  <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-Jetpack%20Compose-7F52FF?logo=kotlin&logoColor=white" />
+  <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-Jetpack%20Compose-7F52FF?logo=kotlin" />
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/License-MIT-blue.svg" /></a>
 </p>
 
@@ -20,20 +20,11 @@
 
 > **Made by the Sanskar**
 
-SpendCalc is built for real everyday bills rather than classroom-demo arithmetic. It keeps the finance engine separate from Android UI/infrastructure, uses `BigDecimal` for money, works without a required network connection, and provides local history, templates, accessibility settings, and export options.
+SpendCalc is built for everyday expense calculations rather than demo arithmetic. It keeps finance rules separate from Android UI/infrastructure, uses `BigDecimal` for money, works without a required network connection or account, and provides local history, templates, explicit backup/restore, accessibility settings, and offline export options.
 
-## Documentation
+> **Current release candidate:** `2.0.12` (`versionCode 20012`). Room database and explicit backup schema versions are maintained separately from the application release number. See [`docs/verification.md`](docs/verification.md) for the exact-head release gates.
 
-The repository now includes a deep, command-by-command Android documentation set.
-
-Start with:
-
-- [`docs/README.md`](docs/README.md) — complete documentation index and recommended reading paths.
-- [`docs/setup.md`](docs/setup.md) — Windows/macOS/Linux workstation setup, JDK 17, Android SDK 35, Gradle 8.9, ADB, and first build.
-- [`docs/android-build-guide.md`](docs/android-build-guide.md) — complete source-to-APK/AAB workflow, debug/release builds, artifact paths, device installation, signing, verification, and release preparation.
-- [`docs/command-reference.md`](docs/command-reference.md) — detailed meanings for Git, Java, Gradle, ADB, `keytool`, `zipalign`, `apksigner`, `jarsigner`, and repository quality commands.
-- [`docs/troubleshooting.md`](docs/troubleshooting.md) — Gradle/JDK/SDK/dependency/ADB/APK/AAB/signing/test/release diagnosis.
-- [`docs/release.md`](docs/release.md) — release gates, versioning, APK/AAB signing, checksums, upgrade testing, and publication rules.
+> **Build/documentation entry point:** [`docs/README.md`](docs/README.md). For Android executable files use the complete [`Android build/APK/AAB/signing guide`](docs/android-build-guide.md); for command meanings and options use the [`command reference`](docs/command-reference.md).
 
 ## Screenshots
 
@@ -43,47 +34,93 @@ Verified screenshots are intentionally captured from real release-candidate buil
 
 ### Expense calculation
 
-- Itemized expense lines with quick totals.
+- Itemized expense lines with live totals.
+- Up to 100 editable expense items per calculation, with an explicit limit state to keep the eager Compose editor bounded.
 - Discount, tax, tip, and service-charge percentages.
-- Split-bill calculation for one or more people.
+- Discount capped at 100% so valid input cannot produce a negative discounted base.
+- Split-bill calculation for 1 through 1,000,000 people.
 - Manual exchange-rate conversion with three-letter currency codes.
-- Explicit charge order documented in the architecture guide.
 - Precision-safe `BigDecimal` arithmetic and centralized rounding policy.
-- Live receipt-style result view.
+- Bounded decimal precision/scale and input lengths to prevent pathological numeric expansion.
+- Receipt-style result view.
 
-### Save and reuse
+### Save, find, and reuse
 
 - Room-backed calculation history.
-- Individual history deletion and clear-all confirmation.
+- Optional user-provided history labels, bounded to 120 characters, with a safe default when left blank.
+- UTF-16-safe saved-name truncation avoids splitting valid surrogate pairs such as emoji at the boundary.
+- Local history search by labels, currencies, totals, and per-person values, with a bounded 120-character query.
+- Individual history deletion with Snackbar Undo.
+- Clear-all confirmation.
 - Optional history auto-delete after 30 or 90 days.
 - Saved templates for common discount/tax/tip/service/split/currency settings.
+- Template naming displays the same 120-character guidance and Unicode-safe boundary behavior as history labels.
+- Template dialog confirmation uses a concise `Save` action distinct from the underlying `Save template` calculator action.
+- New saved history labels/template names are normalized at the persistence boundary, while already-valid restored names are preserved exactly.
+- Individual template deletion with Snackbar Undo.
+
+### Persistence integrity
+
+- Repositories are validation boundaries rather than passive DAO wrappers.
+- Shared persisted-record rules cover IDs, timestamps, canonical currency codes, saved names, history split/result bounds, and duplicate IDs in replacement collections.
+- History records are validated before save/restore/replace DAO writes.
+- Template settings are validated through the same `CalculatorEngine` rules used by the calculator, even when repository callers bypass the ViewModel.
+- Batch replacement validates the entire candidate set before invoking DAO replacement, so one invalid/duplicate record cannot clear valid existing data first.
+- Backup validation reuses the same persisted-record structural policy, preventing local persistence and explicit backup rules from drifting apart.
+
+See [`docs/persistence-invariants.md`](docs/persistence-invariants.md).
+
+### Backup and restore
+
+- Explicit user-driven local backup for history, templates, and preferences.
+- Android Storage Access Framework document creation/selection; no broad storage permission.
+- Visible busy/progress state while backup data is being read, written, or restored.
+- Duplicate backup actions are disabled while a backup operation is active.
+- Versioned, bounded backup format with URL-safe Base64 text fields.
+- SHA-256 accidental-corruption detection.
+- Strict schema, record, identifier, timestamp, currency, split, checksum, decimal, saved-name, duplicate-ID, and Unicode validation.
+- Backup document input rejects malformed/unmappable UTF-8 instead of silently replacing bytes.
+- Backup decode validates canonical persisted currency text exactly rather than repairing noncanonical forms.
+- Backup encoding rejects structurally invalid/noncanonical in-memory records instead of silently changing them.
+- Restore confirmation before replacing current data.
+- Valid decoded history labels/template names are restored without silent trimming or rewriting.
+- Transactional Room replacement plus compensating rollback for the separate DataStore preference write when a multi-store restore fails.
+
+See [`docs/backup-restore.md`](docs/backup-restore.md), [`docs/security-backup.md`](docs/security-backup.md), and [`docs/persistence-invariants.md`](docs/persistence-invariants.md).
 
 ### Export
 
 - Plain-text receipt sharing.
 - CSV export with quote escaping and spreadsheet-formula neutralization for text cells.
 - Offline PDF receipt creation using Android `PdfDocument`.
+- Unicode-safe PDF line truncation preserves valid surrogate boundaries for long item names.
 - Cache-file sharing through a non-exported Android `FileProvider` with temporary read permission.
+- Canonical-path containment prevents sharing files outside the private export cache directory.
+- Backup/CSV/PDF file I/O runs off the main thread.
 
-### UI and accessibility
+### UI, branding, and accessibility
 
 - Jetpack Compose + Material 3.
 - Responsive phone/tablet layout.
 - Light, dark, and system theme modes.
 - Large-text preference.
-- Reduced-motion preference and no fake loading delays.
+- Reduced-motion preference that removes navigation transitions when enabled.
+- Repository-owned vector icons for primary navigation with visible text labels.
+- Branded AndroidX launch splash treatment using the SpendCalc icon.
 - Externalized user-facing strings for localization readiness.
 - Clear validation text in addition to color/state styling.
+- Named-history/template dialogs include visible input guidance and unambiguous Save/Cancel actions.
 - First-run onboarding.
 - About screen with version, license, support, repository, funding, and credit.
 
 ### Privacy
 
-- Core calculation requires no account.
-- Core calculation requires no network.
+- Core use requires no account.
+- Core calculation, history, templates, backup encoding, and receipt generation require no network.
 - Current manifest does not request Android Internet permission.
 - History/templates/preferences live in app-local storage.
 - No analytics or advertising SDK is required by the current implementation.
+- Android system-managed backup/device transfer is documented separately from user-created backup files.
 
 See [`PRIVACY.md`](PRIVACY.md) and [`SECURITY.md`](SECURITY.md).
 
@@ -91,98 +128,25 @@ See [`PRIVACY.md`](PRIVACY.md) and [`SECURITY.md`](SECURITY.md).
 
 | Platform | Status |
 | --- | --- |
-| Android API 26+ | Primary supported runtime target |
+| Android API 26+ | Primary supported target |
 | Android phone | Supported |
 | Android tablet / wide screen | Responsive layout supported |
-| Windows | Development/build host supported with Android toolchain |
-| macOS | Development/build host supported with Android toolchain |
-| Linux | Development/build host supported with Android toolchain |
-| iOS / iPadOS runtime | Not part of this repository |
-| Windows/macOS/Linux desktop runtime | Not part of this repository |
-| Web/browser runtime | Not part of this repository |
+| iOS / desktop / web | Not part of the 2.0.12 Android release candidate |
 
-## Language and tech stack
+## Tech stack
 
-Primary application language: **Kotlin**.
-
-Main technologies:
-
-- Kotlin `2.0.21`
+- Kotlin
 - Jetpack Compose
 - Material 3
+- AndroidX SplashScreen
 - AndroidX Navigation Compose
 - AndroidX Lifecycle/ViewModel
 - Room + KSP
 - Preferences DataStore
 - Kotlin coroutines/Flow
 - Android `PdfDocument`
-- JUnit + AndroidX/Compose UI tests
-- Android Gradle Plugin `8.7.3`
-- documented Gradle `8.9`
-- Java/JVM 17
+- JUnit + Android/Compose UI tests
 - GitHub Actions + CodeQL + Dependabot
-
-## Android configuration
-
-Current `app/build.gradle.kts` baseline:
-
-```text
-applicationId = in.sanskar.spendcalc
-minSdk = 26
-targetSdk = 35
-compileSdk = 35
-versionCode = 1
-versionName = 1.0.0
-Java/JVM target = 17
-```
-
-The release build enables code minification and resource shrinking.
-
-## What Android executable files can be built?
-
-### Debug APK
-
-```bash
-gradle assembleDebug
-```
-
-Expected output:
-
-```text
-app/build/outputs/apk/debug/app-debug.apk
-```
-
-The debug APK is intended for development/testing and is automatically debug-signed by Android tooling.
-
-### Release APK
-
-```bash
-gradle assembleRelease
-```
-
-Inspect:
-
-```text
-app/build/outputs/apk/release/
-```
-
-The repository deliberately does not store production signing credentials. A release output must be securely signed and verified before production distribution.
-
-### Release Android App Bundle (AAB)
-
-```bash
-gradle bundleRelease
-```
-
-Inspect:
-
-```text
-app/build/outputs/bundle/release/
-```
-
-AAB is primarily a publishing format. It is not normally installed directly with `adb install`.
-
-Full details: [`docs/android-build-guide.md`](docs/android-build-guide.md).
 
 ## Architecture
 
@@ -197,10 +161,10 @@ Domain calculation + repositories
    ↓
 Room / DataStore
 
-Platform adapters: FileProvider, PDF, share intents, external links
+Platform adapters: document picker, FileProvider, PDF, share intents, external links
 ```
 
-The domain layer contains finance rules and does not depend on Compose, Room, Activity, or Android resources.
+The domain layer does not depend on Compose, Room, Activity, or Android resources. It owns finance rules plus shared saved-name/persisted-record policies. Repositories remain authoritative persistence boundaries, and backup orchestration coordinates Room and DataStore through explicit repositories rather than bypassing them.
 
 Full details: [`docs/architecture.md`](docs/architecture.md)
 
@@ -209,10 +173,49 @@ Architecture decisions:
 - [`ADR 0001 — BigDecimal finance arithmetic`](docs/adr/0001-use-bigdecimal-for-finance.md)
 - [`ADR 0002 — Local-first core`](docs/adr/0002-local-first-core.md)
 - [`ADR 0003 — Room and DataStore`](docs/adr/0003-room-and-datastore.md)
+- [`ADR 0004 — Versioned bounded backup format`](docs/adr/0004-versioned-local-backup.md)
+
+Persistence contract: [`docs/persistence-invariants.md`](docs/persistence-invariants.md)
+
+## Complete documentation
+
+SpendCalc treats documentation coverage as a repository invariant rather than a one-time release task.
+
+- [`docs/README.md`](docs/README.md) is the central documentation index and provides task-based reading paths.
+- [`docs/android-build-guide.md`](docs/android-build-guide.md) is the complete Android executable guide for environment verification, APK/AAB generation, output locations, ADB installation, signing, version inspection, checksums, and release artifact preparation.
+- [`docs/command-reference.md`](docs/command-reference.md) explains Git, Java, Gradle, ADB, Android packaging/signing, and all repository guard commands instead of requiring users to copy commands without understanding them.
+- [`docs/codebase-reference.md`](docs/codebase-reference.md) documents **every tracked file individually**, including root/build/configuration, `.github` automation/templates, production Kotlin, Android resources, JVM/instrumentation tests, scripts, policies, assets, and permanent/compatibility documentation.
+- [`docs/documentation-map.md`](docs/documentation-map.md) defines which document is authoritative for product behavior, architecture, build/commands, persistence/backup/security/privacy, testing, maintenance, release, ADRs, planning, and active-work continuity.
+- `scripts/check_documentation_coverage.py` compares the marked file index with `git ls-files` and fails when a tracked file is missing, a stale path remains documented, or a path is listed more than once.
+- `scripts/check_repository.py` requires the core documentation suite, validates local Markdown links/project identity, and checks the build/index/command documents against application release metadata parsed from `app/build.gradle.kts`.
+- Main CI and the lightweight Repository Audit run the repository/documentation guards.
+- Adding, deleting, or renaming a tracked file therefore requires updating the codebase reference in the same pull request.
+
+Useful documentation entry points:
+
+- [Documentation index](docs/README.md)
+- [Android APK/AAB/build/sign/install guide](docs/android-build-guide.md)
+- [Complete command reference](docs/command-reference.md)
+- [Features](docs/features.md)
+- [Architecture](docs/architecture.md)
+- [Codebase file reference](docs/codebase-reference.md)
+- [Documentation source-of-truth map](docs/documentation-map.md)
+- [Development](docs/development.md)
+- [Testing](docs/testing.md)
+- [Accessibility](docs/accessibility.md)
+- [Performance](docs/performance.md)
+- [Backup/restore](docs/backup-restore.md)
+- [Backup security](docs/security-backup.md)
+- [Backup privacy](docs/privacy-backup.md)
+- [Persistence invariants](docs/persistence-invariants.md)
+- [Release-candidate source audit](docs/release-candidate-final-audit.md)
+- [Release guide](docs/release.md)
+- [Release verification](docs/verification.md)
+- [Troubleshooting](docs/troubleshooting.md)
 
 ## Calculation rule
 
-The initial calculation order is intentionally deterministic:
+The calculation order is deterministic:
 
 1. Sum item amounts.
 2. Calculate discount from subtotal.
@@ -231,12 +234,10 @@ Any behavior change to this order should include exact regression tests and chan
 
 - Git
 - JDK 17
-- Android Studio
 - Android SDK Platform 35
-- compatible Android SDK Build-Tools and Platform-Tools
-- Gradle 8.9 for the current command-line setup
+- Gradle 8.9 for command-line builds
 
-The repository currently does not commit a Gradle wrapper JAR, so examples use the local `gradle` executable.
+The repository currently does **not** commit a Gradle wrapper. This is intentional; local commands use a compatible installed Gradle 8.9 or Android Studio environment, while CI pins Gradle 8.9 via `gradle/actions/setup-gradle`.
 
 Clone:
 
@@ -245,49 +246,40 @@ git clone https://github.com/sanskarIN/spendcalc.git
 cd spendcalc
 ```
 
-Check environment:
-
-```bash
-java -version
-gradle --version
-adb version
-```
-
-Run tests and lint:
-
-```bash
-gradle testDebugUnitTest
-gradle lintDebug
-```
-
 Build the debug APK:
 
 ```bash
 gradle assembleDebug
 ```
 
-Install on a connected Android device/emulator:
+Expected debug executable:
 
-```bash
-gradle installDebug
-```
-
-or:
-
-```bash
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+```text
+app/build/outputs/apk/debug/app-debug.apk
 ```
 
 For Android Studio, open the repository, use JDK 17 for Gradle, allow sync to complete, select an API 26+ device/emulator, and run the `app` configuration.
 
-Detailed setup: [`docs/setup.md`](docs/setup.md)
+- Environment/setup: [`docs/setup.md`](docs/setup.md)
+- Complete APK/AAB/build/install/signing steps: [`docs/android-build-guide.md`](docs/android-build-guide.md)
+- Meaning of every project/tool command: [`docs/command-reference.md`](docs/command-reference.md)
+- Build failure diagnosis: [`docs/troubleshooting.md`](docs/troubleshooting.md)
 
-## Complete local verification
-
-A useful grouped source/build verification command is:
+## Development checks
 
 ```bash
-gradle clean testDebugUnitTest lintDebug assembleDebug assembleRelease bundleRelease
+gradle testDebugUnitTest
+gradle assembleDebugAndroidTest
+gradle lint
+gradle assembleDebug
+gradle assembleRelease
+python3 scripts/check_format.py
+python3 scripts/check_kotlin_namespace.py
+python3 scripts/check_documentation_coverage.py
+python3 scripts/check_android_resources.py
+python3 scripts/check_android_security.py
+python3 scripts/check_repository.py
+python3 scripts/scan_secrets.py
 ```
 
 With an emulator/device:
@@ -296,132 +288,109 @@ With an emulator/device:
 gradle connectedDebugAndroidTest
 ```
 
-Repository utility checks:
-
-```bash
-python3 scripts/check_format.py
-python3 scripts/scan_secrets.py
-```
-
-On Windows environments that expose Python as `python` rather than `python3`, use `python` for those scripts.
-
-## Development
-
-The app uses Android SDK 35 and Java 17 bytecode. `local.properties` is intentionally excluded from Git.
-
-Development guide: [`docs/development.md`](docs/development.md)
-
-Command dictionary: [`docs/command-reference.md`](docs/command-reference.md)
+See [`docs/development.md`](docs/development.md) and [`docs/command-reference.md`](docs/command-reference.md).
 
 ## Testing
 
 The repository includes:
 
-- finance arithmetic and validation unit tests;
-- decimal/rounding regression tests;
-- history repository tests;
-- template repository tests;
-- CSV security/escaping tests;
-- receipt formatter tests;
-- Room Android integration tests;
-- a Compose calculator screen smoke test.
+- finance arithmetic, rounding, bounds, and validation unit tests;
+- deterministic seeded finance fuzz/regression coverage;
+- history/template repository tests covering names, canonical currencies, persisted-record envelopes, finance settings, exact restore behavior, duplicate replacement IDs, and fail-before-replace semantics;
+- shared persisted-record policy tests for identifiers, timestamps, currencies, split/result bounds, and template envelopes;
+- UTF-16-safe saved-name policy tests, including emoji-boundary and malformed-surrogate cases;
+- backup round-trip coverage for Unicode saved names at the saved-name boundary;
+- backup persisted-policy tests that reject noncanonical/invalid in-memory records before encoding and checksum-valid noncanonical currencies during decode;
+- strict malformed UTF-8 backup-byte decoder regression coverage;
+- backup corruption, schema, structural-bound, and semantic-validation tests;
+- deterministic seeded backup serialization/corruption fuzz coverage;
+- CSV security/escaping and receipt formatter tests;
+- export path-containment, Unicode-safe PDF truncation, and structured-log redaction tests;
+- Room history/template/backup integration tests;
+- Compose calculator, named-history-save/Unicode-boundary, template-name/Unicode-boundary, History label-filter, and Settings busy-state tests;
+- a real-activity calculate/named-save/history journey test;
+- fast repository guards for formatting, namespace, exhaustive tracked-file documentation, required-document/release-metadata alignment, string resources, Android local-first security, links/required files, and common secret patterns.
+
+CI compiles the instrumentation suite; final release verification still requires executing it on a connected emulator/device.
 
 Testing strategy: [`docs/testing.md`](docs/testing.md)
 
-## Android APK installation and ADB
+## Build and release
 
-Check devices:
-
-```bash
-adb devices
-```
-
-Install/reinstall debug APK:
+Debug build:
 
 ```bash
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+gradle assembleDebug
 ```
 
-Uninstall SpendCalc from the selected test device:
+Release compilation:
 
 ```bash
-adb uninstall in.sanskar.spendcalc
+gradle assembleRelease
 ```
 
-Deep ADB/build instructions: [`docs/android-build-guide.md`](docs/android-build-guide.md).
+Release App Bundle:
 
-## Release signing
+```bash
+gradle bundleRelease
+```
 
-Production signing keys and passwords are **not** committed.
+Production signing material is **not** committed to the repository. Tagged release-candidate workflow runs produce an unsigned release artifact after repository/test/lint/release-build verification. Signing and store distribution use protected credentials outside source control.
 
-The documented manual release flow is:
+A configured, queued, pending, cancelled, or superseded workflow is not treated as a successful release check. The exact commit being released must satisfy [`docs/verification.md`](docs/verification.md), including connected-device/accessibility/export/backup/signing/screenshot gates that source CI cannot prove.
 
-1. `gradle assembleRelease`
-2. inspect the generated unsigned release APK
-3. align it with `zipalign`
-4. sign it with `apksigner`
-5. verify its signing certificate
-6. install/test the final signed APK
-7. build/sign an AAB when store publishing is required
+Current tag target after all blocking gates pass: `v2.0.12`.
 
-See [`docs/android-build-guide.md`](docs/android-build-guide.md) and [`docs/release.md`](docs/release.md) for exact commands, flag meanings, security rules, and verification steps.
+- Android artifact/build/signing guide: [`docs/android-build-guide.md`](docs/android-build-guide.md)
+- Command meanings: [`docs/command-reference.md`](docs/command-reference.md)
+- Release procedure: [`docs/release.md`](docs/release.md)
+- Blocking release checklist: [`docs/verification.md`](docs/verification.md)
 
 ## CI and repository automation
 
-- `CI`: format guard, common-secret-pattern guard, JVM tests, Android lint, debug build, and release compilation.
+- `CI`: format, Kotlin namespace, exhaustive tracked-file documentation coverage, Android string-resource audit, Android local-first security policy, repository/link/release-document audit, secret scan, JVM tests, instrumentation-test compilation, full Android lint, debug build, release build.
 - `CodeQL`: Java/Kotlin static analysis.
 - `Dependency Review`: pull-request dependency change review.
+- `Repository Audit`: required-document/local-link/release-metadata audit plus tracked-file documentation coverage and Android string-resource/reference/security guards.
 - `Dependabot`: weekly Gradle and GitHub Actions updates.
-- `Release Candidate`: tag-triggered verified unsigned release build.
+- `Release Candidate`: tag-triggered unsigned release build.
+- Superseded PR workflow runs use concurrency cancellation so the newest revision receives runner priority.
 
 Repository workflow files live under [`.github/workflows/`](.github/workflows/).
 
 ## Security
 
-SpendCalc intentionally minimizes permissions and remote dependencies. The export provider is non-exported and only grants temporary read access during a user-selected share action. CSV text cells are escaped and common formula-leading characters are neutralized.
+SpendCalc minimizes permissions and remote dependencies. The export provider is non-exported, path-restricted, and grants temporary read access only during a user-selected share action. CSV text cells are escaped and common formula-leading characters are neutralized. Repository persistence and explicit backup parsing both fail closed for unsupported/malformed records, including malformed Unicode saved text, malformed UTF-8 document bytes, noncanonical persisted currencies, and invalid persisted-record envelopes.
+
+The backup SHA-256 checksum detects accidental corruption; it is not a signature, MAC, encryption mechanism, or proof of backup authorship.
 
 Do not report exploitable vulnerability details in a public issue. Follow [`SECURITY.md`](SECURITY.md).
 
-Production keystores, private keys, signing passwords, access tokens, and credentials must never be committed.
-
 ## Privacy and data
 
-History/templates use Room, while preferences use DataStore. Users can clear history and delete templates, and history can automatically expire after 30 or 90 days. Android system backup/device transfer may include app-local database/preferences according to OS/device backup settings.
+History/templates use Room while preferences use DataStore. Users can name saved calculations, search/clear history, undo an individual history deletion, delete/undo templates, and configure history expiry. Explicit backup is user-selected and local; Android system backup/device transfer may separately include the documented private database/preferences according to OS/device settings.
 
-Read [`PRIVACY.md`](PRIVACY.md).
+Read [`PRIVACY.md`](PRIVACY.md) and [`docs/privacy-backup.md`](docs/privacy-backup.md).
 
 ## Accessibility
 
-Release checks include TalkBack traversal, large system font scale, light/dark themes, touch-target review, small/wide screen behavior, and non-color-only validation.
+Release checks include TalkBack traversal, large system font scale, light/dark/system themes, app large-text behavior, reduced-motion behavior, navigation-label semantics, named-history/template dialog semantics, backup-progress messaging, touch-target review, small/wide screen behavior, and non-color-only validation.
 
 Read [`docs/accessibility.md`](docs/accessibility.md).
 
 ## Performance
 
-The app avoids network initialization and keeps ordinary calculation work in memory. Performance work should be based on profiling rather than replacing correct decimal math with faster but unsafe primitives.
+The app avoids network initialization, keeps ordinary calculation work in memory, caps the editable calculator at 100 line items, bounds history search and user/backup inputs, prevalidates replacement collections before DAO calls, and moves document/PDF/CSV file I/O off the main thread. Optimization should remain evidence-driven rather than replacing correct decimal math with unsafe primitives.
 
 Read [`docs/performance.md`](docs/performance.md).
 
 ## Troubleshooting
 
-The troubleshooting guide now covers:
-
-- Gradle/JDK/PATH problems;
-- Android SDK 35 configuration;
-- dependency/cache failures;
-- ADB/device authorization;
-- APK/AAB output locations;
-- installation/signature/version errors;
-- `zipalign`/`apksigner` problems;
-- Room/KSP issues;
-- lint/unit/instrumentation failures;
-- release-only shrinking problems.
-
-Read [`docs/troubleshooting.md`](docs/troubleshooting.md).
+JDK, Android SDK, local Gradle/no-wrapper setup, documentation/resource/security guards, KSP/Room, emulator, persistence, export/backup, and release troubleshooting is documented in [`docs/troubleshooting.md`](docs/troubleshooting.md). Build/signing-specific troubleshooting is also cross-referenced from [`docs/android-build-guide.md`](docs/android-build-guide.md).
 
 ## Contributing
 
-Contributions are welcome. Start with [`CONTRIBUTING.md`](CONTRIBUTING.md) and the pull-request checklist.
+Contributions are welcome. Start with [`CONTRIBUTING.md`](CONTRIBUTING.md) and the pull-request checklist. Any new/renamed/deleted tracked file must update the exhaustive codebase reference in the same change.
 
 For local commits, the requested project commit email is:
 
@@ -429,13 +398,13 @@ For local commits, the requested project commit email is:
 git config user.email "sanskarin@outlook.in"
 ```
 
-The connected GitHub contents API may attribute commits to the authenticated GitHub identity; local contributors can explicitly set the requested Git email as shown above.
-
 ## Roadmap and changes
 
 - [`ROADMAP.md`](ROADMAP.md)
 - [`CHANGELOG.md`](CHANGELOG.md)
-- [`what_changed.md`](what_changed.md) — multi-session engineering handoff/current verification state
+- [`what_changed.md`](what_changed.md) — canonical multi-session engineering handoff/current verification state
+
+`what_changed_final.md` and `what_changed_latest.md` are retained only as compatibility pointers and must not be treated as newer state than `what_changed.md`.
 
 ## Support and contact
 

@@ -123,6 +123,58 @@ class CalculatorEngineTest {
     }
 
     @Test
+    fun `rejects decimal shapes that could expand during rendering`() {
+        val outcome = engine.calculate(
+            CalculationInput(
+                items = listOf(ExpenseItem("huge", "Huge", BigDecimal("1E+1000"))),
+                exchangeRate = BigDecimal("1E-1000"),
+            ),
+        )
+
+        val errors = (outcome as CalculationOutcome.Failure).errors
+        assertTrue(errors.contains(CalculationError.InvalidAmount("huge")))
+        assertTrue(errors.contains(CalculationError.InvalidExchangeRate))
+    }
+
+    @Test
+    fun `rejects discount above one hundred percent`() {
+        val outcome = engine.calculate(
+            CalculationInput(
+                items = listOf(ExpenseItem("1", "Bill", BigDecimal("100"))),
+                discountPercent = BigDecimal("100.01"),
+            ),
+        )
+
+        val errors = (outcome as CalculationOutcome.Failure).errors
+        assertTrue(errors.contains(CalculationError.InvalidDiscount))
+    }
+
+    @Test
+    fun `allows bounded charge percentages above one hundred percent`() {
+        val outcome = engine.calculate(
+            CalculationInput(
+                items = listOf(ExpenseItem("1", "Bill", BigDecimal("10"))),
+                taxPercent = BigDecimal("125"),
+            ),
+        )
+
+        assertTrue(outcome is CalculationOutcome.Success)
+    }
+
+    @Test
+    fun `rejects split counts above supported bound`() {
+        val outcome = engine.calculate(
+            CalculationInput(
+                items = emptyList(),
+                splitCount = 1_000_001,
+            ),
+        )
+
+        val errors = (outcome as CalculationOutcome.Failure).errors
+        assertTrue(errors.contains(CalculationError.InvalidSplitCount))
+    }
+
+    @Test
     fun `rejects zero exchange rate and split count`() {
         val outcome = engine.calculate(
             CalculationInput(

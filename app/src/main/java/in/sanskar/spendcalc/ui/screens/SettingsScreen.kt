@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
@@ -37,9 +39,12 @@ fun SettingsScreen(
     onLargeTextChange: (Boolean) -> Unit,
     onReducedMotionChange: (Boolean) -> Unit,
     onAutoDeleteChange: (AutoDeleteHistory) -> Unit,
+    onExportBackup: () -> Unit,
+    onRestoreBackup: () -> Unit,
     onAbout: () -> Unit,
     onOpenRepository: () -> Unit,
     modifier: Modifier = Modifier,
+    backupBusy: Boolean = false,
 ) {
     Column(
         modifier = modifier
@@ -106,6 +111,34 @@ fun SettingsScreen(
                     selected = preferences.autoDeleteHistory == policy,
                     onClick = { onAutoDeleteChange(policy) },
                 )
+            }
+        }
+
+        SettingsCard(title = stringResource(R.string.backup_section)) {
+            Text(
+                text = stringResource(R.string.backup_description),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (backupBusy) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                Text(
+                    text = stringResource(R.string.backup_in_progress),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Button(
+                onClick = onExportBackup,
+                enabled = !backupBusy,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.export_backup))
+            }
+            OutlinedButton(
+                onClick = onRestoreBackup,
+                enabled = !backupBusy,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.restore_backup))
             }
         }
 
