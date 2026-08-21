@@ -1,6 +1,6 @@
 # Release Candidate Verification
 
-This checklist is the source of truth for deciding whether an exact SpendCalc commit is ready to tag. A configured workflow is not counted as passed until GitHub reports an acceptable successful conclusion for the final commit. Source completeness, automated checks, manual Android checks, signing, and screenshots are distinct evidence classes.
+This checklist is the source of truth for deciding whether an exact SpendCalc commit is ready to tag. A configured workflow is not counted as passed until GitHub reports an acceptable successful conclusion for the final commit. Source completeness, automated checks, connected-emulator checks, manual Android checks, signing, and screenshots are distinct evidence classes.
 
 The current application release target is **2.0.12** with Android `versionCode` **20012**. Room database and explicit backup schema versions remain separate compatibility dimensions.
 
@@ -28,6 +28,19 @@ The current application release target is **2.0.12** with Android `versionCode` 
 - [ ] Dependency review completes without a release-blocking finding.
 - [ ] Repository Audit workflow passes, including documentation coverage, required-file/link/release-metadata consistency, Android string-resource checks, and the Android local-first security guard.
 
+## Automated connected Android runtime checks
+
+These checks execute the real Android instrumentation suite instead of only compiling it. The `Android Instrumentation` workflow uses a hardware-accelerated API 35 `google_apis` x86_64 emulator and must succeed for the exact release-candidate commit.
+
+- [ ] Android Instrumentation workflow completes successfully for the exact final commit.
+- [ ] `connectedDebugAndroidTest` passes on the automated API 35 emulator.
+- [ ] Room history/template/backup integration tests pass on the emulator.
+- [ ] Compose calculator, named-history-save/Unicode-boundary dialog, template-name/Unicode-boundary dialog, History label-filter, and Settings busy-state tests pass on the emulator.
+- [ ] Real-activity calculate -> named save -> History journey passes on the emulator and verifies both the saved label and amount.
+- [ ] Failed connected-test runs preserve Android instrumentation reports as workflow artifacts for diagnosis.
+
+Automated emulator execution strengthens runtime evidence but does not replace the manual accessibility, layout, system-picker/share, splash, offline, or representative physical-device checks below.
+
 ## Documentation consistency checks
 
 These are source/repository checks and do not replace runtime/manual verification.
@@ -46,14 +59,11 @@ These are source/repository checks and do not replace runtime/manual verificatio
 - [ ] `what_changed_final.md` and `what_changed_latest.md` remain compatibility pointers to canonical `what_changed.md`, not independent/current release-state documents.
 - [ ] No permanent document falsely promotes a queued/pending/cancelled/superseded workflow to successful verification.
 
-## Android device/emulator checks
+## Android device/emulator manual checks
 
-These require a connected Android runtime and are intentionally not claimed by a compile-only CI run.
+These are human/representative-runtime release checks. Automated API 35 instrumentation success does not by itself satisfy them.
 
-- [ ] `connectedDebugAndroidTest` passes.
-- [ ] Room history/template/backup integration tests pass.
-- [ ] Compose calculator, named-history-save/Unicode-boundary dialog, template-name/Unicode-boundary dialog, History label-filter, and Settings busy-state tests pass.
-- [ ] Real-activity calculate -> named save -> History journey passes and verifies both the saved label and amount.
+- [ ] Re-run `connectedDebugAndroidTest` on a representative local emulator or physical device.
 - [ ] Fresh install shows the branded SpendCalc launch splash and then onboarding.
 - [ ] Returning install does not show a false onboarding flash while preferences load.
 - [ ] Calculator, History, Templates, Settings, and About navigation work.
@@ -135,4 +145,4 @@ These require a connected Android runtime and are intentionally not claimed by a
 
 ## Current status
 
-The feature implementation, persistence/export hardening, final platform fixes, complete Android build/command documentation, release-document drift guards, and deep source-level documentation work are present on the release-candidate branch. This checklist intentionally leaves automated boxes unchecked until exact-head GitHub runs report results, and leaves Android/accessibility/signing/screenshot boxes unchecked until those real external/manual activities occur. Source audit completion is not a substitute for those remaining gates.
+The feature implementation, persistence/export hardening, final platform fixes, complete Android build/command documentation, release-document drift guards, deep source-level documentation work, and API 35 connected-emulator workflow are present on the release-candidate branch. This checklist intentionally leaves boxes unchecked until the exact final commit's corresponding GitHub runs or real manual/distribution activities provide the required evidence. Automated emulator success is not a substitute for manual accessibility, layout, picker/share, screenshot, signing, or artifact verification.
