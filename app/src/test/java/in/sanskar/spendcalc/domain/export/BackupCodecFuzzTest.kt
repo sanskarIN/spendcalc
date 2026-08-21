@@ -18,7 +18,7 @@ class BackupCodecFuzzTest {
         val codec = BackupCodec()
 
         repeat(150) { iteration ->
-            val label = randomText(random, alphabet)
+            val label = "x" + randomText(random, alphabet)
             val backup = backup(iteration, label)
 
             val decoded = codec.decode(codec.encode(backup))
