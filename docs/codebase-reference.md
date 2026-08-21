@@ -51,6 +51,7 @@ The companion [`documentation-map.md`](documentation-map.md) explains which docu
 - `.github/ISSUE_TEMPLATE/feature_request.yml` — Structured feature-request form designed to capture value, scope, privacy, and accessibility considerations.
 - `.github/dependabot.yml` — Scheduled dependency-update configuration for Gradle and GitHub Actions ecosystems.
 - `.github/pull_request_template.md` — Pull-request checklist for behavior, tests, documentation, privacy/security, accessibility, and release-impact review.
+- `.github/workflows/android-instrumentation.yml` — API 35 hardware-accelerated emulator workflow that executes `connectedDebugAndroidTest` on pull requests/main and uploads Android instrumentation reports when the connected test gate fails.
 - `.github/workflows/ci.yml` — Main pull-request CI: formatting, namespace, documentation/resource/security/repository/secret guards, JVM tests, instrumentation compilation, lint, debug build, and release build.
 - `.github/workflows/codeql.yml` — Java/Kotlin CodeQL static-analysis workflow used as a release-blocking security signal when applicable.
 - `.github/workflows/dependency-review.yml` — Pull-request dependency change review to surface risky newly introduced packages/licenses/vulnerabilities.
@@ -88,159 +89,131 @@ The companion [`documentation-map.md`](documentation-map.md) explains which docu
 - `app/src/main/java/in/sanskar/spendcalc/data/local/HistoryDao.kt` — Room DAO for observing, snapshotting, upserting, deleting, clearing, aging, and batch-replacing calculation history.
 - `app/src/main/java/in/sanskar/spendcalc/data/local/HistoryEntity.kt` — Room history table entity storing bounded/canonical metadata and decimal values as exact strings.
 - `app/src/main/java/in/sanskar/spendcalc/data/local/SpendCalcDatabase.kt` — Room database definition/version and DAO exposure for history/templates.
-- `app/src/main/java/in/sanskar/spendcalc/data/local/TemplateDao.kt` — Room DAO for observing, snapshotting, upserting, deleting, clearing, and batch-replacing reusable templates.
-- `app/src/main/java/in/sanskar/spendcalc/data/local/TemplateEntity.kt` — Room template table entity storing reusable calculator settings and decimal values as exact strings.
+- `app/src/main/java/in/sanskar/spendcalc/data/local/TemplateDao.kt` — Room DAO for observing, snapshotting, upserting, deleting, clearing, and batch-replacing calculation templates.
+- `app/src/main/java/in/sanskar/spendcalc/data/local/TemplateEntity.kt` — Room template table entity storing reusable calculator settings with decimal values as exact strings.
 
-### Finance domain, export contracts, and persisted models
+### Domain model and finance/backup logic
 
-- `app/src/main/java/in/sanskar/spendcalc/domain/CalculatorEngine.kt` — Pure precision-safe finance engine and validator: item totals, discount, charges, manual conversion, split, rounding, numeric bounds, currency rules, and typed calculation errors.
-- `app/src/main/java/in/sanskar/spendcalc/domain/export/BackupCodec.kt` — Deterministic versioned backup serializer/parser with URL-safe Base64 text fields, SHA-256 corruption detection, bounded parsing, duplicate-ID rejection, exact canonical persisted-currency validation, shared persisted-record policy reuse, and fail-closed decoding.
-- `app/src/main/java/in/sanskar/spendcalc/domain/export/CsvExportFormatter.kt` — Platform-independent CSV receipt serializer with quoting and spreadsheet-formula neutralization for text cells.
-- `app/src/main/java/in/sanskar/spendcalc/domain/export/ExportFormatter.kt` — Small domain interface for platform-independent text-based export implementations.
-- `app/src/main/java/in/sanskar/spendcalc/domain/export/ReceiptTextFormatter.kt` — Human-readable plain-text receipt serializer used by Android sharing.
-- `app/src/main/java/in/sanskar/spendcalc/domain/model/ExpenseModels.kt` — Core calculation input/result, expense-item, rounding-policy, error, and outcome domain models.
-- `app/src/main/java/in/sanskar/spendcalc/domain/model/SavedModels.kt` — History/template/preferences/backup domain models and shared saved-name size constant.
-- `app/src/main/java/in/sanskar/spendcalc/domain/model/SavedNamePolicy.kt` — Shared saved-label/template-name normalization and validation, including UTF-16 well-formedness and surrogate-safe truncation at the 120-character boundary.
-- `app/src/main/java/in/sanskar/spendcalc/domain/model/SavedRecordPolicy.kt` — Shared persisted-record envelope rules for IDs, timestamps, names, canonical currencies, split counts, result decimal magnitude/scale, and unique batch identifiers.
+- `app/src/main/java/in/sanskar/spendcalc/domain/CalculatorEngine.kt` — Pure `BigDecimal` finance engine and validation boundary for bounded items, percentages, split counts, currencies, exchange rates, and decimal shapes.
+- `app/src/main/java/in/sanskar/spendcalc/domain/export/BackupCodec.kt` — Versioned deterministic local backup encoder/decoder with strict structural/text/decimal bounds, SHA-256 integrity checking, explicit persisted-record validation, strict UTF-8 byte decoding, and exact canonical stored-currency rejection.
+- `app/src/main/java/in/sanskar/spendcalc/domain/export/CsvReceiptFormatter.kt` — CSV receipt serializer with RFC-style quoting plus spreadsheet-formula neutralization for user-controlled text.
+- `app/src/main/java/in/sanskar/spendcalc/domain/export/ReceiptFormatter.kt` — Human-readable text receipt serializer using deterministic money formatting.
+- `app/src/main/java/in/sanskar/spendcalc/domain/model/CalculationModels.kt` — Finance input/output data model, decimal/percentage/split/item bounds, validation-error types, and default calculator state.
+- `app/src/main/java/in/sanskar/spendcalc/domain/model/SavedModels.kt` — Persisted-domain models for history, templates, preferences, and explicit backups, including release-independent backup schema metadata.
+- `app/src/main/java/in/sanskar/spendcalc/domain/model/SavedNamePolicy.kt` — Shared saved-name policy for trimming user input, preserving exact accepted restored names, enforcing the 120-character UTF-16 bound, and avoiding split surrogate pairs.
+- `app/src/main/java/in/sanskar/spendcalc/domain/model/SavedRecordPolicy.kt` — Shared persisted-record envelope policy for bounded IDs/timestamps/canonical currencies/split/result values/names and duplicate-ID rejection.
 
-### Android platform adapters
+### Platform/export/logging helpers
 
-- `app/src/main/java/in/sanskar/spendcalc/platform/BackupFileIo.kt` — Bounded Android Storage Access Framework backup I/O with strict UTF-8 document decoding that reports malformed/unmappable input instead of replacing invalid bytes.
-- `app/src/main/java/in/sanskar/spendcalc/platform/ExportManager.kt` — Android export/share coordinator that writes app-private cache exports and launches user-selected share flows with temporary URI access.
-- `app/src/main/java/in/sanskar/spendcalc/platform/ExternalLinks.kt` — Safe explicit-user-action helpers for opening repository/funding URLs and email applications without making the core app network-dependent.
-- `app/src/main/java/in/sanskar/spendcalc/platform/PathSafety.kt` — Canonical-path containment helper preventing cache-export path prefix/sibling escape mistakes.
-- `app/src/main/java/in/sanskar/spendcalc/platform/PdfReceiptExporter.kt` — Offline Android `PdfDocument` renderer for receipt export with Unicode-safe line truncation at the ellipsis boundary.
-- `app/src/main/java/in/sanskar/spendcalc/platform/SafeLogger.kt` — Structured logging boundary that normalizes keys with `Locale.ROOT` and redacts sensitive categories instead of recording raw private values.
+- `app/src/main/java/in/sanskar/spendcalc/platform/BackupFileIo.kt` — Android document-stream adapter for bounded explicit-backup reads/writes and strict UTF-8 decode delegation.
+- `app/src/main/java/in/sanskar/spendcalc/platform/ExportManager.kt` — Android text/CSV/PDF export coordinator that creates files only inside the intended export cache and shares them through the configured `FileProvider`.
+- `app/src/main/java/in/sanskar/spendcalc/platform/PathSafety.kt` — Canonical-path containment helper preventing sibling-prefix/path-escape mistakes for export targets.
+- `app/src/main/java/in/sanskar/spendcalc/platform/PdfReceiptExporter.kt` — Android PDF renderer with bounded page layout and Unicode-safe line truncation.
+- `app/src/main/java/in/sanskar/spendcalc/platform/SafeLogger.kt` — Minimal diagnostic logging facade with deterministic sensitive-key redaction and no analytics/remote transport.
 
-### Compose presentation, navigation, screens, and theme
+### Compose UI and presentation state
 
-- `app/src/main/java/in/sanskar/spendcalc/ui/AppUiState.kt` — Presentation-state and sequenced-feedback models used to keep UI state explicit and prevent repeated events from being collapsed.
-- `app/src/main/java/in/sanskar/spendcalc/ui/CalculatorStateMapper.kt` — Converts editable calculator text state into validated domain `CalculationInput` and maps parse/domain failures to form issues.
-- `app/src/main/java/in/sanskar/spendcalc/ui/SpendCalcApp.kt` — Top-level Compose application shell: theme, navigation, screens, document-picker/share side effects, backup confirmation/progress, Snackbar feedback, and platform action wiring.
-- `app/src/main/java/in/sanskar/spendcalc/ui/SpendCalcViewModel.kt` — Presentation orchestrator for calculator editing, validation/results, history/templates, retention, preferences, backup preparation/restore, undo, and sequenced user feedback.
-- `app/src/main/java/in/sanskar/spendcalc/ui/components/Common.kt` — Shared Compose primitives such as screen headers and consistently formatted money rows.
-- `app/src/main/java/in/sanskar/spendcalc/ui/screens/AboutScreen.kt` — Version/license/project/support/funding/credit presentation and explicit external-action entry points.
-- `app/src/main/java/in/sanskar/spendcalc/ui/screens/CalculatorScreen.kt` — Responsive calculator form and receipt UI, bounded item editing, validation text, named history/template dialogs, UTF-16-safe name input, and text/CSV/PDF actions.
-- `app/src/main/java/in/sanskar/spendcalc/ui/screens/HistoryScreen.kt` — Searchable local history list with bounded query input, record details, individual delete/undo integration, and confirmed clear-all behavior.
-- `app/src/main/java/in/sanskar/spendcalc/ui/screens/OnboardingScreen.kt` — First-run local/offline/privacy-oriented onboarding experience.
-- `app/src/main/java/in/sanskar/spendcalc/ui/screens/SettingsScreen.kt` — Theme/accessibility/retention/backup-restore/settings UI, including modal busy state and links to About/repository actions.
-- `app/src/main/java/in/sanskar/spendcalc/ui/screens/TemplatesScreen.kt` — Reusable template list with load/delete behavior and empty-state presentation.
-- `app/src/main/java/in/sanskar/spendcalc/ui/theme/DesignTokens.kt` — Shared spacing/radius/layout constants used to keep Compose visuals and touch/layout decisions consistent.
-- `app/src/main/java/in/sanskar/spendcalc/ui/theme/Theme.kt` — Material 3 light/dark/system theme configuration, large-text typography adjustments, and system-bar appearance behavior.
+- `app/src/main/java/in/sanskar/spendcalc/ui/AppUiState.kt` — Top-level immutable UI state including calculator, history/templates, preferences, selected navigation destination, backup progress, transient feedback, and loading readiness.
+- `app/src/main/java/in/sanskar/spendcalc/ui/SpendCalcApp.kt` — App navigation/scaffold, responsive navigation rail/bar choice, dialog/confirmation orchestration, About entry, backup launchers, transient messaging, and reduced-motion transition behavior.
+- `app/src/main/java/in/sanskar/spendcalc/ui/SpendCalcViewModel.kt` — Lifecycle-aware presentation coordinator for calculation, persistence, history/templates, settings, backup/restore, retention, saved-name policy application, and transient feedback.
+- `app/src/main/java/in/sanskar/spendcalc/ui/screens/AboutScreen.kt` — About/support/funding/version/privacy entry points and product credit surface.
+- `app/src/main/java/in/sanskar/spendcalc/ui/screens/CalculatorScreen.kt` — Responsive calculator form, item editor, finance adjustments, result receipt, share/save/template actions, bounded saved-name dialogs, and validation/limit messaging.
+- `app/src/main/java/in/sanskar/spendcalc/ui/screens/HistoryScreen.kt` — Searchable named history list with bounded Unicode-safe search input, delete/Undo/clear behavior, empty states, and formatted persisted results.
+- `app/src/main/java/in/sanskar/spendcalc/ui/screens/OnboardingScreen.kt` — First-run local-first product introduction and onboarding completion action.
+- `app/src/main/java/in/sanskar/spendcalc/ui/screens/SettingsScreen.kt` — Theme/accessibility/retention controls plus backup/restore/About/repository actions and backup-busy presentation.
+- `app/src/main/java/in/sanskar/spendcalc/ui/screens/TemplatesScreen.kt` — Reusable calculation-template list with load/delete actions and empty-state handling.
+- `app/src/main/java/in/sanskar/spendcalc/ui/theme/Theme.kt` — Material 3 light/dark/system theme selection, large-text typography scaling, and app color scheme.
 
-### Android drawable resources
+### Android resources
 
-- `app/src/main/res/drawable/ic_nav_calculator.xml` — Repository-owned vector icon for the Calculator navigation destination; text label remains the accessible name.
-- `app/src/main/res/drawable/ic_nav_history.xml` — Repository-owned vector icon for History navigation.
-- `app/src/main/res/drawable/ic_nav_settings.xml` — Repository-owned vector icon for Settings navigation.
-- `app/src/main/res/drawable/ic_nav_templates.xml` — Repository-owned vector icon for Templates navigation.
-- `app/src/main/res/drawable/ic_spendcalc.xml` — SpendCalc vector mark used by the branded Android launch/splash treatment.
+- `app/src/main/res/drawable/ic_launcher_foreground.xml` — Adaptive-launcher foreground artwork.
+- `app/src/main/res/drawable/ic_nav_calculator.xml` — Calculator navigation icon vector.
+- `app/src/main/res/drawable/ic_nav_history.xml` — History navigation icon vector.
+- `app/src/main/res/drawable/ic_nav_settings.xml` — Settings navigation icon vector.
+- `app/src/main/res/drawable/ic_nav_templates.xml` — Templates navigation icon vector.
+- `app/src/main/res/drawable/ic_spendcalc_logo.xml` — Reusable SpendCalc logo vector used by branding surfaces.
+- `app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml` — Adaptive launcher icon definition.
+- `app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml` — Round adaptive launcher icon definition.
+- `app/src/main/res/mipmap-hdpi/ic_launcher.webp` — hdpi raster launcher icon fallback.
+- `app/src/main/res/mipmap-hdpi/ic_launcher_round.webp` — hdpi round raster launcher icon fallback.
+- `app/src/main/res/mipmap-mdpi/ic_launcher.webp` — mdpi raster launcher icon fallback.
+- `app/src/main/res/mipmap-mdpi/ic_launcher_round.webp` — mdpi round raster launcher icon fallback.
+- `app/src/main/res/mipmap-xhdpi/ic_launcher.webp` — xhdpi raster launcher icon fallback.
+- `app/src/main/res/mipmap-xhdpi/ic_launcher_round.webp` — xhdpi round raster launcher icon fallback.
+- `app/src/main/res/mipmap-xxhdpi/ic_launcher.webp` — xxhdpi raster launcher icon fallback.
+- `app/src/main/res/mipmap-xxhdpi/ic_launcher_round.webp` — xxhdpi round raster launcher icon fallback.
+- `app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp` — xxxhdpi raster launcher icon fallback.
+- `app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp` — xxxhdpi round raster launcher icon fallback.
+- `app/src/main/res/values/colors.xml` — XML color resources required by splash/launcher theme setup.
+- `app/src/main/res/values/strings.xml` — Default product/navigation/calculator/template/general strings and accessibility-facing text.
+- `app/src/main/res/values/strings_about.xml` — About/support/funding/version/privacy strings.
+- `app/src/main/res/values/strings_feedback.xml` — User-facing result/error/Undo/backup status messages.
+- `app/src/main/res/values/strings_history.xml` — History search/list/delete/clear/retention strings.
+- `app/src/main/res/values/strings_limits.xml` — User-facing bounded-input/limit explanatory strings.
+- `app/src/main/res/values/strings_onboarding.xml` — First-run onboarding copy.
+- `app/src/main/res/values/strings_settings.xml` — Settings, theme/accessibility, backup/restore, and retention labels/descriptions.
+- `app/src/main/res/values/themes.xml` — Base Material splash/application themes including the AndroidX starting-window splash configuration.
+- `app/src/main/res/xml/backup_rules.xml` — Android 12+ data-extraction rules for system-managed cloud backup/device transfer.
+- `app/src/main/res/xml/data_extraction_rules.xml` — Android data-extraction configuration matching privacy documentation and local persistence policy.
+- `app/src/main/res/xml/file_paths.xml` — FileProvider path restriction exposing only the private `exports/` cache subdirectory.
 
-### Android values and string resources
+### JVM unit, regression, and deterministic fuzz tests
 
-- `app/src/main/res/values/colors.xml` — Small XML color palette used by Android theme/bootstrap resources.
-- `app/src/main/res/values/strings.xml` — Core calculator/navigation/history/template/settings/about labels, validation messages, project contacts/URLs, and common actions.
-- `app/src/main/res/values/strings_about.xml` — Additional About/support/funding copy kept separate for maintainability.
-- `app/src/main/res/values/strings_export.xml` — Text/CSV/PDF/export and sharing strings.
-- `app/src/main/res/values/strings_feedback.xml` — Snackbar/status/error feedback strings for saves, deletes, backup operations, and other user events.
-- `app/src/main/res/values/strings_history.xml` — History search, empty/no-result, clear-confirmation, and named-history dialog strings including the 120-character guidance.
-- `app/src/main/res/values/strings_limits.xml` — User-facing copy for explicit bounded-work limits such as the maximum editable expense-item count.
-- `app/src/main/res/values/strings_onboarding.xml` — First-run onboarding title/body/action copy.
-- `app/src/main/res/values/strings_settings.xml` — Settings descriptions for appearance, accessibility, retention, backup/restore, privacy, and related controls.
-- `app/src/main/res/values/themes.xml` — Android XML theme/splash configuration used before/around Compose rendering.
+- `app/src/test/java/in/sanskar/spendcalc/data/HistoryRepositoryTest.kt` — History repository behavior, normalization, retention, restore, invalid persisted-input rejection, and replace-all atomicity preconditions.
+- `app/src/test/java/in/sanskar/spendcalc/data/HistoryRestoreRepositoryTest.kt` — Focused restore mapping coverage for preserving exact accepted history names and persisted values.
+- `app/src/test/java/in/sanskar/spendcalc/data/RepositoryDuplicateIdTest.kt` — History/template replacement regression proving duplicate IDs are rejected before DAO replacement and existing data remains intact.
+- `app/src/test/java/in/sanskar/spendcalc/data/TemplateRepositoryTest.kt` — Template repository save/restore/delete, persisted-record bounds, finance validation, name policy, and replacement prevalidation coverage.
+- `app/src/test/java/in/sanskar/spendcalc/domain/CalculatorEngineTest.kt` — Deterministic finance and validation regressions for monetary arithmetic, rounding, percentages, split/currency/exchange-rate rules, and decimal bounds.
+- `app/src/test/java/in/sanskar/spendcalc/domain/CalculatorFuzzTest.kt` — Seeded property-style finance fuzz coverage for valid deterministic calculations and expected rejection of invalid generated amounts.
+- `app/src/test/java/in/sanskar/spendcalc/domain/export/BackupCodecFuzzTest.kt` — Seeded Unicode backup round trips and checksummed-body mutation regressions using only valid saved-record fixtures.
+- `app/src/test/java/in/sanskar/spendcalc/domain/export/BackupCodecPersistedPolicyTest.kt` — Backup encode/decode tests for shared persisted-record envelope rules and canonical currency requirements.
+- `app/src/test/java/in/sanskar/spendcalc/domain/export/BackupCodecSavedNamePolicyTest.kt` — Backup saved-name boundary, malformed Unicode, and round-trip regressions.
+- `app/src/test/java/in/sanskar/spendcalc/domain/export/BackupCodecTest.kt` — Primary versioned backup codec tests for round trips, checksums, record/text/decimal limits, unsupported schema handling, duplicate IDs, and compatibility behavior.
+- `app/src/test/java/in/sanskar/spendcalc/domain/export/BackupCodecValidationTest.kt` — Focused backup validation regressions for persisted-record rejection and strict document-byte decoding behavior.
+- `app/src/test/java/in/sanskar/spendcalc/domain/export/CsvReceiptFormatterFuzzTest.kt` — Seeded CSV quoting/formula-neutralization fuzz coverage.
+- `app/src/test/java/in/sanskar/spendcalc/domain/export/CsvReceiptFormatterTest.kt` — CSV export regression coverage for delimiters, quotes, formatting, and formula-prefix neutralization.
+- `app/src/test/java/in/sanskar/spendcalc/domain/export/ReceiptFormatterTest.kt` — Text receipt formatting coverage.
+- `app/src/test/java/in/sanskar/spendcalc/domain/model/SavedNamePolicyTest.kt` — Shared saved-name normalization/truncation/malformed-surrogate and exact-restored-name tests.
+- `app/src/test/java/in/sanskar/spendcalc/domain/model/SavedRecordPolicyTest.kt` — Persisted-record validation tests for identifiers, timestamps, canonical currencies, split/result bounds, names, and duplicate identifiers.
+- `app/src/test/java/in/sanskar/spendcalc/platform/PathSafetyTest.kt` — Canonical export-path containment regressions, including sibling-prefix escape attempts.
+- `app/src/test/java/in/sanskar/spendcalc/platform/PdfReceiptExporterTest.kt` — Pure line-truncation regressions proving PDF text helpers never split surrogate pairs at the ellipsis boundary.
+- `app/src/test/java/in/sanskar/spendcalc/platform/SafeLoggerTest.kt` — Sensitive-key redaction and locale-independence regressions.
+- `app/src/test/java/in/sanskar/spendcalc/ui/AppUiStateTest.kt` — Presentation-state regressions for result/feedback state behavior.
 
-### Android XML security, provider, and system-backup rules
+### Repository verification scripts
 
-- `app/src/main/res/xml/backup_rules.xml` — Legacy Android backup include/exclude rules; kept aligned with the documented device-transfer/system-backup privacy model.
-- `app/src/main/res/xml/data_extraction_rules.xml` — Modern Android cloud-backup/device-transfer extraction policy paired with `PRIVACY.md`.
-- `app/src/main/res/xml/file_paths.xml` — Restricts `FileProvider` sharing to the app-private `cache/exports/` subtree.
+- `scripts/check_android_resources.py` — Validates default Android string references and duplicate names across Kotlin/XML sources before Gradle resource compilation.
+- `scripts/check_android_security.py` — Enforces the no-Internet manifest baseline plus non-exported/path-restricted FileProvider policy.
+- `scripts/check_documentation_coverage.py` — Compares `git ls-files` with this marked file index and rejects missing, stale, or duplicate tracked-file documentation entries.
+- `scripts/check_format.py` — Enforces UTF-8 decoding, final newline, trailing-whitespace, and tab hygiene across tracked text files.
+- `scripts/check_kotlin_namespace.py` — Validates Kotlin package declarations and rejects forbidden/reserved project namespace usage.
+- `scripts/check_repository.py` — Enforces required repository/release/build files, README identity/contact metadata, local Markdown-link integrity, and current application release metadata across build/index/command documentation, including stale signed-APK example detection.
+- `scripts/scan_secrets.py` — Scans tracked text for common token/private-key/signing-material patterns while allowing documented placeholder examples.
 
-### JVM repository tests
+### Documentation
 
-- `app/src/test/java/in/sanskar/spendcalc/data/HistoryRepositoryTest.kt` — Unit coverage for history save/normalization, snapshot, clear/retention, exact restore, persisted-envelope rejection, and failure-before-write semantics.
-- `app/src/test/java/in/sanskar/spendcalc/data/HistoryRestoreRepositoryTest.kt` — Focused regression coverage for exact accepted restore behavior and invalid-history restore rejection.
-- `app/src/test/java/in/sanskar/spendcalc/data/RepositoryDuplicateIdTest.kt` — Guards history/template batch replacement against duplicate IDs before any DAO replacement can mutate existing state.
-- `app/src/test/java/in/sanskar/spendcalc/data/TemplateRepositoryTest.kt` — Template save/load-persistence coverage including name normalization, shared finance validation, exact restore, invalid settings/envelope rejection, and batch failure-before-write behavior.
-
-### JVM finance/domain/export tests
-
-- `app/src/test/java/in/sanskar/spendcalc/domain/CalculatorEngineTest.kt` — Exact arithmetic, rounding, order-of-operations, validation, currency, split, percentage, and numeric-bound tests for `CalculatorEngine`.
-- `app/src/test/java/in/sanskar/spendcalc/domain/CalculatorFuzzTest.kt` — Deterministic seeded finance regression/fuzz invariants for valid and invalid generated inputs.
-- `app/src/test/java/in/sanskar/spendcalc/domain/export/BackupCodecFuzzTest.kt` — Deterministic generated backup round-trip/corruption mutations that must remain reproducible in CI.
-- `app/src/test/java/in/sanskar/spendcalc/domain/export/BackupCodecPersistedPolicyTest.kt` — Verifies backup encode/decode obeys the same persisted-record envelope and exact canonical-currency expectations as repositories, including checksum-valid noncanonical decode rejection.
-- `app/src/test/java/in/sanskar/spendcalc/domain/export/BackupCodecSavedNamePolicyTest.kt` — Exercises saved-name Unicode/surrogate boundary behavior through real backup serialization round trips.
-- `app/src/test/java/in/sanskar/spendcalc/domain/export/BackupCodecTest.kt` — Primary backup-format tests for deterministic round trips, checksums, versions, records, Unicode, preferences, identifiers, and structural limits.
-- `app/src/test/java/in/sanskar/spendcalc/domain/export/BackupCodecValidationTest.kt` — Focused malformed/invalid backup-record validation regressions and fail-closed outcomes.
-- `app/src/test/java/in/sanskar/spendcalc/domain/export/CsvExportFormatterTest.kt` — CSV shape, quoting, embedded-quote, and formula-neutralization regression tests.
-- `app/src/test/java/in/sanskar/spendcalc/domain/export/CsvExportFuzzTest.kt` — Deterministic generated CSV text-cell/escaping security regressions.
-- `app/src/test/java/in/sanskar/spendcalc/domain/export/ReceiptTextFormatterTest.kt` — Plain-text receipt output regression coverage.
-- `app/src/test/java/in/sanskar/spendcalc/domain/model/SavedNamePolicyTest.kt` — Shared saved-name tests for trimming/fallback, 120-character bounds, malformed UTF-16 rejection, surrogate-safe truncation, and repair of earlier split boundaries.
-- `app/src/test/java/in/sanskar/spendcalc/domain/model/SavedRecordPolicyTest.kt` — Shared persisted-envelope tests for IDs, timestamps, canonical currencies, split bounds, decimal magnitude/scale, and valid history/template envelopes.
-
-### JVM platform/presentation tests
-
-- `app/src/test/java/in/sanskar/spendcalc/platform/PathSafetyTest.kt` — Platform regression bundle covering canonical export-path containment, malformed UTF-8 backup-byte rejection through the strict decoder, and Unicode-safe PDF line truncation.
-- `app/src/test/java/in/sanskar/spendcalc/platform/SafeLoggerTest.kt` — Sensitive-key redaction and locale-independent key-normalization regressions, including Turkish-locale behavior.
-- `app/src/test/java/in/sanskar/spendcalc/ui/AppUiStateTest.kt` — Presentation feedback/event sequencing regression coverage.
-
-### Permanent product and engineering documentation
-
-- `docs/README.md` — Central documentation index and reading map linking setup, development, testing, architecture, security/privacy, accessibility, troubleshooting, Android build, command reference, release, and verification material.
-- `docs/accessibility.md` — Accessibility implementation decisions plus TalkBack, font-scale, motion, contrast, touch, dialog, and device-size manual verification guidance.
-- `docs/adr/0001-use-bigdecimal-for-finance.md` — ADR establishing `BigDecimal` rather than binary floating point for finance arithmetic.
-- `docs/adr/0002-local-first-core.md` — ADR establishing no-account/no-required-network local-first core behavior.
-- `docs/adr/0003-room-and-datastore.md` — ADR establishing Room for structured records and DataStore for user preferences.
-- `docs/adr/0004-versioned-local-backup.md` — ADR for the explicit versioned bounded backup format, integrity checksum, validation, and restore model.
-- `docs/android-build-guide.md` — Comprehensive Android executable guide covering environment verification, Gradle tasks, debug/release APK and AAB outputs, ADB installation, signing tools, artifact inspection, checksums, and release-oriented troubleshooting.
-- `docs/architecture.md` — Layer responsibilities, dependency direction, calculation order, persistence/export architecture, error handling, dependency wiring, and links to detailed invariants.
-- `docs/assets/screenshots/README.md` — Policy/checklist for capturing real verified release screenshots using fictional data rather than fabricated imagery.
-- `docs/assets/spendcalc-logo.svg` — Editable repository-owned SVG logo source used in project documentation/branding.
-- `docs/backup-restore.md` — User/developer behavior of explicit backup/restore, scope, format, SAF flow, confirmation, rollback, and compatibility boundaries.
-- `docs/codebase-reference.md` — This exhaustive tracked-file inventory; source of truth for file ownership/purpose and documentation-coverage enforcement.
-- `docs/command-reference.md` — Detailed command catalog explaining the purpose and practical use of Git, Java, Gradle, ADB, Android SDK packaging/signing tools, repository scripts, command options, and common diagnostics.
-- `docs/design-system.md` — Compose/Material design tokens, typography/theme, spacing, responsiveness, interaction, and accessibility design conventions.
-- `docs/development.md` — Day-to-day contributor guide for source layout, finance/UI/persistence/export/logging changes, dependencies, quality commands, and Git workflow.
-- `docs/documentation-map.md` — Documentation information architecture: audience, authority, update triggers, duplication rules, and source-of-truth relationships.
-- `docs/features.md` — Implemented product behavior that must remain aligned with tests and release verification.
-- `docs/github-maintenance.md` — Repository-maintenance procedures for Actions, Dependabot, issue/PR hygiene, documentation, release checks, and multi-session handoffs.
-- `docs/logging.md` — Safe structured-logging policy and sensitive-field redaction boundaries.
-- `docs/performance.md` — Performance model, bounded-work decisions, off-main-thread I/O, profiling expectations, and thresholds for future optimization work.
-- `docs/persistence-invariants.md` — Permanent contract requiring every repository-accepted saved record to remain backup-exportable, including shared names/IDs/currency/timestamp/split/decimal/duplicate-ID rules.
-- `docs/privacy-backup.md` — Privacy analysis for explicit user-created backups versus Android system-managed backup/device transfer.
-- `docs/release-candidate-final-audit.md` — Source-level `2.0.12` release-candidate audit; records what is implemented without falsely claiming pending automated/manual gates passed.
-- `docs/release.md` — Release workflow, versioning, exact-commit verification, unsigned artifact generation, external signing, screenshots, and tag/publication steps.
-- `docs/security-backup.md` — Backup/restore threat model, parser limits, Unicode/text/decimal validation, checksum semantics, rollback, and format-evolution security requirements.
-- `docs/setup.md` — Local environment/setup instructions for Git, JDK 17, Android SDK 35, Gradle/Android Studio, build/run, and troubleshooting handoff.
-- `docs/testing.md` — Verification taxonomy and commands for JVM tests, deterministic fuzz tests, Android integration/Compose tests, repository guards, regression policy, migrations, and manual release checks.
-- `docs/troubleshooting.md` — Known setup/build/KSP/Room/emulator/export/release troubleshooting guidance.
-- `docs/verification.md` — Exact release-candidate checklist separating automated PR checks, Android runtime checks, accessibility/responsive checks, security/privacy checks, and final release/signing/screenshots.
-
-### Repository guard scripts
-
-- `scripts/check_android_resources.py` — Parses default Android string resources and scans Kotlin/XML references to reject missing or duplicate default string resources before Android compilation.
-- `scripts/check_android_security.py` — Fast manifest/FileProvider/local-first policy audit, including the no-Internet-permission and cache-export-provider invariants.
-- `scripts/check_documentation_coverage.py` — Compares `git ls-files` with this file index so every tracked file is documented exactly once and stale/deleted paths cannot remain in the reference.
-- `scripts/check_format.py` — Lightweight repository text hygiene guard for UTF-8, final newline, trailing whitespace, and tab characters.
-- `scripts/check_kotlin_namespace.py` — Detects invalid/reserved Kotlin package/namespace regressions in source files.
-- `scripts/check_repository.py` — Verifies required repository/release/build documentation, project identity/contact text, local Markdown links, and current `versionName`/`versionCode` alignment between `app/build.gradle.kts` and the build/index/command guides; also rejects stale signed-APK version examples.
-- `scripts/scan_secrets.py` — Fast common secret-pattern scan intended to catch accidental credential/token/signing-material commits; complements, rather than replaces, platform secret scanning.
+- `docs/README.md` — Documentation index, recommended reading paths, release metadata, and authority boundaries.
+- `docs/accessibility.md` — Accessibility design decisions, semantics expectations, large-text/reduced-motion behavior, and manual TalkBack/layout review checklist.
+- `docs/android-build-guide.md` — Complete Android executable guide for environment verification, Gradle builds, APK/AAB outputs, ADB install/inspection, signing tools, checksums, current release filenames, and troubleshooting.
+- `docs/architecture.md` — System architecture, dependency direction, local-first boundaries, persistence/export/backup trust boundaries, and ViewModel/UI responsibilities.
+- `docs/backup-restore.md` — User/developer-facing explicit backup format, restore replacement behavior, limits, validation, corruption detection, and compatibility rules.
+- `docs/codebase-reference.md` — This exhaustive tracked-file index; maintained as a machine-enforced documentation invariant.
+- `docs/command-reference.md` — Detailed explanations and examples for Git, Java, Gradle, ADB, Android SDK packaging/signing tools, and every repository guard command.
+- `docs/design-system.md` — Material 3 visual/interaction conventions, navigation patterns, typography/accessibility behavior, and UI consistency guidance.
+- `docs/development.md` — Contributor setup, architecture/change boundaries, persistence/testing rules, repository guards, and release-safe workflow.
+- `docs/documentation-map.md` — Maps documentation ownership/authority by change type and defines anti-drift update requirements.
+- `docs/features.md` — Current implemented user features, limits, local-first behavior, export/backup capabilities, and accessibility settings.
+- `docs/github-maintenance.md` — Repository administration, dependency/security workflow upkeep, branch/release maintenance, and release-retarget guidance.
+- `docs/logging.md` — Local logging/redaction contract and prohibited sensitive-data logging behavior.
+- `docs/performance.md` — Bounded-work policy, performance-sensitive paths, and measurement/review guidance.
+- `docs/persistence-invariants.md` — Canonical contract for persisted history/template records and their shared repository/backup validation envelope.
+- `docs/privacy-backup.md` — Explicit-backup privacy model and its relationship to Android system-managed backup/device transfer.
+- `docs/release-candidate-final-audit.md` — Source-level 2.0.12 release-candidate audit; explicitly not a substitute for external/manual release gates.
+- `docs/release.md` — Exact-source release procedure, verification/signing/artifact requirements, and semantic-versioning discipline.
+- `docs/security-backup.md` — Backup parser/threat model, structural limits, checksum semantics, strict decoding, and persistence-envelope validation.
+- `docs/setup.md` — Minimal contributor environment/setup path, delegating detailed command semantics/build steps to the authoritative guides.
+- `docs/testing.md` — JVM/fuzz/Android/repository-guard testing strategy and regression-placement policy.
+- `docs/troubleshooting.md` — Focused resolution guidance for setup/build/test/export/backup/release failures, with links back to authoritative command/build docs.
+- `docs/verification.md` — Authoritative blocking checklist separating automated PR checks, documentation, connected Android runtime checks, accessibility/privacy/security review, and distribution gates.
 
 <!-- FILE-INDEX:END -->
-
-## Ownership and change rules
-
-### When adding or deleting a file
-
-Update this index in the same pull request. The documentation-coverage guard intentionally fails when a tracked path is missing, duplicated, or still documented after deletion/rename.
-
-### When changing production behavior
-
-Update the nearest behavior document (`features.md`, `architecture.md`, persistence/backup/security/privacy/accessibility/performance documentation as applicable), add the lowest-practical regression test, and update `CHANGELOG.md` for user-visible changes.
-
-### When changing CI/repository policy
-
-Update `development.md`, `testing.md`, `github-maintenance.md`, `verification.md`, and this file where the command/workflow/source-of-truth contract changes.
-
-### When changing release status
-
-Update `what_changed.md` and `docs/verification.md` truthfully. Queued, pending, skipped, cancelled, or not-yet-run checks are never represented as successful.
