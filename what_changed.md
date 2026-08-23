@@ -1,5 +1,72 @@
 # SpendCalc — Work Continuity
 
+## 2026-08-23 continuation
+
+- Repository: `sanskarIN/spendcalc`
+- Default branch: `main`
+- Active branch: `complete/v1-finalization`
+- Active pull request: `#12`
+- Target application release: `2.0.12`
+- Android `versionName`: `2.0.12`
+- Android `versionCode`: `20012`
+- Room database version: `1`
+- Explicit backup schema version: `1`
+- Exact source head immediately before this handoff update: `69f391003a451bb825c0d077dc780a65c334970f`
+
+### Concrete CI failures investigated and corrected
+
+The continuation inspected the real GitHub Actions evidence for release-candidate head `82f0b866050a8173cab45ac34dbd94bda3254acf` instead of inferring readiness from source alone.
+
+At that head:
+
+- CodeQL succeeded;
+- Dependency Review succeeded;
+- Repository Audit failed because the machine-enforced tracked-file documentation index had drifted after the branch/main reconciliation;
+- CI failed at the same documentation-coverage gate;
+- Android Instrumentation compiled, booted an API 35 emulator, started all 12 tests, and then failed 6 Compose tests because text-field selectors incorrectly assumed Material field labels were exposed on the editable semantics node.
+
+The six Android failures were selector failures, not production calculation or persistence failures. The test log showed the affected matchers searched for `SetText` plus visible field-label text such as `Template name`, `History label (optional)`, `Search history`, and `Amount`, while the actual editable semantics nodes exposed `SetText` without those labels.
+
+### Focused commits created in this continuation
+
+- `beaa24314fbf115b66aac2213b49dabac884cb98` — `test: stabilize calculator dialog text field selectors`
+- `4e318e4470b79a885830333ea3f1b46c877cf2c8` — `test: target history search by edit semantics`
+- `c26308e127f86cc8b1930d527654a6ee0ec2a068` — `test: stabilize end-to-end input targeting`
+- `03aaeefb61f4b1f2722690a19bc78a7d7133e0ad` — `test: keep history selector imports minimal`
+- `106eaee67c84a6f50942b11e447b2983a41ab540` — `docs: reconcile tracked-file codebase reference`
+- `0cd7723724903e846d3816ae37458cb68584cc41` — `test: scope dialog inputs to dialog semantics`
+- `69f391003a451bb825c0d077dc780a65c334970f` — `test: scope journey dialog input to modal semantics`
+
+The final selector shape no longer depends on Material label merging for modal text fields: dialog inputs are selected by editable semantics scoped beneath dialog semantics. The real-activity journey retains deterministic selection of the first item amount field while scoping its save-label field to the active dialog.
+
+The documentation coverage reference was reconciled directly from the CI-reported missing/stale sets. It now records the reconciled formatter/model/component/platform/resource/test/ADR/asset paths and removes paths that were renamed or removed.
+
+### Repository/source audit in this continuation
+
+- No open non-pull-request issues were found.
+- No `TODO`, `FIXME`, `XXX`, or `HACK` markers were found in the repository search.
+- The implemented product still covers the intended SpendCalc core: precision-safe itemized calculations, adjustments/splitting, manual currency conversion, history, templates, text/CSV/PDF export, local backup/restore, local-first security, responsive Compose UI, themes/accessibility controls, About/support/funding metadata, regression/fuzz tests, and repository guards.
+- Existing major-version Dependabot pull requests are intentionally not folded blindly into the 2.0.12 release candidate; major dependency upgrades remain separate maintenance work requiring isolated compatibility verification.
+
+### Exact-head verification rule
+
+This documentation commit becomes a newer exact release-candidate head than every commit listed above. Any workflow result attached only to an older head is useful diagnostic evidence but is not final release evidence.
+
+For the exact commit containing this handoff:
+
+1. re-fetch CI, CodeQL, Dependency Review, Repository Audit, and Android Instrumentation;
+2. require every workflow family to complete successfully for this exact SHA;
+3. require CI to reach and pass repository guards, JVM unit/fuzz tests, instrumentation-test compilation, full Android lint, debug compilation, and release compilation;
+4. require Android Instrumentation to execute the connected test suite successfully, not merely compile it;
+5. inspect exact logs and fix concrete defects if any gate fails;
+6. do not merge/tag/publish from an older successful SHA after this handoff changes the branch head.
+
+Manual Android/accessibility/export/backup/offline/screenshot/signing/artifact verification in `docs/verification.md` remains blocking even after automated workflows are green. PR #12 must remain a release candidate until those gates are actually completed.
+
+---
+
+## Previous handoff — 2026-08-21
+
 ## Current release candidate
 
 - Date: 2026-08-21
