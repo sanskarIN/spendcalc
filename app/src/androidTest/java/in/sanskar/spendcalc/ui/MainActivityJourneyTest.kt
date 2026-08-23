@@ -1,6 +1,8 @@
 package `in`.sanskar.spendcalc.ui
 
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodes
 import androidx.compose.ui.test.onAllNodesWithText
@@ -51,10 +53,10 @@ class MainActivityJourneyTest {
         useUnmergedTree = true,
     )[1]
 
-    private fun activeDialogTextField() = composeRule.onAllNodes(
-        hasSetTextAction(),
+    private fun activeDialogTextField() = composeRule.onNode(
+        hasSetTextAction() and hasAnyAncestor(isDialog()),
         useUnmergedTree = true,
-    )[0]
+    )
 
     private fun completeOnboardingIfNeeded() {
         val continueLabel = composeRule.activity.getString(R.string.onboarding_continue)
