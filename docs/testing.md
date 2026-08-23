@@ -85,6 +85,12 @@ Android coverage includes:
 
 The main CI workflow compiles the instrumentation suite on every pull request so Android tests cannot silently stop compiling. The separate `Android Instrumentation` workflow goes further: it boots a hardware-accelerated API 35 `google_apis` x86_64 emulator on Ubuntu, disables animations, and runs `connectedDebugAndroidTest` against the exact pull-request head. Failed connected runs upload the Android instrumentation reports for diagnosis.
 
+### Compose test-targeting policy
+
+UI tests should target real semantics whenever those semantics identify the interaction unambiguously. When a Material component does not expose its visible field label on the editable semantics node, an interaction that must identify one exact field uses a stable `Modifier.testTag` instead of relying on field order or label-merging implementation details.
+
+Current stable field tags cover the first-item amount journey, saved-history label dialog, template-name dialog, and History search field. Test tags are non-user-facing test semantics; they must not be replaced with fake `contentDescription` values merely to make tests pass, because doing that would pollute the accessibility tree and produce misleading screen-reader output.
+
 Automated emulator success is strong runtime evidence, but it does not replace human review of TalkBack, real font scaling, phone/tablet presentation, system share/document pickers, splash behavior, or a representative physical-device check before production release.
 
 ## Repository guard tests
