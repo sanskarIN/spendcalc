@@ -30,6 +30,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -89,6 +90,7 @@ fun CalculatorScreen(
                     label = { Text(stringResource(R.string.history_label)) },
                     supportingText = { Text(stringResource(R.string.history_label_hint)) },
                     singleLine = true,
+                    modifier = Modifier.testTag("history-save-label"),
                 )
             },
             confirmButton = {
@@ -132,6 +134,7 @@ fun CalculatorScreen(
                     label = { Text(stringResource(R.string.template_name)) },
                     supportingText = { Text(stringResource(R.string.template_name_hint)) },
                     singleLine = true,
+                    modifier = Modifier.testTag("template-save-name"),
                 )
             },
             confirmButton = {
@@ -292,7 +295,9 @@ private fun CalculatorForm(
                         value = item.amount,
                         onValueChange = { onItemAmountChange(item.id, it) },
                         label = { Text(stringResource(R.string.item_amount)) },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .testTag("calculator-item-amount-$index")
+                            .fillMaxWidth(),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         isError = FormIssue.ITEM_AMOUNT in state.issues,
