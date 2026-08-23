@@ -21,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import `in`.sanskar.spendcalc.R
@@ -102,7 +103,9 @@ fun HistoryScreen(
                     label = { Text(stringResource(R.string.history_search_label)) },
                     supportingText = { Text(stringResource(R.string.history_search_supporting)) },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .testTag("history-search")
+                        .fillMaxWidth(),
                 )
             }
             if (normalizedQuery.isNotBlank()) {
