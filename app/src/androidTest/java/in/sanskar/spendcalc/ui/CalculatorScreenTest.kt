@@ -1,10 +1,8 @@
 package `in`.sanskar.spendcalc.ui
 
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.hasAnyAncestor
-import androidx.compose.ui.test.hasSetTextAction
-import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -117,12 +115,13 @@ class CalculatorScreenTest {
         composeRule.onNodeWithText("Template name").assertIsDisplayed()
     }
 
-    private fun historyLabelField() = dialogTextField()
+    private fun historyLabelField() = composeRule.onNodeWithTag(
+        "history-save-label",
+        useUnmergedTree = true,
+    )
 
-    private fun templateNameField() = dialogTextField()
-
-    private fun dialogTextField() = composeRule.onNode(
-        hasSetTextAction() and hasAnyAncestor(isDialog()),
+    private fun templateNameField() = composeRule.onNodeWithTag(
+        "template-save-name",
         useUnmergedTree = true,
     )
 
