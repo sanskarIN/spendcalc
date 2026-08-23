@@ -1,8 +1,8 @@
 package `in`.sanskar.spendcalc.ui
 
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -35,8 +35,8 @@ class HistoryScreenTest {
             }
         }
 
-        composeRule.onNode(
-            hasSetTextAction(),
+        composeRule.onNodeWithTag(
+            "history-search",
             useUnmergedTree = true,
         ).performTextInput("Grocery")
 
