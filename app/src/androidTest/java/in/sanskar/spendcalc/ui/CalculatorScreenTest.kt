@@ -1,9 +1,10 @@
 package `in`.sanskar.spendcalc.ui
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onAllNodes
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -120,10 +121,10 @@ class CalculatorScreenTest {
 
     private fun templateNameField() = dialogTextField()
 
-    private fun dialogTextField() = composeRule.onAllNodes(
-        hasSetTextAction(),
+    private fun dialogTextField() = composeRule.onNode(
+        hasSetTextAction() and hasAnyAncestor(isDialog()),
         useUnmergedTree = true,
-    )[0]
+    )
 
     private fun zeroResult(): CalculationResult {
         val outcome = CalculatorEngine().calculate(CalculationInput(items = emptyList()))
