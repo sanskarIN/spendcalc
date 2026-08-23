@@ -83,6 +83,8 @@ All notable changes to SpendCalc are documented here. The project follows a sema
 - PDF receipt line truncation now reuses the Unicode-safe truncation policy so long valid names cannot be cut between UTF-16 surrogate units.
 - Bottom-navigation icon graphics are decorative when a visible text label already provides the accessible name, avoiding duplicate screen-reader announcements.
 - GitHub Actions use maintained major action versions and concurrency cancellation for superseded pull-request runs.
+- Android instrumentation explicitly disables emulator metrics collection so future emulator releases cannot turn the metrics warning into an interactive CI prompt.
+- Compose instrumentation input targeting uses stable non-user-facing test tags for exact editable fields instead of depending on Material label merging or editable-field ordering.
 - CI runs Android lint across configured variants rather than only the debug variant.
 - Development, testing, architecture, setup, contribution, maintenance, release, verification, build, command, and source-audit documentation now cross-reference one explicit documentation source-of-truth model instead of duplicating ambiguous status.
 - The repository's intentional absence of a committed Gradle wrapper is documented explicitly; command-line setup uses compatible local Gradle 8.9 while CI pins Gradle 8.9 through the setup action.
