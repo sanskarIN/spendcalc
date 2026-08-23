@@ -11,7 +11,8 @@
 - Android `versionCode`: `20012`
 - Room database version: `1`
 - Explicit backup schema version: `1`
-- Exact source head immediately before this handoff update: `69f391003a451bb825c0d077dc780a65c334970f`
+- Exact source head immediately before this final handoff update: `f144afbb9bef84e33d5bb387ff700883b2f17e36`
+- `main` comparison during this continuation: `behind_by = 0`; the release branch remains ahead and PR #12 remains open/non-draft/mergeable.
 
 ### Concrete CI failures investigated and corrected
 
@@ -29,6 +30,8 @@ The six Android failures were selector failures, not production calculation or p
 
 ### Focused commits created in this continuation
 
+Initial CI-driven corrections:
+
 - `beaa24314fbf115b66aac2213b49dabac884cb98` — `test: stabilize calculator dialog text field selectors`
 - `4e318e4470b79a885830333ea3f1b46c877cf2c8` — `test: target history search by edit semantics`
 - `c26308e127f86cc8b1930d527654a6ee0ec2a068` — `test: stabilize end-to-end input targeting`
@@ -36,8 +39,22 @@ The six Android failures were selector failures, not production calculation or p
 - `106eaee67c84a6f50942b11e447b2983a41ab540` — `docs: reconcile tracked-file codebase reference`
 - `0cd7723724903e846d3816ae37458cb68584cc41` — `test: scope dialog inputs to dialog semantics`
 - `69f391003a451bb825c0d077dc780a65c334970f` — `test: scope journey dialog input to modal semantics`
+- `e497ec1b52143d545cc504ed8edabd5aa56af20e` — `docs: record 2026-08-23 release-candidate continuation`
 
-The final selector shape no longer depends on Material label merging for modal text fields: dialog inputs are selected by editable semantics scoped beneath dialog semantics. The real-activity journey retains deterministic selection of the first item amount field while scoping its save-label field to the active dialog.
+Final instrumentation-stability hardening:
+
+- `39b916560cda1ed4641ab1f13ddd43cab1a5e0c6` — `ci: disable emulator metrics prompts in instrumentation`
+- `3f76f60881aeb22c629ef5d53de701f30d33dd69` — `testability: add stable calculator input test tags`
+- `df0ca18302460a4ead852c9bd50e502100c1167b` — `testability: add stable history search test tag`
+- `cb637cc22b7de6df8739c188f83d672695c2dbd2` — `test: target calculator dialogs by stable test tags`
+- `4ce49eb5edbb6a301e58ecae35e4862646696019` — `test: target activity journey inputs by stable tags`
+- `d65d1556a5d1392c6b2d9168f6fd61208a017ee4` — `test: target history search by stable test tag`
+- `1235102425513d8e92096d77d6fe85b4c465afe6` — `docs: document stable Compose test-targeting policy`
+- `f144afbb9bef84e33d5bb387ff700883b2f17e36` — `docs: record instrumentation stability hardening`
+
+The final selector shape no longer depends on Material label merging, modal tree shape, or the ordering of editable semantics nodes. Exact fields use stable, non-user-facing Compose test tags. The test-targeting policy explicitly prohibits adding fake accessibility descriptions merely to make tests pass.
+
+The Android emulator workflow now passes `-no-metrics`, removing the warning that metrics collection may become an interactive prompt in a future emulator release.
 
 The documentation coverage reference was reconciled directly from the CI-reported missing/stale sets. It now records the reconciled formatter/model/component/platform/resource/test/ADR/asset paths and removes paths that were renamed or removed.
 
@@ -45,12 +62,13 @@ The documentation coverage reference was reconciled directly from the CI-reporte
 
 - No open non-pull-request issues were found.
 - No `TODO`, `FIXME`, `XXX`, or `HACK` markers were found in the repository search.
+- A focused source-risk search found no `GlobalScope`, `Thread.sleep`, raw `readText()`/`readBytes()`, `runBlocking`, or forced `!!` usages.
 - The implemented product still covers the intended SpendCalc core: precision-safe itemized calculations, adjustments/splitting, manual currency conversion, history, templates, text/CSV/PDF export, local backup/restore, local-first security, responsive Compose UI, themes/accessibility controls, About/support/funding metadata, regression/fuzz tests, and repository guards.
 - Existing major-version Dependabot pull requests are intentionally not folded blindly into the 2.0.12 release candidate; major dependency upgrades remain separate maintenance work requiring isolated compatibility verification.
 
 ### Exact-head verification rule
 
-This documentation commit becomes a newer exact release-candidate head than every commit listed above. Any workflow result attached only to an older head is useful diagnostic evidence but is not final release evidence.
+This final handoff commit becomes a newer exact release-candidate head than every commit listed above. Any workflow result attached only to an older head is useful diagnostic evidence but is not final release evidence.
 
 For the exact commit containing this handoff:
 
@@ -348,7 +366,8 @@ All must be successful for the exact final commit:
 - CI;
 - CodeQL;
 - Dependency Review;
-- Repository Audit.
+- Repository Audit;
+- Android Instrumentation.
 
 CI specifically must complete, not merely start, all of these stages:
 
@@ -363,8 +382,7 @@ CI specifically must complete, not merely start, all of these stages:
 
 Still require a real connected Android runtime and human/device review as specified in `docs/verification.md`, including:
 
-- `connectedDebugAndroidTest`;
-- Room/Compose/activity test execution;
+- a representative local/physical `connectedDebugAndroidTest` pass in addition to hosted emulator evidence;
 - phone/tablet layouts;
 - light/dark/system themes;
 - app and Android large-text behavior;
@@ -395,7 +413,7 @@ Still require:
 1. Treat the exact commit containing this file as the newest 2.0.12 release-candidate head.
 2. Re-fetch PR #12; require it to remain open/non-draft and confirm mergeability before the intended merge step.
 3. Compare `main` to `complete/v1-finalization`; require `behind_by = 0`. If `main` advances, reconcile deliberately instead of overwriting the release branch.
-4. Fetch CI, CodeQL, Dependency Review, and Repository Audit for this exact SHA.
+4. Fetch CI, CodeQL, Dependency Review, Repository Audit, and Android Instrumentation for this exact SHA.
 5. In CI, require the unit-test, instrumentation-compile, lint, debug-build, and release-build steps all to succeed.
 6. If any exact-head workflow fails, inspect the failed job/log and fix only the concrete defect with appropriate regression/documentation coverage.
 7. Any further source/documentation commit invalidates older workflow release evidence and should be reflected here if work continues across sessions.
