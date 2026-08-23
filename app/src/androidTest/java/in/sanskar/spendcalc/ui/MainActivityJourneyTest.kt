@@ -1,11 +1,8 @@
 package `in`.sanskar.spendcalc.ui
 
-import androidx.compose.ui.test.hasAnyAncestor
-import androidx.compose.ui.test.hasSetTextAction
-import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onAllNodes
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -48,13 +45,13 @@ class MainActivityJourneyTest {
         composeRule.onNodeWithText(expectedAmount).assertExists()
     }
 
-    private fun firstItemAmountField() = composeRule.onAllNodes(
-        hasSetTextAction(),
+    private fun firstItemAmountField() = composeRule.onNodeWithTag(
+        "calculator-item-amount-0",
         useUnmergedTree = true,
-    )[1]
+    )
 
-    private fun activeDialogTextField() = composeRule.onNode(
-        hasSetTextAction() and hasAnyAncestor(isDialog()),
+    private fun activeDialogTextField() = composeRule.onNodeWithTag(
+        "history-save-label",
         useUnmergedTree = true,
     )
 
