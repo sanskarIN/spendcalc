@@ -25,7 +25,7 @@ object ExportManager {
         text: String,
     ): File {
         val directory = File(context.cacheDir, "exports").apply { mkdirs() }
-        return File(directory, safeFileName(fileName)).also { file ->
+        return File(directory, sanitizeExportFileName(fileName)).also { file ->
             file.writeText(text, Charsets.UTF_8)
         }
     }
@@ -67,7 +67,4 @@ object ExportManager {
         }
         context.startActivity(Intent.createChooser(intent, chooserTitle))
     }
-
-    private fun safeFileName(value: String): String =
-        value.replace(Regex("[^A-Za-z0-9._-]"), "_").take(96).ifBlank { "spendcalc-export.txt" }
 }
