@@ -42,6 +42,31 @@ class PathSafetyTest {
     }
 
     @Test
+    fun `export filenames replace path separators and unsafe characters`() {
+        assertEquals(
+            ".._private_receipt_1.txt",
+            sanitizeExportFileName("../private/receipt 1.txt"),
+        )
+    }
+
+    @Test
+    fun `dot only export filenames fall back to a regular file`() {
+        assertEquals("spendcalc-export.txt", sanitizeExportFileName("."))
+        assertEquals("spendcalc-export.txt", sanitizeExportFileName(".."))
+        assertEquals("spendcalc-export.txt", sanitizeExportFileName("...."))
+    }
+
+    @Test
+    fun `blank export filenames fall back to a regular file`() {
+        assertEquals("spendcalc-export.txt", sanitizeExportFileName(""))
+    }
+
+    @Test
+    fun `export filenames are bounded`() {
+        assertEquals(96, sanitizeExportFileName("a".repeat(200)).length)
+    }
+
+    @Test
     fun `strict backup decoder rejects malformed utf8 bytes`() {
         val malformed = ByteBuffer.wrap(byteArrayOf(0xC3.toByte(), 0x28))
 
