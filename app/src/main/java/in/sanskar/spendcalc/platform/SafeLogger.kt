@@ -10,14 +10,13 @@ import java.util.Locale
  * credentials, or other user data. Callers should log event metadata only.
  */
 object SafeLogger {
-    private val blockedKeys = setOf(
+    private val blockedKeyFragments = setOf(
         "password",
         "passcode",
         "token",
         "authorization",
         "cookie",
         "secret",
-        "api_key",
         "apikey",
         "receipt",
         "label",
@@ -39,8 +38,7 @@ object SafeLogger {
         val encoded = fields.entries
             .sortedBy { it.key }
             .joinToString(separator = " ") { (key, value) ->
-                val normalizedKey = key.trim().lowercase(Locale.ROOT)
-                val safeValue = if (normalizedKey in blockedKeys) {
+                val safeValue = if (isBlockedKey(key)) {
                     REDACTED
                 } else {
                     sanitize(value?.toString().orEmpty())
@@ -48,6 +46,14 @@ object SafeLogger {
                 "${sanitize(key)}=$safeValue"
             }
         return "$safeEvent $encoded"
+    }
+
+    private fun isBlockedKey(key: String): Boolean {
+        val compactKey = key
+            .trim()
+            .lowercase(Locale.ROOT)
+            .filter(Char::isLetterOrDigit)
+        return blockedKeyFragments.any { fragment -> compactKey.contains(fragment) }
     }
 
     private fun sanitize(value: String): String =
