@@ -1,35 +1,8 @@
-# SpendCalc Troubleshooting Guide
+# Troubleshooting
 
-This guide covers common setup, Gradle, Android SDK, build, APK/AAB, ADB, test, signing, Room/KSP, export, and release problems.
+## `gradlew` or `gradlew.bat` is missing
 
-For commands and their meanings, see [`command-reference.md`](command-reference.md). For the complete executable workflow, see [`android-build-guide.md`](android-build-guide.md).
-
-## 1. Collect basic environment information
-
-Before diagnosing a build problem, run:
-
-```bash
-git status
-git rev-parse --short HEAD
-java -version
-gradle --version
-adb version
-adb devices
-```
-
-When sharing logs publicly, remove usernames, private paths, serial numbers when unnecessary, credentials, tokens, signing information, and other private data.
-
-## 2. `gradle` is not recognized / command not found
-
-Symptoms:
-
-```text
-gradle: command not found
-```
-
-or Windows reports that `gradle` is not recognized.
-
-Cause: Gradle is not installed or the Gradle `bin` directory is not on PATH.
+The current SpendCalc repository intentionally does **not** commit a Gradle wrapper. Use a compatible local Gradle 8.9 installation or Android Studio's configured Gradle environment, as described in [`setup.md`](setup.md).
 
 Verify:
 
@@ -37,527 +10,181 @@ Verify:
 gradle --version
 ```
 
-SpendCalc currently documents local Gradle 8.9 because the repository does not commit a Gradle wrapper JAR.
+Do not create/commit wrapper files merely to make an undocumented local command work. If the project deliberately adopts the wrapper later, add all wrapper files, update setup/CI guidance, and document every newly tracked path in `codebase-reference.md`.
 
-After changing PATH, open a new terminal and run the check again.
+## Gradle uses the wrong Java version
 
-## 3. Gradle uses the wrong Java version
-
-SpendCalc targets Java/JVM 17 bytecode.
-
-Check:
+SpendCalc targets Java/JVM 17 bytecode. Confirm your Gradle JVM is JDK 17 or a compatible newer JDK capable of targeting 17:
 
 ```bash
 java -version
-javac -version
 gradle --version
 ```
 
-`gradle --version` is especially important because it shows the JVM Gradle itself is using.
+In Android Studio, check **Settings/Preferences → Build, Execution, Deployment → Build Tools → Gradle → Gradle JDK**.
 
-In Android Studio, check the configured Gradle JDK and select JDK 17 for the documented project environment.
+## Android SDK 35 is missing
 
-If `JAVA_HOME` is used, verify it points to the intended JDK.
+Install Android SDK Platform 35 and compatible Build-Tools from Android Studio's SDK Manager. CI installs `platforms;android-35` and `build-tools;35.0.0`. Ensure `local.properties` points to the correct SDK path.
 
-### Windows PowerShell
+## `SDK location not found`
 
-```powershell
-$env:JAVA_HOME
-```
+Create local `local.properties` with `sdk.dir=...`. This file is intentionally ignored by Git and must not be added to `codebase-reference.md` because it is not a tracked repository file.
 
-### Windows Command Prompt
+## Documentation coverage audit fails
 
-```cmd
-echo %JAVA_HOME%
-```
-
-### macOS/Linux
+Run:
 
 ```bash
-echo "$JAVA_HOME"
+python3 scripts/check_documentation_coverage.py
 ```
 
-## 4. Android SDK 35 is missing
+The guard compares `git ls-files` with the marked file index in [`codebase-reference.md`](codebase-reference.md). Typical failures mean:
 
-SpendCalc uses:
+- **Tracked files missing from the reference** — add one descriptive entry for each new tracked path.
+- **Documented paths that are not tracked** — a file was deleted/renamed; remove or rename its old reference entry.
+- **Paths documented more than once** — keep exactly one authoritative file entry.
+- **File-index marker error** — preserve exactly one `<!-- FILE-INDEX:START -->` and `<!-- FILE-INDEX:END -->` pair in the correct order.
+- **Git unavailable** — run inside a real Git checkout with the `git` executable installed.
 
-```text
-compileSdk = 35
-targetSdk = 35
+Do not “fix” this guard by ignoring source/test/resource/configuration files. Its purpose is to make complete documentation mechanically verifiable.
+
+## Repository link/required-file audit fails
+
+Run:
+
+```bash
+python3 scripts/check_repository.py
 ```
 
-Install Android SDK Platform 35 and compatible Build-Tools from Android Studio SDK Manager.
+This guard verifies required release/project documents and local Markdown links. If a local link is broken, update the source link or restore the intended tracked file; do not replace a valid local link with an external URL simply to bypass the check.
 
-Then retry:
+It also requires the exhaustive codebase reference, documentation map, persistence/release/security docs, and key Android/documentation guard scripts.
+
+## Android string-resource audit fails
+
+Run:
+
+```bash
+python3 scripts/check_android_resources.py
+```
+
+A failure usually means a Kotlin/XML `R.string.*`/`@string/*` reference lacks a default resource, or the same default string name exists in more than one `app/src/main/res/values/*.xml` file. String resources are intentionally split across focused files but still share one Android namespace.
+
+## Android local-first security audit fails
+
+Run:
+
+```bash
+python3 scripts/check_android_security.py
+```
+
+Check `AndroidManifest.xml` and `res/xml/file_paths.xml`. The current security contract requires no Android `INTERNET` permission for core operation, a non-exported `FileProvider`, and sharing limited to the private `cache/exports` subtree.
+
+## KSP/Room schema errors
+
+Run a clean build:
 
 ```bash
 gradle clean assembleDebug
 ```
 
-## 5. `SDK location not found`
+Room schema export is configured under `app/schemas/`. Database version 1 currently has no released migration predecessor. When generated schema snapshots become part of migration history, keep old released schemas and add each tracked schema file to `codebase-reference.md`. Do not delete released schemas simply to silence a migration error.
 
-Create a local `local.properties` in the repository root.
+## Unit test failures around decimal values
 
-Windows example:
-
-```properties
-sdk.dir=C:\\Users\\YOUR_USER\\AppData\\Local\\Android\\Sdk
-```
-
-macOS example:
-
-```properties
-sdk.dir=/Users/YOUR_USER/Library/Android/sdk
-```
-
-Linux example:
-
-```properties
-sdk.dir=/home/YOUR_USER/Android/Sdk
-```
-
-This file is machine-specific and intentionally ignored by Git.
-
-## 6. Gradle cannot download a dependency
-
-A fresh source build can require network access even though SpendCalc's app runtime is offline-first.
-
-Check:
-
-- internet connection;
-- VPN/proxy/firewall behavior;
-- Maven/Google repository accessibility;
-- system clock/certificate problems;
-- Gradle cache state.
-
-For a deliberate dependency refresh:
-
-```bash
-gradle assembleDebug --refresh-dependencies
-```
-
-Do not use dependency refresh for every normal build.
-
-If dependencies are already cached and you want to prove an offline build:
-
-```bash
-gradle assembleDebug --offline
-```
-
-The command fails if required artifacts are not available locally.
-
-## 7. Gradle daemon appears stale
-
-Stop Gradle daemons:
-
-```bash
-gradle --stop
-```
-
-Then retry:
-
-```bash
-gradle clean assembleDebug --stacktrace
-```
-
-## 8. Build error does not show enough information
-
-Add stack trace:
-
-```bash
-gradle assembleDebug --stacktrace
-```
-
-Add informational logging:
-
-```bash
-gradle assembleDebug --info --stacktrace
-```
-
-Very verbose logging:
-
-```bash
-gradle assembleDebug --debug --stacktrace
-```
-
-Review verbose logs before sharing because they can contain local environment details.
-
-## 9. Debug APK cannot be found
-
-Build it:
-
-```bash
-gradle assembleDebug
-```
-
-Expected path:
-
-```text
-app/build/outputs/apk/debug/app-debug.apk
-```
-
-Windows PowerShell:
-
-```powershell
-Get-Item .\app\build\outputs\apk\debug\app-debug.apk
-```
-
-macOS/Linux:
-
-```bash
-ls -lh app/build/outputs/apk/debug/app-debug.apk
-```
-
-If the build command failed, no valid APK should be expected.
-
-## 10. Release APK cannot be found
-
-Run:
-
-```bash
-gradle assembleRelease
-```
-
-Inspect:
-
-```text
-app/build/outputs/apk/release/
-```
-
-Do not assume the exact release filename; inspect the generated directory.
-
-## 11. AAB cannot be found
-
-Run:
-
-```bash
-gradle bundleRelease
-```
-
-Inspect:
-
-```text
-app/build/outputs/bundle/release/
-```
-
-An AAB is a publishing bundle and is not normally installed directly with `adb install`.
-
-## 12. `adb` is not recognized / command not found
-
-ADB comes from Android SDK Platform-Tools.
-
-Check:
-
-```bash
-adb version
-```
-
-If missing:
-
-- install Platform-Tools through Android SDK Manager;
-- add the SDK `platform-tools` directory to PATH;
-- or invoke the `adb` executable using its full path.
-
-## 13. `adb devices` shows no device
-
-Run:
-
-```bash
-adb devices
-```
-
-For a physical device:
-
-- enable Developer Options;
-- enable USB debugging;
-- connect a data-capable USB cable;
-- accept the debugging authorization prompt;
-- install appropriate device drivers on Windows if required.
-
-For an emulator:
-
-- create/start an Android Virtual Device in Android Studio;
-- wait for Android to finish booting;
-- rerun `adb devices`.
-
-## 14. ADB device is `unauthorized`
-
-Unlock the physical device and accept the USB debugging authorization prompt.
-
-If the prompt was denied, revoke USB debugging authorizations in Android Developer Options and reconnect only on a trusted development machine.
-
-## 15. More than one Android device is connected
-
-List serials:
-
-```bash
-adb devices
-```
-
-Select a specific target:
-
-```bash
-adb -s emulator-5554 install -r app/build/outputs/apk/debug/app-debug.apk
-```
-
-Replace `emulator-5554` with the actual target serial shown by `adb devices`.
-
-## 16. `INSTALL_FAILED_UPDATE_INCOMPATIBLE`
-
-A common cause is signature mismatch: for example, a debug-signed SpendCalc is already installed and you are trying to install a release signed by a different key.
-
-For a disposable test installation, uninstall the old package:
-
-```bash
-adb uninstall in.sanskar.spendcalc
-```
-
-Then install the intended APK.
-
-For real upgrades, both versions must use the appropriate compatible signing identity.
-
-## 17. `INSTALL_FAILED_VERSION_DOWNGRADE`
-
-The installed app may have a higher `versionCode` than the APK being installed.
-
-Check the intended source version. For development-only reset, uninstall the existing test package and reinstall. Do not use a lower `versionCode` for a store production upgrade.
-
-## 18. Release APK is unsigned
-
-The repository does not include production signing credentials.
-
-Build:
-
-```bash
-gradle assembleRelease
-```
-
-Then use the secure signing flow documented in [`android-build-guide.md`](android-build-guide.md):
-
-1. align with `zipalign`;
-2. sign with `apksigner`;
-3. verify with `apksigner verify`;
-4. install/test the signed artifact.
-
-## 19. `apksigner` or `zipalign` not found
-
-These tools are supplied by Android SDK Build-Tools.
-
-Install compatible Build-Tools through Android Studio SDK Manager and add the selected Build-Tools directory to PATH, or invoke the utilities using their full SDK paths.
-
-Do not copy signing tools from untrusted third-party downloads.
-
-## 20. APK signature verification fails
-
-Run:
-
-```bash
-apksigner verify --verbose --print-certs SpendCalc-1.0.0-release.apk
-```
-
-If verification fails:
-
-- make sure you signed the final aligned APK;
-- do not modify an APK after signing;
-- repeat the build → alignment → signing process from a clean artifact;
-- confirm the correct keystore/key alias was used.
-
-Never expose the keystore/password to troubleshoot publicly.
-
-## 21. `zipalign` verification fails
-
-Check:
-
-```bash
-zipalign -c -v 4 SpendCalc-release-aligned.apk
-```
-
-If it fails, regenerate the aligned APK from the unsigned release file, then sign the newly aligned output.
-
-Manual APK order is important: **align before signing**.
-
-## 22. Instrumentation tests fail to find a device
-
-Verify:
-
-```bash
-adb devices
-```
-
-Then rerun:
-
-```bash
-gradle connectedDebugAndroidTest
-```
-
-The test target must be compatible with the project's minimum SDK.
-
-## 23. JVM unit tests fail but app builds
-
-Run only unit tests with details:
-
-```bash
-gradle testDebugUnitTest --stacktrace
-```
-
-Do not ignore failing tests simply because `assembleDebug` succeeds. A build artifact can compile while behavior is incorrect.
-
-## 24. Android lint fails
-
-Run:
-
-```bash
-gradle lintDebug --stacktrace
-```
-
-Read the generated lint report under Gradle build reports. Fix the actual issue rather than globally suppressing lint without justification.
-
-## 25. KSP/Room schema errors
-
-Try a clean build:
-
-```bash
-gradle clean assembleDebug
-```
-
-Room database version currently begins at 1. Once released schema history exists, keep historical schema snapshots and add explicit migrations for version changes.
-
-Do not delete released schemas or enable destructive migration simply to silence a migration failure.
-
-## 26. Unit test failures around decimal values
-
-Use decimal strings when constructing `BigDecimal` values:
+Use decimal strings when creating `BigDecimal` test fixtures:
 
 ```kotlin
 BigDecimal("0.10")
 ```
 
-Do not create monetary values from binary floating-point literals such as:
+Do not construct money values from binary floating-point literals such as `BigDecimal(0.1)`.
 
-```kotlin
-BigDecimal(0.1)
-```
+## Saved-history/template persistence throws `IllegalArgumentException`
 
-Binary floating-point representation can introduce unexpected decimal values.
+Repositories intentionally validate persisted records even when callers bypass the UI/ViewModel. Review [`persistence-invariants.md`](persistence-invariants.md).
 
-## 27. App shows validation instead of a result
+Common causes include:
 
-Check input requirements:
+- blank/oversized/malformed IDs or saved names;
+- negative timestamps;
+- invalid/canonical currency values;
+- unsupported history split/result decimal shapes;
+- invalid template finance settings;
+- duplicate IDs in a replacement batch.
 
-- item amounts are valid non-negative decimals;
-- percentages are within the app's accepted range;
-- split/people count is at least 1;
-- currency codes are exactly three letters;
-- exchange rate is greater than 0.
+For restore/batch failures, validation occurs before DAO replacement so existing valid data should remain untouched.
 
-Validation is intentional and should not be bypassed in the finance engine.
+## App shows validation instead of a result
 
-## 28. History does not contain a calculation
+Check:
 
-History is opt-in. Save a valid result explicitly.
+- item amounts are non-negative bounded decimals;
+- discount is between 0 and 100;
+- tax/tip/service-charge percentages are within their supported bounded ranges;
+- people/split count is between 1 and 1,000,000;
+- currency fields normalize to exactly three letters;
+- exchange rate is greater than 0 and inside the supported numeric shape.
 
-Also check:
+## History does not contain a calculation
 
-- auto-delete/retention preference;
-- whether app data was cleared;
-- whether the package was uninstalled/reinstalled;
-- whether you are testing a different device/emulator profile.
+History is opt-in. Use **Save result** on a valid calculation, optionally provide a label, then press the dialog **Save** action. Blank labels fall back to `Calculation`. Check the auto-delete setting if older entries disappear.
 
-## 29. Templates disappeared
+## History search does not accept more text
 
-Templates live in app-local Room storage. Uninstalling the app or clearing package data can remove local application data.
+History search is intentionally capped at 120 UTF-16 characters and truncates safely without splitting a valid surrogate pair. This bounds repeated in-memory filtering work and matches the documented UI contract.
 
-Check whether this command was run:
+## Template cannot be saved
 
-```bash
-adb shell pm clear in.sanskar.spendcalc
-```
+A template can only be saved while the active calculator state produces a valid result. Template persistence also revalidates the settings it stores. Check discount/tax/tip/service percentages, split count, currencies, and exchange rate. Line items are not stored by templates.
 
-That command intentionally clears app data on the selected test device.
+## Backup file is rejected
 
-## 30. CSV/PDF share target is missing
+Explicit backups are treated as untrusted input. Rejection can be caused by payload/line/record bounds, checksum mismatch, unsupported schema, malformed Base64/UTF-8/Unicode, invalid IDs/names/timestamps/currencies/decimals/splits/template settings, or duplicate IDs.
 
-Android's share sheet lists installed apps that advertise support for the exported MIME type.
+See [`security-backup.md`](security-backup.md). The SHA-256 checksum detects accidental corruption but is not a signature or proof of authorship.
 
-The export file can be created correctly even if no third-party app is installed that accepts it.
+## CSV/PDF share target is missing
 
-Core SpendCalc calculation functionality does not depend on a share target.
+The Android share sheet only lists installed apps that can accept the exported MIME type. The export is generated locally before the share intent is opened.
 
-## 31. External GitHub/BMC/email action does nothing
+## External GitHub/BMC/email action does nothing
 
-The Android device needs an installed application capable of handling the selected URL/email intent.
+The device must have an application capable of handling the selected URL or email intent. Core SpendCalc calculation functionality remains available without those external apps.
 
-Core SpendCalc behavior remains available without those external handlers.
+## Instrumentation tests fail to find a device
 
-## 32. Release-only crash/shrinking issue
-
-Reproduce the release variant:
+Verify:
 
 ```bash
-gradle assembleRelease --stacktrace
+adb devices
 ```
 
-Do not solve a release shrinker problem with a broad rule such as:
-
-```text
--keep class ** { *; }
-```
-
-Instead identify the specific reflection/serialization/generated-code requirement and add the narrowest justified ProGuard/R8 rule with a regression test or documented verification.
-
-## 33. Debug works but release behaves differently
-
-Release builds enable minification and resource shrinking, so inspect:
-
-- reflection-based libraries;
-- generated classes;
-- resource lookups by name;
-- ProGuard/R8 warnings;
-- release-only code paths.
-
-Build both variants during release verification:
+Start an emulator or connect an authorized Android device, then rerun:
 
 ```bash
-gradle assembleDebug assembleRelease
+gradle connectedDebugAndroidTest
 ```
 
-## 34. Build output appears stale
+Remember that CI's `assembleDebugAndroidTest` only proves the instrumentation suite compiles; it is not a substitute for connected-device execution.
 
-Run:
+## Release shrinking issue
+
+If a release-only failure appears, reproduce with:
 
 ```bash
-gradle clean assembleDebug
+gradle assembleRelease
 ```
 
-If dependency state is also suspect:
+Do not add broad `-keep class ** { *; }` rules. Identify the specific reflection/consumer-rule requirement and add the narrowest rule with a regression note.
 
-```bash
-gradle clean assembleDebug --refresh-dependencies
-```
+## GitHub Actions remain queued/pending
 
-Do not delete arbitrary Gradle/Android SDK directories as a first troubleshooting step.
+A queued/pending workflow is not a source failure and not a success. Confirm the run belongs to the exact current PR head. Avoid speculative commits solely to “refresh” Actions because concurrency cancellation will supersede older runs again.
 
-## 35. Need to prove which source produced an artifact
+If a run finishes with failure, inspect the failing job/step/log for that exact SHA and make the smallest evidence-driven fix.
 
-Before building, record:
+## Need more help
 
-```bash
-git status
-git rev-parse --short HEAD
-```
-
-Release artifacts should be traceable to a reviewed commit/tag.
-
-## 36. Need more help
-
-Read:
-
-- [`setup.md`](setup.md)
-- [`android-build-guide.md`](android-build-guide.md)
-- [`command-reference.md`](command-reference.md)
-- [`release.md`](release.md)
-- [`../SUPPORT.md`](../SUPPORT.md)
-
-When reporting a reproducible build problem, include the exact command, sanitized error output, Android/Java/Gradle environment, and commit SHA. Never include passwords, signing keys, access tokens, or private user data.
-
-**Made by the Sanskar**
+See [`SUPPORT.md`](../SUPPORT.md) and include sanitized logs plus the exact command, commit SHA, and environment details. Never include credentials, signing material, private backup contents, or real receipt/history data.

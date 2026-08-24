@@ -7,4 +7,11 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:windowActionModeOverlay">true</item>
     </style>
+
+    <style name="Theme.SpendCalc.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/spendcalc_splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_spendcalc</item>
+        <item name="windowSplashScreenAnimationDuration">200</item>
+        <item name="postSplashScreenTheme">@style/Theme.SpendCalc</item>
+    </style>
 </resources>

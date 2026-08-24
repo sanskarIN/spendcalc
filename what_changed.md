@@ -1,273 +1,633 @@
 # SpendCalc — Work Continuity
 
-## Current milestone
+## 2026-08-24 — 2.15.5 next-version hardening continuation
 
-- Date: 2026-08-20
+### Current repository state
+
 - Repository: `sanskarIN/spendcalc`
 - Default branch: `main`
-- Runtime target: Android API 26+, Kotlin, Jetpack Compose, offline-first.
-- Current implementation state: core product, tests, repository automation, security/privacy docs, release docs, and deep Android APK/AAB command documentation are substantially implemented; final CI/device/release verification remains an execution step.
+- Verified 2.15.4 release-candidate branch: `complete/v1-finalization`
+- Verified 2.15.4 release PR: `#12`
+- Next-version maintenance branch: `develop/v2.15.5`
+- Next-version draft stacked PR: `#13`
+- PR #13 title: `maintenance: prepare SpendCalc 2.15.5 hardening`
+- PR #13 is intentionally stacked on the exact green 2.15.4 candidate and must not merge ahead of PR #12.
+- Current application metadata remains `versionName 2.15.4` / `versionCode 21504` during maintenance validation.
+- The actual 2.15.5 metadata cut (`2.15.5` / `21505`) is deferred until 2.15.4 is merged/released and release-facing documentation can be retargeted atomically.
+- Room database version remains `1`.
+- Explicit backup schema version remains `1`.
 
-## Source prompt analyzed
+### Verified 2.15.4 automation
 
-The repository is implemented against `15_spendcalc_master_prompt.md`. The required product is an offline expense calculator with precision-safe decimal arithmetic, itemized expenses, tax/discount/tip/service-charge/split calculations, manual currency conversion, reusable templates, receipt-style results, history with optional auto-delete, export architecture, accessibility, tests, polished settings/about UI, security/privacy documentation, CI, and release engineering.
+Exact release-candidate head:
 
-## Completed work
+```text
+4b4f0ae520cbbaf4c7cee9adb4c5dd7a813bbe80
+```
 
-### Repository/build foundation
+All five automated release families passed on that same exact SHA:
 
-- Added Gradle settings/root build configuration and Android app module.
-- Configured Android API 26 minimum, API 35 target/compile SDK, Java 17 bytecode, Kotlin, Jetpack Compose, KSP, Room, DataStore, and Android test dependencies.
-- Root build currently uses Android Gradle Plugin `8.7.3`, Kotlin `2.0.21`, and KSP `2.0.21-1.0.28`.
-- Local/CI documentation standardizes on Gradle `8.9` while the repository does not commit a Gradle wrapper JAR.
-- Added manifest, launch theme, vector icon, backup/device-transfer policy, and private `FileProvider` export paths.
-- Added `.gitignore`, `.editorconfig`, `.gitattributes`, `.env.example`, and MIT license.
+- CI — success;
+- CodeQL — success;
+- Dependency Review — success;
+- Repository Audit — success;
+- Android Instrumentation — success.
 
-### Domain and finance engine
+The connected API 35 instrumentation suite passed, including the previously failing calculate → named save → History journey. PR #12 is still not merged/tagged because representative physical/local Android checks, accessibility/layout checks, real export/backup picker checks, offline verification, real screenshots, production signing, signed-artifact install/inspection, and artifact SHA-256/source-SHA evidence remain manual release blockers.
 
-- Added `ExpenseItem`, `CalculationInput`, `CalculationResult`, typed calculation errors/outcomes, and explicit rounding policy.
-- Implemented `CalculatorEngine` using `BigDecimal` only for finance arithmetic.
-- Defined charge order: subtotal -> discount -> discounted base -> tax/tip/service -> total -> conversion -> split.
-- Added currency-code, percentage, exchange-rate, split-count, and non-negative amount validation.
-- Added reusable persisted domain models for history, templates, theme, accessibility, and retention.
+### 2.15.5 branch creation and stacked validation
 
-### Persistence and settings
+`develop/v2.15.5` was created directly from exact green 2.15.4 SHA `4b4f0ae520cbbaf4c7cee9adb4c5dd7a813bbe80`.
 
-- Added Room entities/DAOs/database for calculation history and templates.
-- Added history repository with save/delete/clear/age purge.
-- Added template repository with save/load/delete mapping.
-- Added DataStore settings repository for system/light/dark theme, large text, reduced motion, history retention, and onboarding completion.
-- Added explicit application dependency wiring through `AppContainer` and `SpendCalcApplication`.
+Draft PR #13 targets `main` so the same five pull-request workflow families execute. Because PR #12 is not yet merged, PR #13 currently displays the full stacked release history relative to `main`; the meaningful delta should always be reviewed relative to the 2.15.4 exact head until PR #12 lands.
 
-### UI/UX
+Before continuity-document updates, the meaningful maintenance delta relative to the verified 2.15.4 head touched only:
 
-- Added design tokens and custom light/dark Compose themes.
-- Added first-run onboarding.
-- Added responsive calculator form with itemized expenses and validation.
-- Added receipt-style result card.
-- Added history screen with clear confirmation and per-entry deletion.
-- Added templates screen with load/delete actions.
-- Added settings screen for appearance, accessibility, privacy/retention, repository updates, and About navigation.
-- Added About screen with version, MIT license, GitHub, repository, Buy Me a Coffee, business/support contacts, and `Made by the Sanskar`.
-- Added app navigation shell and snackbar feedback.
-- Externalized user-facing strings into Android resources.
+- `.github/workflows/dependency-review.yml`;
+- `app/build.gradle.kts`;
+- `app/src/main/java/in/sanskar/spendcalc/platform/ExportManager.kt`;
+- `app/src/main/java/in/sanskar/spendcalc/platform/PathSafety.kt`;
+- `app/src/test/java/in/sanskar/spendcalc/platform/PathSafetyTest.kt`.
 
-### Export
+`ROADMAP.md` and this file are subsequently updated to record the new state.
 
-- Added platform-independent `ExportFormatter` abstraction.
-- Added CSV export with proper quoting and common spreadsheet-formula-prefix neutralization for text cells.
-- Added plain-text receipt export.
-- Added offline PDF receipt generation using Android `PdfDocument`.
-- Added secure app-cache file sharing through non-exported `FileProvider` URIs.
-- Added safe URL and email intent helpers.
+### Concrete export/path bugs fixed for the next maintenance line
 
-### Tests
+The earlier filename sanitizer could return directory-like dot-only names such as `.`, `..`, or `....`. A text export using such a value could resolve to a directory path and fail with a filesystem error instead of producing a normal SpendCalc export file.
 
-- Added finance-engine tests covering totals, charge order, conversion, split rounding, decimal precision, currency normalization, invalid amounts, invalid exchange rates/splits, and invalid currency codes.
-- Added CSV export tests for quote escaping and formula injection defense.
-- Added receipt text export test.
-- Added history repository tests for persistence mapping, retention purge, and clear.
-- Added template repository tests.
-- Added Room Android integration tests for history/template round trips.
-- Added Compose calculator smoke test.
+The new shared `sanitizeExportFileName` policy:
 
-### CI/security/release automation
+- replaces unsafe/path-separator characters with `_`;
+- bounds generated filenames to 96 characters;
+- falls back to `spendcalc-export.txt` for blank names;
+- falls back to `spendcalc-export.txt` for dot-only names;
+- is used by `ExportManager.createTextFile`.
 
-- Added no-dependency repository formatting guard.
-- Added conservative common-secret-pattern scanner.
-- Added GitHub Actions CI for format check, secret-pattern check, unit tests, Android lint, debug build, and release compilation.
-- Added CodeQL Java/Kotlin analysis workflow.
-- Added pull-request dependency review workflow.
-- Added tag-triggered release-candidate build workflow.
-- Added Dependabot for Gradle and GitHub Actions dependencies.
-- Added issue forms, support/security issue configuration, pull-request checklist, and funding configuration.
+A second containment edge was fixed: `File.isWithinDirectory(directory)` previously returned true when the candidate was the export directory itself. It now requires the candidate to be a descendant and not equal to the root directory, so `shareFile` cannot treat the `exports/` directory object as a shareable file.
 
-### General documentation
+JVM regressions now cover:
 
-- Added comprehensive `README.md` with logo, feature overview, platform support, tech stack, setup, testing, release, architecture, security/privacy, accessibility, performance, contribution, support, BMC, MIT license, and `Made by the Sanskar`.
-- Added `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `SUPPORT.md`, `PRIVACY.md`, `CHANGELOG.md`, and `ROADMAP.md`.
-- Added architecture, setup, development, testing, release, troubleshooting, accessibility, and performance documentation.
-- Added ADRs for BigDecimal finance arithmetic, local-first core behavior, and Room/DataStore persistence.
-- Added editable SVG brand artwork and a verified-screenshot capture policy.
+- normal descendants accepted;
+- same-prefix sibling directories rejected;
+- export root itself rejected;
+- separators/unsafe characters neutralized;
+- blank filenames fall back;
+- dot-only filenames fall back;
+- filename length remains bounded.
 
-### Deep Android build/executable documentation — 2026-08-20
+Focused commits:
 
-A complete Android build documentation pass was added so contributors can understand not only which commands to run, but what they mean and what files they produce.
+- `73e89bc8a7cf632253989c000be33a01c7c253ca` — `fix: harden export filename sanitization`
+- `fac7e3559afcbfd6b79c4555e10f5fe2a150928d` — `refactor: reuse safe export filename policy`
+- `426f26ad8031fe98e713c7b4bde3a513afee9321` — `test: cover safe export filename fallbacks`
+- `8f089493962b09212493ab55000764f2cbe81706` — `fix: reject export directory as shareable file`
+- `9935c22e8a14b184780ee9b092082bcac490938f` — `test: reject export directory root sharing`
 
-New documents:
+### Dependency modernization decisions
 
-- `docs/README.md` — central documentation index and learning/build/release paths.
-- `docs/android-build-guide.md` — deep source-to-APK/AAB guide.
-- `docs/command-reference.md` — command dictionary for Git, Java, Gradle, ADB, Android SDK packaging/signing tools, and repository scripts.
+The first 2.15.5 maintenance batch deliberately avoids AGP/Kotlin platform migrations and accepts only changes compatible with the current compile/runtime baseline.
 
-Expanded documents:
+Accepted for exact-head validation:
 
-- `docs/setup.md` — full environment setup for Windows/macOS/Linux, JDK 17, Android SDK 35, Gradle 8.9, ADB, first build/install, release artifacts, and quality commands.
-- `docs/release.md` — APK/AAB distinctions, versioning, release gates, manual signing, signature verification, checksums, fresh-install/upgrade tests, accessibility/privacy/security verification, and rollback.
-- `docs/troubleshooting.md` — detailed Gradle/JDK/SDK/dependency/ADB/APK/AAB/signing/Room/KSP/test/release diagnosis.
+- AndroidX Core `1.15.0` → `1.16.0`;
+- AndroidX Test JUnit `1.2.1` → `1.3.0`;
+- Room runtime/ktx/compiler `2.6.1` → `2.8.4`;
+- `actions/dependency-review-action` v4 → v5.
 
-The Android executable guide now documents:
+Room 2.8.4 remains compatible with the project Kotlin 2.0/KSP2 direction and does not imply a Room schema-version change. Database schema version stays `1` because the application schema contract itself has not changed.
 
-- what APK and AAB mean;
-- debug versus release artifacts;
-- current package/application ID and Android SDK levels;
-- exact `app/build.gradle.kts` configuration meanings;
-- Git/JDK/Android Studio/SDK/Gradle prerequisites;
-- Windows/macOS/Linux SDK paths;
-- Gradle task syntax and diagnostic flags;
-- `gradle assembleDebug` and expected debug APK path;
-- `gradle assembleRelease` and release APK directory;
-- `gradle bundleRelease` and AAB directory;
-- grouped clean/test/lint/build commands;
-- `gradle installDebug`;
-- `adb devices`, `adb install`, `adb install -r`, `adb uninstall`, package inspection, Logcat, and selected-device syntax;
-- connected instrumentation tests;
-- `keytool` keystore creation and option meanings;
-- `zipalign` APK alignment and verification;
-- `apksigner` APK signing and certificate verification;
-- `jarsigner` AAB signing/verification;
-- release artifact security rules;
-- versionCode/versionName rules;
-- dependency reports and Gradle diagnostic flags;
-- offline Gradle build behavior;
-- artifact locations;
-- common installation/signature failure causes;
-- recommended development and release command sequences.
+AndroidX Core `1.19.0` was initially evaluated but **rejected before build execution**. Its published AAR requirements need compileSdk 37 and AGP 9.1+, while SpendCalc intentionally remains compileSdk 35 / AGP 8.7.3 for this maintenance batch. Core 1.17.0 also requires a newer Android toolchain (compileSdk 36 / AGP 8.9.1+). Core 1.16.0 is therefore the controlled compatible update for the current baseline.
 
-No production signing secret was added to source control. Documentation explicitly instructs maintainers to keep keystores and passwords outside Git.
+The transient 1.19.0 evaluation commit is retained in branch history for traceability, but the current tree no longer contains that incompatible dependency.
 
-## Important files/modules
+Focused dependency/version commits created during this continuation include:
 
-- `app/src/main/java/in/sanskar/spendcalc/domain/CalculatorEngine.kt`
-- `app/src/main/java/in/sanskar/spendcalc/domain/model/ExpenseModels.kt`
-- `app/src/main/java/in/sanskar/spendcalc/data/HistoryRepository.kt`
-- `app/src/main/java/in/sanskar/spendcalc/data/TemplateRepository.kt`
-- `app/src/main/java/in/sanskar/spendcalc/data/SettingsRepository.kt`
-- `app/src/main/java/in/sanskar/spendcalc/data/local/SpendCalcDatabase.kt`
-- `app/src/main/java/in/sanskar/spendcalc/ui/SpendCalcViewModel.kt`
-- `app/src/main/java/in/sanskar/spendcalc/ui/SpendCalcApp.kt`
-- `app/src/main/java/in/sanskar/spendcalc/ui/screens/CalculatorScreen.kt`
-- `app/src/main/java/in/sanskar/spendcalc/platform/PdfReceiptExporter.kt`
-- `.github/workflows/ci.yml`
-- `.github/workflows/codeql.yml`
-- `.github/workflows/dependency-review.yml`
-- `.github/workflows/release.yml`
+- `e35150fe88baae2c304c60d1f0aa7812462fdfbf` — `release: start SpendCalc 2.15.5 development` (transient metadata cut later intentionally reverted pending the real release cut)
+- `66c000d329c8fa68f0accae3d881fc70dbd477a1` — `chore(deps): update AndroidX test JUnit to 1.3.0`
+- `b390fa5fa0ba48edda12dd388398a70d60f74afd` — `chore(deps): update AndroidX Core to 1.19.0` (evaluation subsequently superseded as incompatible)
+- `9180152af80001f7079f046ac6df0f4f6631f0ce` — `chore(deps): update Room to 2.8.4`
+- `938d2b71d89ffe4be03972daa8d385a3377572bb` — `release: keep 2.15.4 metadata until next version cut`
+- `ca722c846501cc5321bc2bb3a4b628a57b1baf3f` — `chore(ci): update dependency review action to v5`
+- `875fa92ca0717ebce6f84d9451d65490fcc719a0` — `fix(deps): keep AndroidX Core compatible with SDK 35`
+- `bc89675525f708091695cd95908b57b896ee661f` — `docs: align roadmap with 2.15.4 verification and 2.15.5 hardening`
+
+### Static audit performed during runner queue
+
+The maintenance review also rechecked adjacent boundaries without making speculative changes:
+
+- CSV export already quotes cells and neutralizes leading spreadsheet formula prefixes for user text;
+- FileProvider is non-exported and exposes only `cache/exports/`;
+- `shareFile` requires canonical export-directory containment;
+- Android backup/data-extraction rules include database/DataStore data but do not include cache exports;
+- external URL/email launch paths already handle missing activities and security exceptions;
+- backup file I/O remains bounded and uses strict malformed/unmappable UTF-8 rejection;
+- backup codec remains bounded, checksummed, duplicate-ID validated, structurally validated, and schema-versioned;
+- no open repository bug/enhancement issue currently provides a higher-priority known defect.
+
+No change was made where the existing implementation already satisfied the intended security/reliability contract.
+
+### Exact-head verification state for PR #13
+
+The first PR #13 workflow set on head `ca722c846501cc5321bc2bb3a4b628a57b1baf3f` remained queued and was correctly cancelled by workflow concurrency after the AndroidX Core compatibility correction advanced the branch.
+
+The corrected head then advanced through the documentation update. Therefore, **only workflows on the exact final head after this `what_changed.md` commit count as current 2.15.5 maintenance evidence**.
+
+Required exact-head families remain:
+
+1. CI;
+2. CodeQL;
+3. Dependency Review;
+4. Repository Audit;
+5. Android Instrumentation.
+
+Do not interpret queued/cancelled/superseded runs as successful evidence. If a final-head job fails, inspect its exact steps/logs and fix or revert the concrete cause before adding another dependency batch.
+
+### Next dependency policy
+
+Do not combine the first validated 2.15.5 batch with AGP 9.x or Kotlin 2.4.x while debugging it. Once this batch is fully green, evaluate remaining upgrades independently, particularly:
+
+- Android Gradle Plugin major update;
+- Kotlin/Compose/KSP coordinated update;
+- checkout/action runner major updates;
+- Gradle Actions updates, including any runner/caching/licensing implications.
+
+Do not accept a Dependabot version merely because it is the numerically newest release. Its Android toolchain requirements must match the project or be accompanied by a separately verified toolchain migration.
+
+### 2.15.5 release-cut rule
+
+The branch name and PR represent **preparation for 2.15.5**, but the application still reports 2.15.4 by design. After 2.15.4 is actually merged/released and the first maintenance batch is verified, perform the real 2.15.5 cut as its own auditable change:
+
+1. set `versionName = "2.15.5"`;
+2. set `versionCode = 21505`;
+3. retarget all release-facing docs enforced by `scripts/check_repository.py`;
+4. update changelog/roadmap/verification/release docs together;
+5. run all five workflow families on the exact resulting SHA;
+6. still require the documented manual Android/accessibility/export/backup/offline/signing/artifact gates before tagging/publishing.
+
+---
+
+## 2026-08-24 — 2.15.4 release preparation
+
+### Current repository state
+
+- Repository: `sanskarIN/spendcalc`
+- Default branch: `main`
+- Active release branch: `complete/v1-finalization`
+- Active pull request: `#12`
+- Pull-request title: `release: prepare SpendCalc 2.15.4 release candidate`
+- Application ID: `in.sanskar.spendcalc`
+- Target application release: `2.15.4`
+- Android `versionName`: `2.15.4`
+- Android `versionCode`: `21504`
+- Android minimum API: `26`
+- Android target/compile API: `35`
+- Java/JVM target: `17`
+- Room database version: `1`
+- Explicit backup schema version: `1`
+- License: MIT
+- Core runtime model: Android-first, Kotlin + Jetpack Compose, local/offline-first
+- Product credit: `Made by the Sanskar`
+
+Application release versioning remains intentionally independent from Room/backup compatibility versions. The move to 2.15.4 does **not** create fake database or backup migrations.
+
+---
+
+## Release target change
+
+The active release candidate has been retargeted from the superseded `2.0.12` candidate to **2.15.4**.
+
+`app/build.gradle.kts` now contains:
+
+```kotlin
+versionCode = 21504
+versionName = "2.15.4"
+```
+
+The `21504` versionCode follows the repository's existing semantic-component encoding convention and is greater than the earlier 20012 candidate code.
+
+The following current release-facing documents have been retargeted to 2.15.4:
+
 - `README.md`
 - `docs/README.md`
 - `docs/android-build-guide.md`
 - `docs/command-reference.md`
-- `docs/setup.md`
 - `docs/release.md`
-- `docs/troubleshooting.md`
+- `docs/verification.md`
+- `CHANGELOG.md`
+- `ROADMAP.md`
+- `what_changed.md`
+- `what_changed_latest.md`
+- `what_changed_final.md`
+- PR `#12` title/body
 
-## Android executable quick reference
-
-Build debug APK:
-
-```bash
-gradle assembleDebug
-```
-
-Expected file:
+Current signed-APK documentation examples use:
 
 ```text
-app/build/outputs/apk/debug/app-debug.apk
+SpendCalc-2.15.4-release.apk
 ```
 
-Build release APK:
+The repository audit still derives application `versionName` and `versionCode` directly from `app/build.gradle.kts`, requires the documentation index/build guide/command reference to match those values, and rejects stale semantic-versioned signed-APK examples.
 
-```bash
-gradle assembleRelease
-```
+---
 
-Release output directory:
+## Concrete Android instrumentation blocker fixed
+
+The most recent executed Android instrumentation evidence before this continuation had one remaining failure in:
 
 ```text
-app/build/outputs/apk/release/
+MainActivityJourneyTest.calculateSaveAndFindHistoryJourney
 ```
 
-Build release AAB:
-
-```bash
-gradle bundleRelease
-```
-
-AAB output directory:
+The failure was:
 
 ```text
-app/build/outputs/bundle/release/
+Expected exactly 1 node but found 3 nodes matching INR 25.00
 ```
 
-Install debug build on a connected device/emulator:
+The application had successfully compiled, the API 35 emulator had booted, and 11 of 12 instrumentation tests passed. The failure was caused by the test assuming that the correctly formatted amount could only appear once in the Compose semantics tree.
+
+That uniqueness assumption was invalid because the same amount may be represented in multiple legitimate UI semantics nodes.
+
+The journey test now:
+
+1. waits until at least one node contains the expected formatted amount;
+2. asserts the first matching collection interaction exists;
+3. keeps the exact saved-history-name assertion;
+4. does not weaken production UI behavior or add fake accessibility descriptions for testing.
+
+This preserves the intent of the end-to-end journey while removing a false semantics-uniqueness requirement.
+
+Fix commit:
+
+- `7c859340f8c4739507ed8047e689249e908a2299` — `test: allow repeated amount semantics in activity journey`
+
+Because later release-preparation commits advanced the branch, workflow runs on the isolated test-fix commit were intentionally superseded/cancelled by concurrency rules and are not final release evidence.
+
+---
+
+## Focused commits created in this continuation
+
+- `7c859340f8c4739507ed8047e689249e908a2299` — `test: allow repeated amount semantics in activity journey`
+- `941bfa67a69bf35091a19cceac749490fbc440ee` — `release: bump application version to 2.15.4`
+- `458243050c4ade8f3c051b4def6c5b5cb4fc0afc` — `docs: retarget documentation index to 2.15.4`
+- `c3e0f864bfb9652dbd892389d0dd9f6acb6f096b` — `docs: retarget Android build guide to 2.15.4`
+- `3c40baf53acc36dfde4cdb2a9807236adb3844b2` — `docs: retarget command reference to 2.15.4`
+- `757d937ca0a2d210b80d711e48cb74bb5f26b6a7` — `docs: retarget release verification to 2.15.4`
+- `276474ebc148bed3f37f9a1d98817d518adb9173` — `docs: prepare 2.15.4 release workflow`
+- `e7977feb450fa45b693bd681eae46995e66fefba` — `docs: retarget project README to 2.15.4`
+- `139f5c56b70a83adac9d98bfc3493f59c1a08fc3` — `docs: prepare changelog for 2.15.4`
+- `ac3095ee71cbbd30a1ea2cb3983d1ac3294817c1` — `docs: retarget roadmap to 2.15.4`
+- `676a722fd91c91dc9d82084d26d84f0d59af42bf` — `docs: retarget latest continuity pointer to 2.15.4`
+- `afb5f69e76cd22d33e753eb17347405cb2936dcc` — `docs: retarget final handoff pointer to 2.15.4`
+
+The commit containing this canonical handoff becomes a newer exact head than every SHA above and therefore requires its own final workflow evidence.
+
+---
+
+## PR #12 retargeted
+
+PR `#12` remains the active release candidate on `complete/v1-finalization` targeting `main`.
+
+The PR metadata now describes 2.15.4, including:
+
+- `versionName 2.15.4`;
+- `versionCode 21504`;
+- Room/backup schema independence;
+- the activity-journey semantics fix;
+- current release documentation;
+- exact-head automated/manual gates;
+- isolation of major dependency upgrades;
+- browser-extension work as post-Android-release work.
+
+Do not merge/tag/publish the pull request as a verified release until every blocking gate below is actually complete.
+
+---
+
+## Current implemented product baseline
+
+The release branch contains the Android application and hardening work accumulated through the earlier stabilization phases.
+
+### Finance/domain
+
+- precision-safe `BigDecimal` arithmetic;
+- itemized expense lines;
+- discount, tax, tip, service charge;
+- split bill;
+- manual currency conversion;
+- centralized rounding/validation;
+- bounded decimal precision/scale/input lengths;
+- bounded split count;
+- bounded 100-item calculator editor;
+- deterministic calculation order.
+
+### Persistence
+
+- Room history;
+- saved history labels;
+- History search/filter;
+- delete/Undo/clear confirmation;
+- retention options;
+- Room templates;
+- template save/load/delete/Undo;
+- Preferences DataStore settings;
+- shared persisted-record policy;
+- ID/timestamp/currency/name/result/split validation;
+- duplicate replacement-ID rejection;
+- repository-boundary validation before DAO replacement.
+
+### Backup/restore
+
+- explicit user-driven local backup;
+- Android Storage Access Framework document flows;
+- versioned bounded backup format;
+- SHA-256 accidental-corruption detection;
+- strict malformed/unmappable UTF-8 rejection;
+- canonical persisted-currency validation;
+- Unicode-safe saved names;
+- duplicate-ID and structural validation;
+- confirmation before replacement;
+- visible busy/progress state;
+- multi-store restore compensation behavior.
+
+### Export/share
+
+- text receipts;
+- CSV export;
+- spreadsheet-formula neutralization for text cells;
+- offline PDF receipts;
+- Unicode-safe PDF truncation;
+- non-exported FileProvider;
+- canonical-path export containment.
+
+### UI/accessibility
+
+- Kotlin + Jetpack Compose + Material 3;
+- responsive phone/tablet layout;
+- light/dark/system themes;
+- large-text preference;
+- reduced-motion preference;
+- branded splash screen;
+- repository-owned navigation icons;
+- user-facing string resources;
+- first-run onboarding;
+- About/support/funding/version UI;
+- stable non-user-facing Compose test tags for exact editable-field targeting.
+
+### Privacy/security
+
+- local-first core;
+- no account required;
+- no remote API key required;
+- no Android Internet permission in current manifest;
+- no production signing material in Git;
+- conservative secret-pattern guard;
+- safe logging/redaction coverage;
+- privacy/security/support/contribution policies.
+
+---
+
+## Testing/automation baseline
+
+The repository includes:
+
+- finance unit tests;
+- deterministic finance fuzz/regression tests;
+- history/template repository tests;
+- persistence invariant tests;
+- saved-name Unicode-boundary tests;
+- backup codec/validation/corruption/fuzz tests;
+- strict backup-byte UTF-8 tests;
+- CSV security tests;
+- PDF Unicode truncation tests;
+- path containment tests;
+- SafeLogger redaction tests;
+- Room integration tests;
+- Compose calculator/history/settings/dialog tests;
+- real-activity calculate → named save → History journey;
+- instrumentation-test compilation in CI.
+
+GitHub workflow families:
+
+- CI;
+- CodeQL;
+- Dependency Review;
+- Repository Audit;
+- Android Instrumentation;
+- tag-triggered release-candidate build.
+
+Workflow concurrency intentionally cancels superseded PR runs so CI resources focus on the newest head.
+
+---
+
+## Documentation/repository integrity baseline
+
+Current documentation includes:
+
+- task-oriented `docs/README.md`;
+- complete 2.15.4 Android build/sign/install guide;
+- 2.15.4 command reference;
+- architecture/development/testing/accessibility/performance docs;
+- backup/security/privacy/persistence docs;
+- documentation source-of-truth map;
+- exhaustive tracked-file codebase reference;
+- release guide;
+- blocking 2.15.4 verification checklist;
+- troubleshooting;
+- screenshot-capture policy;
+- ADRs.
+
+Repository guards cover:
 
 ```bash
-gradle installDebug
+python3 scripts/check_format.py
+python3 scripts/check_kotlin_namespace.py
+python3 scripts/check_documentation_coverage.py
+python3 scripts/check_android_resources.py
+python3 scripts/check_android_security.py
+python3 scripts/check_repository.py
+python3 scripts/scan_secrets.py
 ```
 
-or:
+The repository intentionally does not commit a Gradle wrapper JAR. Documentation uses compatible local Gradle 8.9 and CI pins Gradle 8.9 through `gradle/actions/setup-gradle`.
 
-```bash
-adb install -r app/build/outputs/apk/debug/app-debug.apk
-```
+---
 
-Full details: `docs/android-build-guide.md`.
+## Dependency-upgrade policy for 2.15.4
 
-## Commands/checks run and results
+Open Dependabot major/minor updates are not blindly folded into the current release candidate.
 
-- Confirmed repository exists, is public, default branch is `main`, and connected GitHub account has admin/push access.
-- Confirmed `app/build.gradle.kts`: application ID `in.sanskar.spendcalc`, `minSdk 26`, `targetSdk/compileSdk 35`, version `1.0.0`/code `1`, Java/Kotlin JVM target 17, release minification/resource shrinking.
-- Confirmed root `build.gradle.kts`: Android Gradle Plugin `8.7.3`, Kotlin `2.0.21`, KSP `2.0.21-1.0.28`.
-- Confirmed settings contain the single `:app` module and Google/Maven Central/plugin portal repository configuration.
-- Confirmed no committed `gradle/wrapper/gradle-wrapper.properties` at the checked path; documentation therefore continues to use local Gradle 8.9 rather than pretending wrapper commands currently exist.
-- Direct local `git clone` from the earlier execution container was attempted but failed because that container could not resolve `github.com`; this was an execution-environment network limitation, not a repository result.
-- Source-level compile-risk review previously identified/fixed UI/PDF/callback/test dependency issues.
-- This documentation session changed documentation through the connected GitHub API; it did not execute an Android SDK build locally.
+They require isolated compatibility review for:
 
-## Documentation commits from the 2026-08-20 build-guide pass
+- Android Gradle Plugin/Gradle compatibility;
+- Kotlin/Compose/KSP compatibility;
+- Room compiler/runtime behavior;
+- AndroidX test/runtime behavior;
+- GitHub Actions Node/runner requirements;
+- action/cache behavior;
+- licensing/terms changes.
 
-- `e1f5440` — `docs: add complete Android build and executable guide`
-- `c014f32` — `docs: add complete command reference`
-- `7d6c878` — `docs: add documentation index and learning path`
-- `f0d68aa` — `docs: expand complete development environment setup`
-- `5398e26` — `docs: expand release packaging and signing workflow`
-- `37d8a97` — `docs: expand Android build and install troubleshooting`
+The current 2.15.4 release prep keeps those dependency changes separate unless one becomes necessary to resolve a specific release blocker.
 
-## Known limitations / not-yet-verified items
+---
 
-- The connected GitHub file/commit API does not expose a commit-author-email argument. Commits use the authenticated GitHub identity. Documentation records `git config user.email "sanskarin@outlook.in"` for local contributions.
-- A Gradle wrapper JAR is not committed; local docs use Gradle 8.9, while GitHub Actions can explicitly install/configure Gradle.
-- Real Android screenshots are intentionally not fabricated. `docs/assets/screenshots/README.md` defines the release screenshot capture checklist.
-- No production signing keys are committed. Release production signing remains intentionally external to source control.
-- Database schema version is 1, so there is no historical production migration path to test yet.
-- Final clean Android build/test/lint/device verification still needs to be executed in an Android SDK environment/CI and recorded when available.
+## Browser-extension planning boundary
 
-## Open verification work
+Browser-extension work is planned **after Android 2.15.4 stabilization** and is not a blocking gate for this release.
 
-1. Run/inspect CI for current `main` or a dedicated verification PR.
-2. Fix any reproducible compile/lint/test errors discovered by actual Gradle/Android tooling.
-3. Run connected Android instrumentation tests on a real device/emulator.
-4. Generate actual debug APK and release APK/AAB artifacts from a verified commit.
-5. Securely sign a production candidate outside Git and verify its certificate.
-6. Perform clean-install and upgrade testing when a previous public release exists.
-7. Capture real release screenshots only from a verified build with fictional data.
-8. Record final verification commit/run/artifact identities here.
+Current roadmap preparation includes:
 
-## Migration notes
+- supported browser scope;
+- Manifest V3 baseline;
+- platform-neutral finance-rule reuse where practical;
+- local-only extension storage/privacy model;
+- popup/options/history UX;
+- import/export compatibility boundaries;
+- dedicated extension build/test/security automation;
+- separate extension publishing credentials from Android signing credentials.
 
-- Room database version: 1.
-- No production migration path exists yet because this is the initial schema.
-- Destructive migration fallback is intentionally not enabled.
+Do not couple Android production stability to unfinished browser-extension implementation.
 
-## Release notes draft
+---
 
-### Unreleased / 1.0.0 release candidate
+## Exact-head automated verification still required
 
-- Precision-safe itemized expense calculator with discount, tax, tip, service charge, split bill, and manual exchange-rate conversion.
-- Offline Room history and saved calculation templates.
-- Configurable local history retention.
-- Text, CSV, and PDF receipt export/sharing.
-- Light/dark/system themes, large-text option, reduced-motion setting, onboarding, and responsive phone/tablet UI.
-- Local-first privacy model with no required account or Internet permission for core functionality.
-- Comprehensive repository documentation, testing baseline, CI, CodeQL, dependency review, Dependabot, issue templates, release workflow, and deep APK/AAB build/sign/install command documentation.
+For the exact commit containing this handoff, fetch workflow results again and require:
+
+1. CI — success;
+2. CodeQL — success;
+3. Dependency Review — success;
+4. Repository Audit — success;
+5. Android Instrumentation — success.
+
+CI must reach and pass:
+
+- repository guards;
+- JVM tests;
+- instrumentation-test compilation;
+- full Android lint;
+- debug compilation;
+- release compilation.
+
+Android Instrumentation must execute `connectedDebugAndroidTest` successfully, not merely compile test sources.
+
+If any gate fails, inspect the exact workflow/job logs and fix the concrete defect. Do not mark a failed/cancelled/pending run as successful evidence.
+
+---
+
+## Manual release blockers still required
+
+Even after all automated workflows are green, the following remain blocking until real evidence exists:
+
+### Representative Android runtime
+
+- fresh install;
+- splash/onboarding;
+- returning-user state;
+- Calculator/History/Templates/Settings/About navigation;
+- named history/save/search/delete/Undo/retention;
+- templates save/load/delete/Undo;
+- item/input limits;
+- Unicode boundary behavior.
+
+### Export/share
+
+- text share;
+- CSV share;
+- PDF share;
+- FileProvider containment;
+- Unicode-heavy PDF behavior.
+
+### Backup/restore
+
+- document creator/picker;
+- confirmation before replace;
+- visible progress state;
+- history/template/preferences round-trip;
+- malformed UTF-8 rejection;
+- checksum-invalid rejection;
+- noncanonical persisted-currency rejection;
+- invalid/duplicate replacement protection.
+
+### Offline/privacy/security
+
+- core calculation/history/templates/settings/export with network disabled;
+- no unintended Internet permission;
+- no secrets/private data/signing material in repository/artifacts/screenshots.
+
+### Accessibility/layout
+
+- light/dark/system themes;
+- app/system large text;
+- reduced motion;
+- TalkBack order/labels/dialogs;
+- color-independent validation meaning;
+- small phone layout;
+- tablet/wide layout;
+- touch targets/destructive wording.
+
+### Screenshots
+
+- real screenshots from the verified 2.15.4 build;
+- fictional data only;
+- privacy review before publication.
+
+### Production signing/artifact
+
+- build production candidate from exact verified SHA;
+- keep signing material outside Git;
+- sign using controlled identity;
+- verify certificate/signature;
+- inspect application ID/versionCode/versionName/SDK/permissions;
+- install exact signed artifact;
+- verify About reports 2.15.4;
+- record artifact SHA-256 and source SHA relationship.
+
+Only after all blocking automated/manual gates pass should `v2.15.4` be created and published.
+
+---
+
+## Recommended continuation order
+
+1. Fetch exact-head CI/CodeQL/Dependency Review/Repository Audit/Android Instrumentation.
+2. If any workflow fails, inspect exact job logs and fix the concrete error.
+3. Repeat until the exact current head is green across all automated families.
+4. Perform representative Android/manual/accessibility/export/backup/offline checks.
+5. Capture real screenshots with fictional data.
+6. Build/sign/verify/install the exact production artifact outside Git.
+7. Record checksum/source SHA/certificate evidence.
+8. Reconcile README/changelog/roadmap/release/verification/continuity docs with actual completed evidence.
+9. Merge PR #12 only when release policy permits.
+10. Tag/publish `v2.15.4` only after every blocking gate passes.
+11. Then evaluate isolated dependency upgrades.
+12. Then begin browser-extension implementation as a separate next-version stream.
+
+---
+
+## Safety/secret rules
+
+Never commit or paste into repository history, issues, PR comments, docs, screenshots, or logs:
+
+- production keystore/private key;
+- signing passwords;
+- API/access tokens;
+- private user data;
+- real financial records;
+- machine-local secret configuration.
+
+Production signing and store credentials intentionally remain outside source control.
+
+---
+
+## Historical continuity
+
+Earlier development/release-candidate details, including the 2.0.12 stabilization work, remain available in repository Git history and earlier revisions of this file. They are historical engineering evidence, not the current release target.
+
+Current continuation authority is:
+
+1. current GitHub PR/workflow state;
+2. this canonical `what_changed.md`;
+3. `docs/verification.md` for release blockers;
+4. `app/build.gradle.kts` for application release metadata;
+5. authoritative permanent documentation identified by `docs/documentation-map.md`.
 
 **Made by the Sanskar**

@@ -3,6 +3,8 @@ package `in`.sanskar.spendcalc.ui
 import `in`.sanskar.spendcalc.domain.model.CalculationResult
 import java.util.UUID
 
+const val MAX_EXPENSE_ITEMS = 100
+
 data class ExpenseItemDraft(
     val id: String = UUID.randomUUID().toString(),
     val name: String = "",
@@ -25,8 +27,12 @@ enum class ActionFeedback {
     NONE,
     HISTORY_SAVED,
     TEMPLATE_SAVED,
-    DELETED,
+    HISTORY_DELETED,
+    TEMPLATE_DELETED,
     HISTORY_CLEARED,
+    BACKUP_EXPORTED,
+    BACKUP_RESTORED,
+    BACKUP_FAILED,
 }
 
 data class CalculatorUiState(
@@ -42,4 +48,11 @@ data class CalculatorUiState(
     val result: CalculationResult? = null,
     val issues: Set<FormIssue> = emptySet(),
     val feedback: ActionFeedback = ActionFeedback.NONE,
+    val feedbackSequence: Long = 0L,
 )
+
+internal fun CalculatorUiState.withFeedback(value: ActionFeedback): CalculatorUiState =
+    copy(
+        feedback = value,
+        feedbackSequence = feedbackSequence + 1L,
+    )

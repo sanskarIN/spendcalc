@@ -2,6 +2,8 @@ package `in`.sanskar.spendcalc.domain.model
 
 import java.math.BigDecimal
 
+const val MAX_SAVED_NAME_CHARS = 120
+
 data class HistoryRecord(
     val id: String,
     val createdAtEpochMillis: Long,
@@ -53,3 +55,15 @@ data class UserPreferences(
     val autoDeleteHistory: AutoDeleteHistory = AutoDeleteHistory.NEVER,
     val onboardingCompleted: Boolean = false,
 )
+
+data class SpendCalcBackup(
+    val schemaVersion: Int = CURRENT_SCHEMA_VERSION,
+    val exportedAtEpochMillis: Long,
+    val history: List<HistoryRecord>,
+    val templates: List<CalculationTemplate>,
+    val preferences: UserPreferences,
+) {
+    companion object {
+        const val CURRENT_SCHEMA_VERSION = 1
+    }
+}

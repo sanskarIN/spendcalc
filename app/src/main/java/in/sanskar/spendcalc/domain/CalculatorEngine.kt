@@ -66,17 +66,19 @@ class CalculatorEngine(
     }
 
     fun validate(input: CalculationInput): List<CalculationError> = buildList {
-        input.items.filter { it.amount < BigDecimal.ZERO }.forEach {
+        input.items.filter { it.amount < BigDecimal.ZERO || !validDecimalShape(it.amount) }.forEach {
             add(CalculationError.InvalidAmount(it.id))
         }
-        if (!validPercentage(input.discountPercent)) add(CalculationError.InvalidDiscount)
-        if (!validPercentage(input.taxPercent)) add(CalculationError.InvalidTax)
-        if (!validPercentage(input.tipPercent)) add(CalculationError.InvalidTip)
-        if (!validPercentage(input.serviceChargePercent)) add(CalculationError.InvalidServiceCharge)
-        if (input.splitCount < 1) add(CalculationError.InvalidSplitCount)
+        if (!validDiscount(input.discountPercent)) add(CalculationError.InvalidDiscount)
+        if (!validChargePercentage(input.taxPercent)) add(CalculationError.InvalidTax)
+        if (!validChargePercentage(input.tipPercent)) add(CalculationError.InvalidTip)
+        if (!validChargePercentage(input.serviceChargePercent)) add(CalculationError.InvalidServiceCharge)
+        if (input.splitCount !in 1..MAX_SPLIT_COUNT) add(CalculationError.InvalidSplitCount)
         if (!validCurrencyCode(input.currencyCode)) add(CalculationError.InvalidCurrencyCode)
         if (!validCurrencyCode(input.convertedCurrencyCode)) add(CalculationError.InvalidConvertedCurrencyCode)
-        if (input.exchangeRate <= BigDecimal.ZERO) add(CalculationError.InvalidExchangeRate)
+        if (input.exchangeRate <= BigDecimal.ZERO || !validDecimalShape(input.exchangeRate)) {
+            add(CalculationError.InvalidExchangeRate)
+        }
     }
 
     private fun percentageOf(base: BigDecimal, percentage: BigDecimal): BigDecimal =
@@ -89,8 +91,20 @@ class CalculatorEngine(
     private fun money(value: BigDecimal): BigDecimal =
         value.setScale(roundingPolicy.moneyScale, roundingPolicy.roundingMode)
 
-    private fun validPercentage(value: BigDecimal): Boolean =
-        value >= BigDecimal.ZERO && value <= MAX_PERCENTAGE
+    private fun validDiscount(value: BigDecimal): Boolean =
+        validPercentageShape(value) && value >= BigDecimal.ZERO && value <= ONE_HUNDRED
+
+    private fun validChargePercentage(value: BigDecimal): Boolean =
+        validPercentageShape(value) && value >= BigDecimal.ZERO && value <= MAX_CHARGE_PERCENTAGE
+
+    private fun validPercentageShape(value: BigDecimal): Boolean =
+        value.scale() in 0..MAX_PERCENT_SCALE && integerDigits(value) <= MAX_PERCENT_INTEGER_DIGITS
+
+    private fun validDecimalShape(value: BigDecimal): Boolean =
+        value.scale() in 0..MAX_DECIMAL_SCALE && integerDigits(value) <= MAX_DECIMAL_INTEGER_DIGITS
+
+    private fun integerDigits(value: BigDecimal): Int =
+        (value.precision() - value.scale()).coerceAtLeast(1)
 
     private fun validCurrencyCode(value: String): Boolean =
         CURRENCY_CODE.matches(normalizeCurrencyCode(value))
@@ -100,7 +114,12 @@ class CalculatorEngine(
 
     private companion object {
         val ONE_HUNDRED = BigDecimal("100")
-        val MAX_PERCENTAGE = BigDecimal("1000")
+        val MAX_CHARGE_PERCENTAGE = BigDecimal("1000")
+        const val MAX_SPLIT_COUNT = 1_000_000
+        const val MAX_DECIMAL_INTEGER_DIGITS = 15
+        const val MAX_DECIMAL_SCALE = 12
+        const val MAX_PERCENT_INTEGER_DIGITS = 4
+        const val MAX_PERCENT_SCALE = 6
         val CURRENCY_CODE = Regex("[A-Z]{3}")
     }
 }

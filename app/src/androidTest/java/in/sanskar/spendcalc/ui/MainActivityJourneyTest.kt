@@ -1,13 +1,11 @@
 package `in`.sanskar.spendcalc.ui
 
-import androidx.compose.ui.test.assertExists
-import androidx.compose.ui.test.hasSetTextAction
-import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onNode
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import `in`.sanskar.spendcalc.MainActivity
 import `in`.sanskar.spendcalc.R
@@ -22,29 +20,41 @@ class MainActivityJourneyTest {
     fun calculateSaveAndFindHistoryJourney() {
         completeOnboardingIfNeeded()
 
-        val amountLabel = composeRule.activity.getString(R.string.item_amount)
         val saveLabel = composeRule.activity.getString(R.string.save_to_history)
-        val historyLabel = composeRule.activity.getString(R.string.nav_history)
+        val saveHistoryConfirmLabel = composeRule.activity.getString(R.string.save_history_confirm)
+        val historyNavLabel = composeRule.activity.getString(R.string.nav_history)
         val expectedAmount = "INR 25.00"
+        val savedHistoryName = "Grocery run"
 
-        composeRule.onNode(
-            hasSetTextAction() and hasText(amountLabel, substring = true),
-            useUnmergedTree = true,
-        ).performTextInput("25.00")
+        firstItemAmountField().performTextInput("25.00")
 
-        composeRule.waitUntil(timeoutMillis = 5_000) {
-            composeRule.onAllNodesWithText(expectedAmount).fetchSemanticsNodes().isNotEmpty()
-        }
-        composeRule.onNodeWithText(expectedAmount).assertExists()
+        assertAnyNodeWithText(expectedAmount)
 
-        composeRule.onNodeWithText(saveLabel).performClick()
-        composeRule.onNodeWithText(historyLabel).performClick()
+        composeRule.onNodeWithText(saveLabel).performScrollTo().performClick()
+        activeDialogTextField().performTextInput(savedHistoryName)
+        composeRule.onNodeWithText(saveHistoryConfirmLabel).performClick()
+        composeRule.onNodeWithText(historyNavLabel).performClick()
 
-        composeRule.waitUntil(timeoutMillis = 5_000) {
-            composeRule.onAllNodesWithText(expectedAmount).fetchSemanticsNodes().isNotEmpty()
-        }
-        composeRule.onNodeWithText(expectedAmount).assertExists()
+        assertAnyNodeWithText(expectedAmount)
+        composeRule.onNodeWithText(savedHistoryName).assertExists()
     }
+
+    private fun assertAnyNodeWithText(text: String) {
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onAllNodesWithText(text)[0].assertExists()
+    }
+
+    private fun firstItemAmountField() = composeRule.onNodeWithTag(
+        "calculator-item-amount-0",
+        useUnmergedTree = true,
+    )
+
+    private fun activeDialogTextField() = composeRule.onNodeWithTag(
+        "history-save-label",
+        useUnmergedTree = true,
+    )
 
     private fun completeOnboardingIfNeeded() {
         val continueLabel = composeRule.activity.getString(R.string.onboarding_continue)
