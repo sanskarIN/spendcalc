@@ -1,5 +1,171 @@
 # SpendCalc — Work Continuity
 
+## 2026-08-24 — 2.15.5 next-version hardening continuation
+
+### Current repository state
+
+- Repository: `sanskarIN/spendcalc`
+- Default branch: `main`
+- Verified 2.15.4 release-candidate branch: `complete/v1-finalization`
+- Verified 2.15.4 release PR: `#12`
+- Next-version maintenance branch: `develop/v2.15.5`
+- Next-version draft stacked PR: `#13`
+- PR #13 title: `maintenance: prepare SpendCalc 2.15.5 hardening`
+- PR #13 is intentionally stacked on the exact green 2.15.4 candidate and must not merge ahead of PR #12.
+- Current application metadata remains `versionName 2.15.4` / `versionCode 21504` during maintenance validation.
+- The actual 2.15.5 metadata cut (`2.15.5` / `21505`) is deferred until 2.15.4 is merged/released and release-facing documentation can be retargeted atomically.
+- Room database version remains `1`.
+- Explicit backup schema version remains `1`.
+
+### Verified 2.15.4 automation
+
+Exact release-candidate head:
+
+```text
+4b4f0ae520cbbaf4c7cee9adb4c5dd7a813bbe80
+```
+
+All five automated release families passed on that same exact SHA:
+
+- CI — success;
+- CodeQL — success;
+- Dependency Review — success;
+- Repository Audit — success;
+- Android Instrumentation — success.
+
+The connected API 35 instrumentation suite passed, including the previously failing calculate → named save → History journey. PR #12 is still not merged/tagged because representative physical/local Android checks, accessibility/layout checks, real export/backup picker checks, offline verification, real screenshots, production signing, signed-artifact install/inspection, and artifact SHA-256/source-SHA evidence remain manual release blockers.
+
+### 2.15.5 branch creation and stacked validation
+
+`develop/v2.15.5` was created directly from exact green 2.15.4 SHA `4b4f0ae520cbbaf4c7cee9adb4c5dd7a813bbe80`.
+
+Draft PR #13 targets `main` so the same five pull-request workflow families execute. Because PR #12 is not yet merged, PR #13 currently displays the full stacked release history relative to `main`; the meaningful delta should always be reviewed relative to the 2.15.4 exact head until PR #12 lands.
+
+Before continuity-document updates, the meaningful maintenance delta relative to the verified 2.15.4 head touched only:
+
+- `.github/workflows/dependency-review.yml`;
+- `app/build.gradle.kts`;
+- `app/src/main/java/in/sanskar/spendcalc/platform/ExportManager.kt`;
+- `app/src/main/java/in/sanskar/spendcalc/platform/PathSafety.kt`;
+- `app/src/test/java/in/sanskar/spendcalc/platform/PathSafetyTest.kt`.
+
+`ROADMAP.md` and this file are subsequently updated to record the new state.
+
+### Concrete export/path bugs fixed for the next maintenance line
+
+The earlier filename sanitizer could return directory-like dot-only names such as `.`, `..`, or `....`. A text export using such a value could resolve to a directory path and fail with a filesystem error instead of producing a normal SpendCalc export file.
+
+The new shared `sanitizeExportFileName` policy:
+
+- replaces unsafe/path-separator characters with `_`;
+- bounds generated filenames to 96 characters;
+- falls back to `spendcalc-export.txt` for blank names;
+- falls back to `spendcalc-export.txt` for dot-only names;
+- is used by `ExportManager.createTextFile`.
+
+A second containment edge was fixed: `File.isWithinDirectory(directory)` previously returned true when the candidate was the export directory itself. It now requires the candidate to be a descendant and not equal to the root directory, so `shareFile` cannot treat the `exports/` directory object as a shareable file.
+
+JVM regressions now cover:
+
+- normal descendants accepted;
+- same-prefix sibling directories rejected;
+- export root itself rejected;
+- separators/unsafe characters neutralized;
+- blank filenames fall back;
+- dot-only filenames fall back;
+- filename length remains bounded.
+
+Focused commits:
+
+- `73e89bc8a7cf632253989c000be33a01c7c253ca` — `fix: harden export filename sanitization`
+- `fac7e3559afcbfd6b79c4555e10f5fe2a150928d` — `refactor: reuse safe export filename policy`
+- `426f26ad8031fe98e713c7b4bde3a513afee9321` — `test: cover safe export filename fallbacks`
+- `8f089493962b09212493ab55000764f2cbe81706` — `fix: reject export directory as shareable file`
+- `9935c22e8a14b184780ee9b092082bcac490938f` — `test: reject export directory root sharing`
+
+### Dependency modernization decisions
+
+The first 2.15.5 maintenance batch deliberately avoids AGP/Kotlin platform migrations and accepts only changes compatible with the current compile/runtime baseline.
+
+Accepted for exact-head validation:
+
+- AndroidX Core `1.15.0` → `1.16.0`;
+- AndroidX Test JUnit `1.2.1` → `1.3.0`;
+- Room runtime/ktx/compiler `2.6.1` → `2.8.4`;
+- `actions/dependency-review-action` v4 → v5.
+
+Room 2.8.4 remains compatible with the project Kotlin 2.0/KSP2 direction and does not imply a Room schema-version change. Database schema version stays `1` because the application schema contract itself has not changed.
+
+AndroidX Core `1.19.0` was initially evaluated but **rejected before build execution**. Its published AAR requirements need compileSdk 37 and AGP 9.1+, while SpendCalc intentionally remains compileSdk 35 / AGP 8.7.3 for this maintenance batch. Core 1.17.0 also requires a newer Android toolchain (compileSdk 36 / AGP 8.9.1+). Core 1.16.0 is therefore the controlled compatible update for the current baseline.
+
+The transient 1.19.0 evaluation commit is retained in branch history for traceability, but the current tree no longer contains that incompatible dependency.
+
+Focused dependency/version commits created during this continuation include:
+
+- `e35150fe88baae2c304c60d1f0aa7812462fdfbf` — `release: start SpendCalc 2.15.5 development` (transient metadata cut later intentionally reverted pending the real release cut)
+- `66c000d329c8fa68f0accae3d881fc70dbd477a1` — `chore(deps): update AndroidX test JUnit to 1.3.0`
+- `b390fa5fa0ba48edda12dd388398a70d60f74afd` — `chore(deps): update AndroidX Core to 1.19.0` (evaluation subsequently superseded as incompatible)
+- `9180152af80001f7079f046ac6df0f4f6631f0ce` — `chore(deps): update Room to 2.8.4`
+- `938d2b71d89ffe4be03972daa8d385a3377572bb` — `release: keep 2.15.4 metadata until next version cut`
+- `ca722c846501cc5321bc2bb3a4b628a57b1baf3f` — `chore(ci): update dependency review action to v5`
+- `875fa92ca0717ebce6f84d9451d65490fcc719a0` — `fix(deps): keep AndroidX Core compatible with SDK 35`
+- `bc89675525f708091695cd95908b57b896ee661f` — `docs: align roadmap with 2.15.4 verification and 2.15.5 hardening`
+
+### Static audit performed during runner queue
+
+The maintenance review also rechecked adjacent boundaries without making speculative changes:
+
+- CSV export already quotes cells and neutralizes leading spreadsheet formula prefixes for user text;
+- FileProvider is non-exported and exposes only `cache/exports/`;
+- `shareFile` requires canonical export-directory containment;
+- Android backup/data-extraction rules include database/DataStore data but do not include cache exports;
+- external URL/email launch paths already handle missing activities and security exceptions;
+- backup file I/O remains bounded and uses strict malformed/unmappable UTF-8 rejection;
+- backup codec remains bounded, checksummed, duplicate-ID validated, structurally validated, and schema-versioned;
+- no open repository bug/enhancement issue currently provides a higher-priority known defect.
+
+No change was made where the existing implementation already satisfied the intended security/reliability contract.
+
+### Exact-head verification state for PR #13
+
+The first PR #13 workflow set on head `ca722c846501cc5321bc2bb3a4b628a57b1baf3f` remained queued and was correctly cancelled by workflow concurrency after the AndroidX Core compatibility correction advanced the branch.
+
+The corrected head then advanced through the documentation update. Therefore, **only workflows on the exact final head after this `what_changed.md` commit count as current 2.15.5 maintenance evidence**.
+
+Required exact-head families remain:
+
+1. CI;
+2. CodeQL;
+3. Dependency Review;
+4. Repository Audit;
+5. Android Instrumentation.
+
+Do not interpret queued/cancelled/superseded runs as successful evidence. If a final-head job fails, inspect its exact steps/logs and fix or revert the concrete cause before adding another dependency batch.
+
+### Next dependency policy
+
+Do not combine the first validated 2.15.5 batch with AGP 9.x or Kotlin 2.4.x while debugging it. Once this batch is fully green, evaluate remaining upgrades independently, particularly:
+
+- Android Gradle Plugin major update;
+- Kotlin/Compose/KSP coordinated update;
+- checkout/action runner major updates;
+- Gradle Actions updates, including any runner/caching/licensing implications.
+
+Do not accept a Dependabot version merely because it is the numerically newest release. Its Android toolchain requirements must match the project or be accompanied by a separately verified toolchain migration.
+
+### 2.15.5 release-cut rule
+
+The branch name and PR represent **preparation for 2.15.5**, but the application still reports 2.15.4 by design. After 2.15.4 is actually merged/released and the first maintenance batch is verified, perform the real 2.15.5 cut as its own auditable change:
+
+1. set `versionName = "2.15.5"`;
+2. set `versionCode = 21505`;
+3. retarget all release-facing docs enforced by `scripts/check_repository.py`;
+4. update changelog/roadmap/verification/release docs together;
+5. run all five workflow families on the exact resulting SHA;
+6. still require the documented manual Android/accessibility/export/backup/offline/signing/artifact gates before tagging/publishing.
+
+---
+
 ## 2026-08-24 — 2.15.4 release preparation
 
 ### Current repository state
