@@ -4,7 +4,7 @@ This directory is the technical documentation index for SpendCalc.
 
 SpendCalc is an Android-first, Kotlin + Jetpack Compose expense calculator with precision-safe `BigDecimal` finance arithmetic, local Room/DataStore persistence, offline core functionality, receipt export, testing, CI, privacy/security guidance, and release engineering documentation.
 
-Current application release candidate: **2.0.12** (`versionCode = 20012`). Room database version and explicit backup schema version both remain **1** because compatibility schema versions are independent from the application release number.
+Current application release candidate: **2.15.4** (`versionCode = 21504`). Room database version and explicit backup schema version both remain **1** because compatibility schema versions are independent from the application release number.
 
 ## Start here
 
@@ -40,9 +40,9 @@ Choose the path that matches what you want to do.
 
 ### I want to prepare or verify a release
 
-1. [`verification.md`](verification.md) — authoritative blocking automated/manual/distribution checklist.
+1. [`verification.md`](verification.md) — authoritative blocking automated/manual/distribution checklist for the current 2.15.4 candidate.
 2. [`release.md`](release.md) — exact-commit release, signing, artifact, screenshot, and publication workflow.
-3. [`release-candidate-final-audit.md`](release-candidate-final-audit.md) — source-level 2.0.12 completeness audit.
+3. [`release-candidate-final-audit.md`](release-candidate-final-audit.md) — retained source-level audit from the earlier 2.0.12 stabilization milestone; use it as historical evidence, not current release proof.
 4. [`android-build-guide.md`](android-build-guide.md) — APK/AAB/build/install/signing details.
 5. [`command-reference.md`](command-reference.md) — command meanings and verification commands.
 6. [`testing.md`](testing.md) — automated and connected-device verification strategy.
@@ -67,7 +67,7 @@ Choose the path that matches what you want to do.
 | [`testing.md`](testing.md) | Unit, deterministic fuzz, instrumentation, Compose, Room, export/security test strategy and commands. |
 | [`verification.md`](verification.md) | Exact release-candidate automated, Android runtime, accessibility, security/privacy, signing, screenshot, and artifact gates. |
 | [`release.md`](release.md) | Versioning, exact-source release workflow, unsigned/signed artifacts, screenshots, tag/publication sequence, and rollback considerations. |
-| [`release-candidate-final-audit.md`](release-candidate-final-audit.md) | Source-level audit for 2.0.12; not a substitute for pending runtime/release evidence. |
+| [`release-candidate-final-audit.md`](release-candidate-final-audit.md) | Historical source-level audit from the 2.0.12 stabilization cycle; not a substitute for current 2.15.4 runtime/release evidence. |
 | [`troubleshooting.md`](troubleshooting.md) | JDK, SDK, Gradle, dependency, KSP/Room, emulator/device, APK/install, signing, export, and release diagnosis. |
 | [`accessibility.md`](accessibility.md) | Accessibility implementation expectations plus TalkBack/font-scale/motion/contrast/touch/layout release checks. |
 | [`design-system.md`](design-system.md) | Material/Compose design tokens, layout conventions, typography/theme behavior, and UI consistency rules. |
@@ -136,8 +136,8 @@ Full explanations are in [`android-build-guide.md`](android-build-guide.md). Pro
 
 ## Current technical baseline
 
-- Application release candidate: 2.0.12
-- Android versionCode: 20012
+- Application release candidate: 2.15.4
+- Android versionCode: 21504
 - Room database schema: 1
 - Explicit backup schema: 1
 - Language: Kotlin 2.0.21
