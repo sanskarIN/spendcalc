@@ -9,11 +9,13 @@ internal fun File.isWithinDirectory(directory: File): Boolean {
 }
 
 internal fun sanitizeExportFileName(value: String): String {
+    if (value.isBlank()) return DEFAULT_EXPORT_FILE_NAME
+
     val sanitized = value
         .replace(Regex("[^A-Za-z0-9._-]"), "_")
         .take(MAX_EXPORT_FILE_NAME_CHARS)
 
-    return if (sanitized.isBlank() || sanitized.all { it == '.' }) {
+    return if (sanitized.all { it == '.' }) {
         DEFAULT_EXPORT_FILE_NAME
     } else {
         sanitized
