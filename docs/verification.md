@@ -1,148 +1,399 @@
 # Release Candidate Verification
 
-This checklist is the source of truth for deciding whether an exact SpendCalc commit is ready to tag. A configured workflow is not counted as passed until GitHub reports an acceptable successful conclusion for the final commit. Source completeness, automated checks, connected-emulator checks, manual Android checks, signing, and screenshots are distinct evidence classes.
+This checklist is the source of truth for deciding whether an exact SpendCalc commit is ready to tag and publish.
 
-The current application release target is **2.0.12** with Android `versionCode` **20012**. Room database and explicit backup schema versions remain separate compatibility dimensions.
+The current application release target is **2.15.4** with Android `versionCode` **21504**. The Room database version and explicit backup schema version remain **1** because those compatibility versions are independent from the application release number.
 
-## Automated pull-request checks
+A configured workflow is not counted as passed until GitHub reports a successful conclusion for the exact final release-candidate commit. Source review, automated CI, connected Android execution, manual runtime checks, accessibility review, signing, screenshots, and final artifact inspection are separate evidence classes.
 
-- [ ] Formatting guard passes.
+---
+
+## Exact-head rule
+
+- [ ] Record the exact candidate commit SHA.
+- [ ] Confirm the candidate branch is not behind its intended base branch.
+- [ ] Confirm no newer commit exists after the workflow evidence being used.
+- [ ] If any source/documentation/version commit is added, discard older runs as final release proof and verify the new exact head.
+- [ ] Tag only the exact commit that passed every blocking gate.
+
+---
+
+## Release metadata
+
+- [ ] `app/build.gradle.kts` contains `versionName = "2.15.4"`.
+- [ ] `app/build.gradle.kts` contains `versionCode = 21504`.
+- [ ] Application ID remains `in.sanskar.spendcalc`.
+- [ ] `minSdk` remains 26 unless an intentional compatibility decision changes it.
+- [ ] `targetSdk`/`compileSdk` remain 35 unless an intentional platform upgrade changes them.
+- [ ] Room schema remains version 1 unless a real database compatibility change requires a migration.
+- [ ] Explicit backup schema remains version 1 unless a real serialized-format compatibility change requires it.
+- [ ] Documentation index/build guide/command reference agree on 2.15.4 / 21504.
+- [ ] No stale versioned signed-APK example is presented as the current candidate.
+
+---
+
+## Repository guard checks
+
+Run from the repository root:
+
+```bash
+python3 scripts/check_format.py
+python3 scripts/check_kotlin_namespace.py
+python3 scripts/check_documentation_coverage.py
+python3 scripts/check_android_resources.py
+python3 scripts/check_android_security.py
+python3 scripts/check_repository.py
+python3 scripts/scan_secrets.py
+```
+
+Required evidence:
+
+- [ ] Formatting/text-hygiene guard passes.
 - [ ] Kotlin namespace/package guard passes.
-- [ ] Tracked-file documentation coverage guard passes: every `git ls-files` path appears exactly once in `docs/codebase-reference.md`, with no stale entries.
-- [ ] Android default string-resource reference/duplicate-name audit passes.
-- [ ] Android local-first manifest/FileProvider security audit passes.
-- [ ] Repository required-file/metadata/local Markdown-link audit passes, including the documentation index, Android build guide, command reference, exhaustive codebase reference, documentation map, and documentation-coverage guard.
-- [ ] Repository audit derives application `versionName`/`versionCode` from `app/build.gradle.kts`, confirms the build/index/command documents match them, and finds no stale semantic-version name in signed-APK examples.
+- [ ] Tracked-file documentation coverage passes with no missing/stale/duplicate inventory entries.
+- [ ] Android default string-resource/reference audit passes.
+- [ ] Android local-first manifest/FileProvider security guard passes.
+- [ ] Repository required-file/metadata/local-link/release-version audit passes.
 - [ ] Common secret-pattern scan passes.
-- [ ] JVM unit and deterministic fuzz/regression tests pass, including UTF-16 saved-name boundary coverage.
-- [ ] Persistence-invariant tests pass for history/template IDs, timestamps, names, currencies, split/result bounds, template finance settings, and duplicate replacement IDs.
-- [ ] Backup codec rejects invalid persisted-record envelopes, noncanonical in-memory backup records, and checksum-valid decoded records whose persisted currency text is not canonical.
-- [ ] Strict backup byte-decoder regression rejects malformed/unmappable UTF-8 rather than replacing invalid bytes.
-- [ ] PDF line-truncation regression preserves valid UTF-16 when a supplementary Unicode character crosses the ellipsis boundary.
-- [ ] Repository replace-all tests prove invalid or duplicate candidates are rejected before existing data is replaced.
-- [ ] Debug instrumentation tests compile with `assembleDebugAndroidTest`.
+
+---
+
+## JVM/unit/regression coverage
+
+Run:
+
+```bash
+gradle --no-daemon testDebugUnitTest
+```
+
+Verify:
+
+- [ ] Finance engine arithmetic/rounding/validation tests pass.
+- [ ] Deterministic finance fuzz/regression tests pass.
+- [ ] History repository tests pass.
+- [ ] Template repository tests pass.
+- [ ] Settings/state feedback tests pass.
+- [ ] Backup codec/validation/corruption tests pass.
+- [ ] Persistence invariant/duplicate-ID tests pass.
+- [ ] Saved-name Unicode-boundary tests pass.
+- [ ] Strict malformed/unmappable UTF-8 backup input tests pass.
+- [ ] Noncanonical persisted-currency rejection tests pass.
+- [ ] CSV formula-neutralization tests pass.
+- [ ] PDF Unicode truncation regressions pass.
+- [ ] Path-containment and SafeLogger redaction tests pass.
+
+---
+
+## Android test compilation and lint
+
+Run:
+
+```bash
+gradle --no-daemon assembleDebugAndroidTest
+gradle --no-daemon lint
+```
+
+Verify:
+
+- [ ] Instrumentation test APK compiles.
 - [ ] Full Android lint passes.
+- [ ] No new release-blocking lint warning is ignored without rationale.
+
+---
+
+## Debug/release compilation
+
+Run:
+
+```bash
+gradle --no-daemon assembleDebug
+gradle --no-daemon assembleRelease
+gradle --no-daemon bundleRelease
+```
+
+Verify:
+
 - [ ] Debug APK compiles.
-- [ ] Release APK compiles with the repository's current release configuration.
-- [ ] CodeQL Java/Kotlin analysis completes without a release-blocking finding.
-- [ ] Dependency review completes without a release-blocking finding.
-- [ ] Repository Audit workflow passes, including documentation coverage, required-file/link/release-metadata consistency, Android string-resource checks, and the Android local-first security guard.
+- [ ] Release APK compiles under the current shrinking/minification configuration.
+- [ ] Release AAB compiles.
+- [ ] Generated artifacts are taken from the exact candidate source SHA.
 
-## Automated connected Android runtime checks
+---
 
-These checks execute the real Android instrumentation suite instead of only compiling it. The `Android Instrumentation` workflow uses a hardware-accelerated API 35 `google_apis` x86_64 emulator and must succeed for the exact release-candidate commit.
+## GitHub Actions gates
 
-- [ ] Android Instrumentation workflow completes successfully for the exact final commit.
-- [ ] `connectedDebugAndroidTest` passes on the automated API 35 emulator.
-- [ ] Room history/template/backup integration tests pass on the emulator.
-- [ ] Compose calculator, named-history-save/Unicode-boundary dialog, template-name/Unicode-boundary dialog, History label-filter, and Settings busy-state tests pass on the emulator.
-- [ ] Real-activity calculate -> named save -> History journey passes on the emulator and verifies both the saved label and amount.
-- [ ] Failed connected-test runs preserve Android instrumentation reports as workflow artifacts for diagnosis.
+For the exact final head require:
 
-Automated emulator execution strengthens runtime evidence but does not replace the manual accessibility, layout, system-picker/share, splash, offline, or representative physical-device checks below.
+- [ ] CI succeeds.
+- [ ] CodeQL succeeds without a release-blocking finding.
+- [ ] Dependency Review succeeds without a release-blocking finding.
+- [ ] Repository Audit succeeds.
+- [ ] Android Instrumentation succeeds.
 
-## Documentation consistency checks
+Do not use an older successful commit as final release evidence after the branch advances.
 
-These are source/repository checks and do not replace runtime/manual verification.
+---
 
-- [ ] `docs/README.md` is the current documentation index and links the build, command, setup, testing, security/privacy, and release paths without creating a competing source of truth.
-- [ ] `docs/android-build-guide.md` identifies the current `2.0.12` / `versionCode 20012` candidate, uses current signed-artifact examples, and keeps application versioning separate from Room/backup schema compatibility.
-- [ ] `docs/command-reference.md` identifies the current release metadata where relevant and documents every repository guard command used by the engineering workflow.
-- [ ] `docs/codebase-reference.md` describes every tracked root/configuration/GitHub/build/source/test/resource/script/policy/documentation file exactly once.
-- [ ] `docs/documentation-map.md` correctly identifies the authoritative document for public behavior, architecture, build/commands, persistence/backup/security/privacy, testing, maintenance, release, and active-work continuity.
-- [ ] New/renamed/deleted tracked files have matching codebase-reference changes in the same release candidate.
-- [ ] `README.md` and `docs/features.md` describe implemented behavior and limits rather than roadmap-only work.
-- [ ] `docs/architecture.md`, `docs/development.md`, and `docs/testing.md` agree on dependency boundaries, persistence validation, build tooling, repository guards, and quality commands.
-- [ ] `docs/persistence-invariants.md`, `docs/security-backup.md`, and backup/repository tests agree on the persisted-record contract, strict UTF-8 document decoding, and canonical persisted-currency behavior.
-- [ ] `PRIVACY.md`, `docs/privacy-backup.md`, manifest backup/data-extraction XML, and explicit-backup docs do not contradict each other.
-- [ ] `CHANGELOG.md`, `ROADMAP.md`, `docs/release.md`, and this checklist all identify `2.0.12` as the current target without treating the app version as a Room/backup schema migration.
-- [ ] `what_changed_final.md` and `what_changed_latest.md` remain compatibility pointers to canonical `what_changed.md`, not independent/current release-state documents.
-- [ ] No permanent document falsely promotes a queued/pending/cancelled/superseded workflow to successful verification.
+## Connected Android instrumentation
 
-## Android device/emulator manual checks
+The automated `Android Instrumentation` workflow runs an API 35 Google APIs x86_64 emulator.
 
-These are human/representative-runtime release checks. Automated API 35 instrumentation success does not by itself satisfy them.
+Required evidence:
 
-- [ ] Re-run `connectedDebugAndroidTest` on a representative local emulator or physical device.
-- [ ] Fresh install shows the branded SpendCalc launch splash and then onboarding.
-- [ ] Returning install does not show a false onboarding flash while preferences load.
-- [ ] Calculator, History, Templates, Settings, and About navigation work.
-- [ ] Saving with a meaningful history label stores that label and History search finds the entry by it; blank labels fall back to `Calculation`.
-- [ ] Pasting a Unicode-heavy saved name near the 120-character boundary does not leave malformed text, and the resulting record can be backed up and restored successfully.
-- [ ] History search, individual delete + Undo, clear-all confirmation, and retention settings work.
-- [ ] History search stops at the documented 120-character limit without splitting a valid surrogate pair.
-- [ ] Template save/load/delete + Undo work, including a Unicode-heavy template name near the saved-name boundary.
-- [ ] Template save dialog explains the 120-character name limit and its `Save` confirmation is distinct from the underlying `Save template` action.
-- [ ] Calculator stops at 100 editable line items, disables Add item, and explains the limit.
-- [ ] Text, CSV, and PDF exports open the expected Android share flow.
-- [ ] PDF export with a long Unicode item name near the truncation boundary renders without malformed/dangling surrogate text.
-- [ ] Exported cache files remain shareable only through the intended FileProvider flow.
-- [ ] Backup export opens the document creator; backup restore opens the document picker and requires confirmation before replacement.
-- [ ] Backup progress is visible during real work and duplicate backup actions remain disabled until completion.
-- [ ] Restored history, including exact accepted history labels, templates, theme/accessibility preferences, and retention preference match the selected backup.
-- [ ] A deliberately malformed UTF-8 backup document is rejected without replacing current data.
-- [ ] A checksum-valid backup edited to use noncanonical persisted currency text is rejected without replacing current data.
-- [ ] Core calculation/history/template behavior works with network disabled.
+- [ ] Emulator boots successfully.
+- [ ] `connectedDebugAndroidTest` completes successfully.
+- [ ] Room history/template/backup integration tests pass.
+- [ ] Calculator Compose tests pass.
+- [ ] History search/filter tests pass.
+- [ ] Settings busy/progress state tests pass.
+- [ ] Named-history save dialog tests pass.
+- [ ] Template-name dialog tests pass.
+- [ ] Unicode-boundary dialog cases pass.
+- [ ] Real-activity calculate → named save → History journey passes.
+- [ ] The journey verifies both the saved name and expected amount without assuming amount text appears in exactly one semantics node.
+- [ ] Failed runs, if any, preserve instrumentation reports for diagnosis.
 
-## Accessibility and responsive-layout checks
+Automated emulator success does not replace manual representative-device/accessibility/system-picker/share checks.
+
+---
+
+## Manual Android smoke checks
+
+- [ ] Re-run connected tests on a representative local emulator or physical device.
+- [ ] Fresh install shows the branded splash and onboarding.
+- [ ] Returning install avoids a false onboarding flash while preferences load.
+- [ ] Calculator navigation works.
+- [ ] History navigation works.
+- [ ] Templates navigation works.
+- [ ] Settings navigation works.
+- [ ] About navigation works.
+- [ ] About reports version 2.15.4.
+
+---
+
+## Calculator behavior
+
+- [ ] Add/edit/remove expense items.
+- [ ] Calculator enforces the documented 100-item limit.
+- [ ] Nonnegative amount validation works.
+- [ ] Percentage validation works.
+- [ ] Currency-code validation works.
+- [ ] Exchange-rate validation works.
+- [ ] Split-count validation works.
+- [ ] Discount/tax/tip/service-charge ordering matches documented finance policy.
+- [ ] Currency conversion is manual/local and precision-safe.
+- [ ] Split display/rounding remains consistent with domain results.
+
+---
+
+## History behavior
+
+- [ ] Save a calculation with a meaningful label.
+- [ ] Blank save label falls back to the safe default name.
+- [ ] History search finds the saved label.
+- [ ] History search respects its documented length bound without splitting valid surrogate pairs.
+- [ ] Individual deletion works.
+- [ ] Undo after individual deletion works.
+- [ ] Clear-all requires confirmation.
+- [ ] Retention settings/purge behavior work.
+- [ ] Unicode-heavy labels near the saved-name boundary remain well-formed and restorable.
+
+---
+
+## Template behavior
+
+- [ ] Save a template.
+- [ ] Load a template and verify its finance fields.
+- [ ] Delete a template.
+- [ ] Undo template deletion.
+- [ ] Template name limit/guidance is correct.
+- [ ] Dialog confirmation wording is not confused with the underlying `Save template` action.
+- [ ] Unicode-heavy template names near the boundary remain well-formed and restorable.
+
+---
+
+## Export/share behavior
+
+- [ ] Plain-text receipt export opens the expected Android share flow.
+- [ ] CSV export opens the expected Android share flow.
+- [ ] CSV text cells remain protected against spreadsheet formula interpretation.
+- [ ] PDF receipt export opens the expected share flow.
+- [ ] Long Unicode item names do not create malformed/dangling surrogate text in PDF truncation.
+- [ ] Shared cache files use only the intended non-exported FileProvider path.
+- [ ] No unintended broad filesystem path becomes shareable.
+
+---
+
+## Backup/restore behavior
+
+- [ ] Backup export opens Android's document creator.
+- [ ] Restore opens Android's document picker.
+- [ ] Restore requires confirmation before replacing current data.
+- [ ] Backup/restore busy/progress state is visible during actual work.
+- [ ] Duplicate backup actions remain disabled while work is active.
+- [ ] History round-trips.
+- [ ] Exact accepted history labels round-trip.
+- [ ] Templates round-trip.
+- [ ] Theme preference round-trips.
+- [ ] Accessibility preferences round-trip.
+- [ ] Retention preference round-trips.
+- [ ] Malformed UTF-8 backup input is rejected without replacing current data.
+- [ ] Checksum-invalid backup input is rejected.
+- [ ] Checksum-valid but structurally invalid persisted records are rejected.
+- [ ] Noncanonical persisted currency text is rejected rather than silently repaired.
+- [ ] Duplicate IDs in replacement collections are rejected before destructive replacement.
+- [ ] Failed multi-store restore does not silently erase valid existing state.
+
+The backup SHA-256 protects against accidental corruption; it is not a signature/MAC/authorship proof.
+
+---
+
+## Offline/local-first behavior
+
+With network disabled verify:
+
+- [ ] Calculation works.
+- [ ] History works.
+- [ ] Templates work.
+- [ ] Settings work.
+- [ ] Text/CSV/PDF generation works.
+- [ ] Core functionality requires no account/API key.
+- [ ] Manifest still has no unintended `INTERNET` permission.
+
+---
+
+## Accessibility
 
 - [ ] Light theme reviewed.
 - [ ] Dark theme reviewed.
 - [ ] System theme reviewed.
 - [ ] App large-text preference reviewed.
-- [ ] Large Android system font scale reviewed, including named-history and template save dialogs.
-- [ ] Reduced-motion preference verified to remove navigation transitions.
-- [ ] TalkBack order, labels, buttons, dialogs, navigation, progress state, and list actions reviewed.
-- [ ] Named-history save dialog title, optional label field, supporting text, Save, and Cancel are announced in a logical order.
-- [ ] Template save dialog title, name field, length guidance, Save, and Cancel are announced in a logical order without duplicate `Save template` ambiguity.
-- [ ] Primary navigation destinations are announced once rather than duplicating icon + label names.
-- [ ] Validation/error meaning remains understandable without color alone.
+- [ ] Large Android system font scale reviewed.
+- [ ] Reduced-motion preference removes/reduces navigation transitions as intended.
+- [ ] TalkBack traversal order reviewed.
+- [ ] Navigation destinations are announced logically without fake duplicate accessibility labels added only for testing.
+- [ ] Named-history dialog title/field/supporting text/actions are announced logically.
+- [ ] Template dialog title/field/limit guidance/actions are announced logically.
+- [ ] Backup progress state is announced appropriately.
+- [ ] Validation meaning is understandable without color alone.
+- [ ] Touch targets are appropriate.
+- [ ] Destructive-action wording is clear.
+
+---
+
+## Responsive layout
+
 - [ ] Small phone layout reviewed.
+- [ ] Typical phone layout reviewed.
+- [ ] Large phone layout reviewed.
 - [ ] Tablet/wide layout reviewed.
-- [ ] Touch targets and destructive-action wording reviewed.
+- [ ] Large font scale does not hide essential actions.
+- [ ] Dialogs remain usable at supported widths/font scales.
 
-## Data, privacy, and security checks
+---
 
-- [ ] No private test data appears in committed assets or screenshots.
-- [ ] No production signing material, secrets, tokens, or local configuration are committed.
-- [ ] `.env.example` remains non-secret documentation; core operation still requires no remote API key.
-- [ ] App manifest still has no `INTERNET` permission unless a future feature explicitly requires and documents it.
-- [ ] FileProvider remains non-exported and limited to the private export cache path.
-- [ ] Canonical path-containment regression tests pass.
-- [ ] CSV formula-neutralization regression/fuzz tests pass.
-- [ ] Backup size/line/record/text/decimal/schema/checksum validation tests pass.
-- [ ] Backup document bytes are decoded with malformed/unmappable UTF-8 configured to report/fail closed.
-- [ ] Backup decode does not uppercase/repair noncanonical persisted currency text before structural validation.
-- [ ] Saved history/template names produced through normal save operations stay within the shared 120-character contract and remain well-formed UTF-16.
-- [ ] Valid accepted history/template names entering restore/replace paths are preserved exactly rather than silently trimmed or rewritten.
-- [ ] Persisted record IDs are nonblank, bounded, valid Unicode, and unique inside replacement collections.
-- [ ] Persisted timestamps are nonnegative and stored currencies are canonical uppercase three-letter values.
-- [ ] Stored history results remain nonnegative and inside the supported saved-result shape/split bounds.
-- [ ] Template finance settings are validated through `CalculatorEngine` even when repository callers bypass the ViewModel.
-- [ ] Invalid or duplicate replacement records fail before DAO replacement and do not erase existing data.
-- [ ] Backup encoding applies the same persisted-record envelope rules as repositories instead of silently canonicalizing malformed in-memory backup objects.
-- [ ] Malformed Unicode saved names fail closed, while a valid emoji crossing the saved-name boundary is truncated safely and still round-trips through backup encoding/decoding.
-- [ ] SafeLogger redaction tests pass, including locale-independent sensitive-key normalization.
-- [ ] Android system-managed backup/device-transfer behavior matches `PRIVACY.md` and `docs/privacy-backup.md`.
-- [ ] Explicit backup documentation correctly states that the SHA-256 checksum detects accidental corruption but is not a signature/MAC/authorship proof.
+## Privacy/security
 
-## Release checks
+- [ ] No private test data appears in committed screenshots/assets.
+- [ ] No production signing key, password, token, or local secret is committed.
+- [ ] `.env.example` remains non-secret documentation only.
+- [ ] Core runtime requires no remote API key.
+- [ ] FileProvider remains non-exported and path-constrained.
+- [ ] Android system-managed backup/device-transfer behavior agrees with `PRIVACY.md` and related docs.
+- [ ] Explicit backup docs accurately describe checksum limitations.
+- [ ] Logging remains redacted for sensitive keys/data.
 
-- [ ] `README.md`, `docs/README.md`, `CHANGELOG.md`, `ROADMAP.md`, permanent `docs/`, and `what_changed.md` match actual behavior/status.
-- [ ] `docs/android-build-guide.md` and `docs/command-reference.md` match `app/build.gradle.kts` release metadata and use 2.0.12 signed-artifact examples where a versioned filename is shown.
-- [ ] `docs/codebase-reference.md` and `docs/documentation-map.md` are current for the exact release commit.
-- [ ] `docs/persistence-invariants.md` matches the repository and backup codec implementation.
-- [ ] `app/build.gradle.kts` contains `versionName = "2.0.12"` and `versionCode = 20012`.
-- [ ] Room database version and backup schema version were changed only if a real compatibility change required them; the app version bump alone is not such a reason.
-- [ ] Any committed Room schema history matches the database version/migration contract; future schema files are individually documented in the file reference.
-- [ ] Production signing material remains outside source control and is supplied by the release environment only.
-- [ ] Real release screenshots are captured from the verified build and use fictional data only.
-- [ ] The signed artifact is produced from the exact verified/tagged commit.
-- [ ] Built artifact inspection confirms application ID `in.sanskar.spendcalc`, `versionName 2.0.12`, `versionCode 20012`, expected SDK metadata, and intended permissions before distribution.
-- [ ] The signed artifact installs and reports `2.0.12` in About.
-- [ ] Artifact checksum/source-SHA relationship is recorded/verified.
-- [ ] `v2.0.12` is created only after all release-blocking automated and manual items above are complete.
+---
 
-## Current status
+## Production signing
 
-The feature implementation, persistence/export hardening, final platform fixes, complete Android build/command documentation, release-document drift guards, deep source-level documentation work, and API 35 connected-emulator workflow are present on the release-candidate branch. This checklist intentionally leaves boxes unchecked until the exact final commit's corresponding GitHub runs or real manual/distribution activities provide the required evidence. Automated emulator success is not a substitute for manual accessibility, layout, picker/share, screenshot, signing, or artifact verification.
+Production signing material stays outside source control.
+
+- [ ] Build unsigned/unsigned-equivalent release artifact from the exact verified source SHA.
+- [ ] Align the APK if the chosen signing flow requires it.
+- [ ] Sign with the controlled production key.
+- [ ] Verify the signature/certificate with `apksigner`.
+- [ ] Sign/prepare the AAB according to the chosen store workflow.
+- [ ] Do not expose signing passwords in shell history/CI logs/issues/docs.
+
+Current signed APK example:
+
+```text
+SpendCalc-2.15.4-release.apk
+```
+
+---
+
+## Artifact inspection
+
+- [ ] Inspect package identity: `in.sanskar.spendcalc`.
+- [ ] Inspect `versionName`: 2.15.4.
+- [ ] Inspect `versionCode`: 21504.
+- [ ] Inspect `minSdk`: 26.
+- [ ] Inspect `targetSdk`: 35.
+- [ ] Inspect intended permissions.
+- [ ] Install the exact signed artifact on a representative device.
+- [ ] About reports 2.15.4 from the installed signed artifact.
+- [ ] Record SHA-256 checksum.
+- [ ] Record exact source commit SHA.
+- [ ] Preserve the checksum ↔ source-SHA relationship in release records.
+
+---
+
+## Upgrade testing
+
+When a previous production-signed public release exists:
+
+- [ ] Install the prior public release.
+- [ ] Create representative local data/preferences.
+- [ ] Upgrade in place to the 2.15.4 production-signed artifact.
+- [ ] Existing history/templates/preferences survive.
+- [ ] Backup/export still work.
+- [ ] About reports 2.15.4.
+
+Do not claim upgrade verification before this is executed with real matching production signing identity/artifacts.
+
+---
+
+## Screenshots
+
+- [ ] Capture screenshots only from the verified 2.15.4 build.
+- [ ] Use fictional data only.
+- [ ] Capture representative Calculator/History/Templates/Settings/About states where needed.
+- [ ] Review screenshots for private data, notifications, account identifiers, tokens, local paths, or other accidental leakage.
+- [ ] Follow `docs/assets/screenshots/README.md`.
+
+---
+
+## Dependency-update isolation
+
+- [ ] Do not mix unrelated major dependency jumps into 2.15.4 merely because Dependabot opened them.
+- [ ] Evaluate AGP/Kotlin/KSP/Room/AndroidX/Actions major updates independently.
+- [ ] For each dependency PR, inspect breaking changes, runner/runtime requirements, licenses/terms, build compatibility, and Android runtime regressions.
+- [ ] Merge only upgrades that independently pass their compatibility gates.
+
+---
+
+## Final tag/publication gate
+
+Before creating `v2.15.4`:
+
+- [ ] Exact-head CI green.
+- [ ] Exact-head CodeQL green.
+- [ ] Exact-head Dependency Review green.
+- [ ] Exact-head Repository Audit green.
+- [ ] Exact-head Android Instrumentation green.
+- [ ] Manual Android checks complete.
+- [ ] Accessibility/layout checks complete.
+- [ ] Export/share checks complete.
+- [ ] Backup/restore checks complete.
+- [ ] Offline/privacy/security checks complete.
+- [ ] Real screenshots complete.
+- [ ] Production signing complete.
+- [ ] Signed-artifact install/version/permission inspection complete.
+- [ ] Artifact SHA-256/source-SHA recorded.
+- [ ] Release documentation/changelog/roadmap/continuity state matches actual evidence.
+
+Only then tag and publish **v2.15.4**.
+
+**Made by the Sanskar**
