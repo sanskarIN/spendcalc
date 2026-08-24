@@ -5,7 +5,7 @@ import java.io.File
 internal fun File.isWithinDirectory(directory: File): Boolean {
     val root = directory.canonicalFile.toPath()
     val candidate = canonicalFile.toPath()
-    return candidate.startsWith(root)
+    return candidate != root && candidate.startsWith(root)
 }
 
 internal fun sanitizeExportFileName(value: String): String {
