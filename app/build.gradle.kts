@@ -13,8 +13,8 @@ android {
         applicationId = "in.sanskar.spendcalc"
         minSdk = 26
         targetSdk = 35
-        versionCode = 21505
-        versionName = "2.15.5"
+        versionCode = 21504
+        versionName = "2.15.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
