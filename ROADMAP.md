@@ -2,7 +2,7 @@
 
 The roadmap prioritizes correctness, privacy, accessibility, maintainability, and verifiable documentation over feature count.
 
-Current Android release target: **2.15.4** (`versionCode 21504`). Room database and explicit backup schema compatibility versions remain `1` unless their actual contracts change.
+Current verified Android release candidate: **2.15.4** (`versionCode 21504`). Room database and explicit backup schema compatibility versions remain `1` unless their actual contracts change. The next maintenance line is being prepared on `develop/v2.15.5`; application metadata remains at 2.15.4 until the 2.15.4 release is merged/published and the next release cut is intentionally performed.
 
 ## Phase 0 — Repository foundation
 
@@ -11,7 +11,7 @@ Current Android release target: **2.15.4** (`versionCode 21504`). Room database 
 - [x] Architecture, privacy, security, and support direction.
 - [x] Pull-request CI, CodeQL, dependency review, repository audit, namespace check, formatting check, Android resource/security checks, documentation coverage, and secret-pattern scan are configured.
 - [x] Exhaustive tracked-file reference and documentation source-of-truth map are maintained as required repository artifacts.
-- [ ] Current 2.15.4 release-candidate workflow results are green on the exact final PR head.
+- [x] 2.15.4 release-candidate workflow results are green on exact head `4b4f0ae520cbbaf4c7cee9adb4c5dd7a813bbe80`.
 
 ## Phase 1 — Core calculator
 
@@ -56,6 +56,8 @@ Current Android release target: **2.15.4** (`versionCode 21504`). Room database 
 - [x] Calculator eager-composition budget capped at 100 editable expense items with visible feedback.
 - [x] Named-history and template save dialogs expose the 120-character/Unicode-safe naming contract and unambiguous Save/Cancel actions.
 - [x] Real-activity instrumentation journey updated so repeated formatted amount semantics do not create a false uniqueness failure.
+- [x] Export filename sanitization rejects blank/dot-only directory-like names and bounds filenames.
+- [x] Export containment rejects the export directory itself as a shareable file.
 - [ ] Add real release screenshots from a verified 2.15.4 build using fictional data.
 - [ ] Profile very large history/template collections if real-device measurements identify a need.
 - [ ] Optional receipt notes/categories remain a post-2.15.4 enhancement, not a release blocker.
@@ -76,7 +78,8 @@ Current Android release target: **2.15.4** (`versionCode 21504`). Room database 
 - [x] Real-activity calculate/named-save/history journey smoke test.
 - [x] Instrumentation-test compilation in CI.
 - [x] Fast guard rejects any tracked file omitted/stale/duplicated in exhaustive codebase documentation.
-- [ ] Execute the Android instrumentation suite successfully on the exact final 2.15.4 candidate.
+- [x] Android instrumentation suite succeeded on exact 2.15.4 candidate head `4b4f0ae520cbbaf4c7cee9adb4c5dd7a813bbe80`.
+- [x] Export path/filename regression tests cover root rejection, separator neutralization, dot-only fallback, and filename length bounds.
 - [ ] Re-run connected tests on a representative physical device/local emulator.
 - [ ] Add database migration tests when schema version 2 exists.
 - [ ] Add a macrobenchmark/profile module only if measured performance warrants it.
@@ -90,11 +93,11 @@ Current Android release target: **2.15.4** (`versionCode 21504`). Room database 
 - [x] Android application metadata is set to `2.15.4` with monotonic `versionCode` `21504`.
 - [x] Room database and explicit backup schema compatibility versions remain independent from the app release number.
 - [x] Documentation index, root README, Android build guide, command reference, release guide, verification checklist, changelog, and roadmap are retargeted to 2.15.4.
-- [ ] Confirm CI is green on the exact final 2.15.4 commit.
-- [ ] Confirm CodeQL is green on the exact final 2.15.4 commit.
-- [ ] Confirm Dependency Review is green on the exact final 2.15.4 commit.
-- [ ] Confirm Repository Audit is green on the exact final 2.15.4 commit.
-- [ ] Confirm Android Instrumentation is green on the exact final 2.15.4 commit.
+- [x] CI is green on exact 2.15.4 head `4b4f0ae520cbbaf4c7cee9adb4c5dd7a813bbe80`.
+- [x] CodeQL is green on exact 2.15.4 head `4b4f0ae520cbbaf4c7cee9adb4c5dd7a813bbe80`.
+- [x] Dependency Review is green on exact 2.15.4 head `4b4f0ae520cbbaf4c7cee9adb4c5dd7a813bbe80`.
+- [x] Repository Audit is green on exact 2.15.4 head `4b4f0ae520cbbaf4c7cee9adb4c5dd7a813bbe80`.
+- [x] Android Instrumentation is green on exact 2.15.4 head `4b4f0ae520cbbaf4c7cee9adb4c5dd7a813bbe80`.
 - [ ] Complete representative manual Android checks.
 - [ ] Complete TalkBack/large-font/reduced-motion accessibility review.
 - [ ] Complete phone and tablet/wide layout review.
@@ -126,13 +129,15 @@ Current Android release target: **2.15.4** (`versionCode 21504`). Room database 
 
 ## Phase 7 — Dependency modernization after 2.15.4 stabilization
 
-Major dependency updates are deliberately isolated from the current release candidate unless required to fix a blocker.
+Major dependency updates are deliberately isolated from the verified 2.15.4 release candidate unless required to fix a blocker.
 
-- [ ] Evaluate Android Gradle Plugin major update independently.
+- [ ] Evaluate Android Gradle Plugin major update independently; do not couple it to the first 2.15.5 maintenance batch.
 - [ ] Evaluate Kotlin major/minor update together with Compose/KSP compatibility.
-- [ ] Evaluate Room update with compiler/runtime/instrumentation compatibility checks.
-- [ ] Evaluate AndroidX Core/Test updates independently.
-- [ ] Evaluate GitHub Actions major updates for runner/Node/licensing/cache behavior.
+- [x] Evaluate Room 2.8.4 on the 2.15.5 maintenance branch with compiler/runtime/instrumentation verification pending on the exact final maintenance head.
+- [x] Evaluate AndroidX Core compatibility: 1.19.0 was rejected because it requires compileSdk 37 / AGP 9.1+; 1.16.0 is the selected compatible update for compileSdk 35 / AGP 8.7.3.
+- [x] Evaluate AndroidX Test JUnit 1.3.0 for the current minSdk baseline; exact-head instrumentation verification remains required.
+- [x] Evaluate Dependency Review Action v5 on the maintenance branch; exact-head workflow verification remains required.
+- [ ] Evaluate remaining GitHub Actions major updates independently for runner/Node/licensing/cache behavior.
 - [ ] Close/supersede Dependabot PRs that become obsolete after controlled upgrades.
 - [ ] Re-run full CI and Android instrumentation for each accepted dependency batch.
 
@@ -150,5 +155,26 @@ Planned preparation:
 - [ ] Define import/export compatibility boundaries with Android without weakening validation.
 - [ ] Add dedicated extension build/test/lint/security workflow when implementation begins.
 - [ ] Keep Android production signing and browser-extension publishing credentials separate.
+
+## Phase 9 — 2.15.5 maintenance preparation
+
+The first 2.15.5 batch is intentionally stacked on the exact green 2.15.4 candidate and is tracked in draft PR #13. It must not be merged ahead of PR #12.
+
+- [x] Create `develop/v2.15.5` from exact green 2.15.4 head `4b4f0ae520cbbaf4c7cee9adb4c5dd7a813bbe80`.
+- [x] Open draft stacked PR #13 for next-version validation.
+- [x] Harden export filename sanitization for blank and dot-only names.
+- [x] Reject the export directory root itself from the shareable-file containment predicate.
+- [x] Add JVM regression tests for the new export path policy.
+- [x] Update AndroidX Core from 1.15.0 to compatible 1.16.0; explicitly reject incompatible 1.19.0 for the current SDK/AGP baseline.
+- [x] Update AndroidX Test JUnit from 1.2.1 to 1.3.0.
+- [x] Update Room runtime/ktx/compiler from 2.6.1 to 2.8.4 without changing database schema version 1.
+- [x] Update Dependency Review Action from v4 to v5.
+- [ ] Confirm Repository Audit on the exact final 2.15.5 maintenance head.
+- [ ] Confirm CI/unit/fuzz/lint/debug/release compilation on the exact final 2.15.5 maintenance head.
+- [ ] Confirm CodeQL on the exact final 2.15.5 maintenance head.
+- [ ] Confirm Dependency Review on the exact final 2.15.5 maintenance head.
+- [ ] Confirm Android Instrumentation on the exact final 2.15.5 maintenance head.
+- [ ] Evaluate the next dependency batch only after this one is completely green.
+- [ ] After 2.15.4 is actually merged/released, retarget application metadata and release-facing documentation to `2.15.5` / `21505` as a separate intentional release-cut change.
 
 Future work should enter a tagged release only after the exact commit being released passes both automated checks and the documented manual Android/accessibility/export/backup/signing/screenshot gates.
