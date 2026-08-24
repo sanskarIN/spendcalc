@@ -71,6 +71,7 @@ class PathSafetyTest {
     @Test
     fun `blank export filenames fall back to a regular file`() {
         assertEquals("spendcalc-export.txt", sanitizeExportFileName(""))
+        assertEquals("spendcalc-export.txt", sanitizeExportFileName("   \n\t"))
     }
 
     @Test
