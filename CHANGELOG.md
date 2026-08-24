@@ -4,6 +4,8 @@ All notable changes to SpendCalc are documented here. The project follows a sema
 
 ## [Unreleased]
 
+Current release candidate: **2.15.4** (`versionCode 21504`). This candidate is not considered a verified public release until the exact-head automated and manual gates in `docs/verification.md` are complete.
+
 ### Added
 
 - Android application bootstrap with Kotlin and Jetpack Compose.
@@ -36,78 +38,81 @@ All notable changes to SpendCalc are documented here. The project follows a sema
 - Unit tests for calculation arithmetic, validation, repositories, backup codec, exports, path containment, safe logging, and UI-state feedback sequencing.
 - Deterministic seeded fuzz/regression coverage for finance arithmetic and backup serialization/corruption handling.
 - Android integration tests for Room persistence and backup replacement, plus Compose and real-activity journey smoke tests.
-- Compose regression coverage for the named-history save dialog and callback wiring.
-- Compose regression coverage proving History filtering finds saved labels and removes non-matching entries.
-- Compose regression coverage for template naming guidance, confirm semantics, and Unicode boundary truncation.
-- UTF-16-safe saved-name policy tests plus backup round-trip coverage at an emoji boundary.
+- Compose regression coverage for named-history save behavior, template naming, History filtering, Settings backup busy state, and Unicode boundaries.
+- UTF-16-safe saved-name policy tests plus backup round-trip coverage at emoji boundaries.
 - Persisted-record policy tests covering invalid history/template envelopes, strict decoded currency forms, and backup encode rejection.
 - Platform regression coverage for malformed UTF-8 backup bytes and surrogate-safe PDF line truncation.
-- Settings UI coverage for the backup busy state.
 - CI compilation of instrumentation tests in addition to JVM tests, full Android lint, debug build, and release compilation.
 - Android manifest/FileProvider local-first policy guard in CI.
-- Android string-resource reference/duplicate-name audit in CI and the lightweight Repository Audit workflow.
-- Exhaustive `docs/codebase-reference.md` documenting every tracked root/configuration/GitHub/build/source/test/resource/script/policy/documentation file and its ownership/invariant role.
+- Android string-resource reference/duplicate-name audit in CI and Repository Audit.
+- Exhaustive `docs/codebase-reference.md` documenting every tracked file and its ownership/invariant role.
 - `docs/documentation-map.md` defining documentation authority, update triggers, anti-drift rules, and a change-to-document matrix.
-- `docs/README.md` as the central task-oriented documentation index for build, contribution, persistence/security/privacy, and release workflows.
-- `docs/android-build-guide.md` with end-to-end Android APK/AAB generation, output discovery, ADB installation, signing, artifact/version inspection, checksum, and release-oriented troubleshooting guidance.
-- `docs/command-reference.md` explaining Git, Java, Gradle, ADB, Android SDK packaging/signing utilities, repository guard commands, command options, and cross-platform invocation examples.
-- `scripts/check_documentation_coverage.py` comparing the codebase file index with `git ls-files` and rejecting missing, stale, or duplicated documentation entries.
-- Documentation coverage enforcement in both the main CI workflow and the lightweight Repository Audit workflow.
-- Repository required-file enforcement for the exhaustive codebase reference, documentation map, documentation index, Android build guide, command reference, and documentation coverage guard.
+- `docs/README.md` as the task-oriented documentation index.
+- `docs/android-build-guide.md` with Android APK/AAB generation, output discovery, ADB installation, signing, artifact/version inspection, checksum, and release troubleshooting guidance.
+- `docs/command-reference.md` explaining Git, Java, Gradle, ADB, Android packaging/signing utilities, repository guards, options, and examples.
+- `scripts/check_documentation_coverage.py` comparing the file index with `git ls-files` and rejecting missing/stale/duplicate inventory entries.
+- Documentation coverage enforcement in CI and Repository Audit.
 - Project policies for privacy, security, support, contribution, and community conduct.
 
 ### Changed
 
-- Release metadata targets SpendCalc `2.0.12` with Android `versionCode` `20012`; Room database version and explicit backup schema version remain independent compatibility versions.
-- Discount validation now caps discounts at 100% so a valid discount cannot make the taxable base negative.
+- Release metadata now targets SpendCalc `2.15.4` with Android `versionCode` `21504`; Room database version and explicit backup schema version remain independent compatibility versions at `1`.
+- Release/build/command/root documentation has been retargeted to the 2.15.4 candidate and current signed-APK examples use `SpendCalc-2.15.4-release.apk`.
+- `docs/verification.md` now defines the blocking 2.15.4 exact-head, Android runtime, accessibility, export, backup, offline, signing, screenshot, and artifact gates.
+- `docs/release.md` now defines the exact-source 2.15.4 build/sign/tag/publication workflow and dependency-upgrade isolation rules.
+- The real-activity calculate → save → History instrumentation journey no longer incorrectly requires formatted amount text to exist in exactly one Compose semantics node; it waits for and asserts at least one valid matching amount while still requiring the saved history name.
+- Discount validation caps discounts at 100% so a valid discount cannot make the taxable base negative.
 - Monetary/exchange-rate inputs are bounded by supported precision, scale, text length, and integer-digit limits.
 - Split counts are bounded to 1 through 1,000,000.
 - Editable expense items are capped at 100 with a visible UI limit state to bound eager Compose work.
 - Calculator item/name/input counts are bounded before expensive conversion or rendering work.
-- Saved history labels and template names now share one 120-character domain limit; new user input is normalized before storage so valid local data cannot later violate backup validation.
+- Saved history labels and template names share one 120-character domain limit.
 - Saved-name truncation is UTF-16 safe and cannot split a valid surrogate pair such as an emoji at the length boundary.
 - Valid history/template names entering restore/replace paths are validated and preserved exactly rather than silently trimmed or rewritten.
-- Saved-name normalization now occurs at the repository boundary instead of being partially duplicated in the ViewModel.
-- History search input is capped at 120 characters, truncated with the same surrogate-safe helper, and the UI explains the limit.
-- Template naming now displays the same 120-character guidance and uses a concise `Save` confirm action distinct from the underlying `Save template` control.
-- Template persistence now validates finance settings at the repository boundary rather than assuming every caller has already passed through the ViewModel.
-- History and template repositories now validate persisted record envelopes before writing, so direct save/restore/replace calls cannot manufacture data that explicit backup validation later rejects.
-- Restore/replace operations validate every mapped record and duplicate identifier before invoking DAO replacement, preserving existing data when supplied records are invalid.
-- Backup validation reuses the same persisted-record policy as repositories, including canonical template/history currency forms; decode no longer normalizes invalid noncanonical forms before validation.
+- Saved-name normalization occurs at the repository boundary.
+- History search input is capped at 120 characters using the shared Unicode-safe truncation policy.
+- Template naming displays the same 120-character guidance and uses a concise `Save` confirmation distinct from the underlying `Save template` control.
+- Template persistence validates finance settings at the repository boundary rather than trusting ViewModel-only validation.
+- History/template repositories validate persisted record envelopes before writes.
+- Restore/replace validates every mapped record and duplicate identifier before DAO replacement.
+- Backup validation reuses persisted-record policy, including canonical currency forms, and decode does not silently normalize noncanonical persisted currency text.
 - The production container shares one `CalculatorEngine` validator instance with template persistence.
-- Backup document I/O runs on `Dispatchers.IO`, while bounded backup encoding/decoding runs on `Dispatchers.Default` instead of the UI thread.
+- Backup document I/O runs on `Dispatchers.IO`; bounded backup encode/decode runs on `Dispatchers.Default`.
 - Room history/templates are captured in one transaction for backups and restored with batch DAO inserts.
-- Backup result decimals accept the full bounded magnitude that `CalculatorEngine` can legitimately produce, including converted totals up to 34 integer digits.
+- Backup result decimals accept the full bounded magnitude that `CalculatorEngine` can legitimately produce.
 - Returning users remain on the splash screen until stored preferences load, avoiding a false onboarding flash.
 - Corrupted Preferences DataStore files recover to safe default preferences without deleting Room history/templates.
-- PDF receipt line truncation now reuses the Unicode-safe truncation policy so long valid names cannot be cut between UTF-16 surrogate units.
-- Bottom-navigation icon graphics are decorative when a visible text label already provides the accessible name, avoiding duplicate screen-reader announcements.
-- GitHub Actions use maintained major action versions and concurrency cancellation for superseded pull-request runs.
-- Android instrumentation explicitly disables emulator metrics collection so future emulator releases cannot turn the metrics warning into an interactive CI prompt.
-- Compose instrumentation input targeting uses stable non-user-facing test tags for exact editable fields instead of depending on Material label merging or editable-field ordering.
-- CI runs Android lint across configured variants rather than only the debug variant.
-- Development, testing, architecture, setup, contribution, maintenance, release, verification, build, command, and source-audit documentation now cross-reference one explicit documentation source-of-truth model instead of duplicating ambiguous status.
-- The repository's intentional absence of a committed Gradle wrapper is documented explicitly; command-line setup uses compatible local Gradle 8.9 while CI pins Gradle 8.9 through the setup action.
-- Future tracked Room schema files are explicitly treated as migration/release evidence that must be individually covered by the exhaustive file reference.
-- The tag-triggered release workflow now runs the same fast formatting/namespace/documentation/resource/security/repository/secret guards, JVM tests, instrumentation compilation, and full Android lint before release compilation/uploading an unsigned artifact.
-- Repository required-file auditing now covers the complete permanent documentation/ADR/brand-screenshot-policy set plus the documentation index, Android executable guide, and command reference rather than only a smaller release subset.
-- The repository audit derives current application `versionName` and `versionCode` from `app/build.gradle.kts`, requires the build/index/command documents to match them, and rejects stale semantic-version names in signed-APK examples so release retargets cannot leave dangerous copy/paste packaging instructions behind.
-- The Android build/signing documentation has been reconciled with the `2.0.12` release candidate, including `SpendCalc-2.0.12-release.apk` examples and an explicit warning that application, Room database, and backup schema versions are separate concepts.
+- PDF receipt line truncation reuses Unicode-safe truncation.
+- Bottom-navigation icon graphics are decorative when a visible text label provides the accessible name, avoiding duplicate screen-reader announcements.
+- GitHub Actions use maintained action majors and concurrency cancellation for superseded pull-request runs.
+- Android instrumentation disables emulator metrics collection.
+- Compose instrumentation targets exact editable fields with stable non-user-facing test tags instead of Material label merging or field ordering.
+- CI runs Android lint across configured variants rather than only debug.
+- Development/testing/architecture/setup/contribution/maintenance/release/build/command documentation follows one source-of-truth model.
+- The intentional absence of a committed Gradle wrapper is documented; local documentation uses compatible Gradle 8.9 while CI pins Gradle 8.9.
+- The tag-triggered release workflow runs repository guards, JVM tests, instrumentation compilation, full lint, and release compilation before uploading an unsigned artifact.
+- Repository required-file auditing covers the permanent documentation/ADR/brand-screenshot-policy suite.
+- Repository audit derives `versionName`/`versionCode` from `app/build.gradle.kts`, requires current build/index/command docs to match them, and rejects stale semantic-versioned signed-APK examples.
+- Major dependency upgrades remain separate maintenance work unless independently verified or required to resolve a release blocker.
 
 ### Security
 
-- Core application requires no Android Internet permission, and CI now fails if that manifest invariant regresses.
-- Export sharing uses app-private `cache/exports` files and temporary URI read permission; CI verifies the FileProvider remains non-exported and exposes only `cache/exports/`.
+- Core application requires no Android Internet permission, and CI fails if that manifest invariant regresses.
+- Export sharing uses app-private `cache/exports` files and temporary URI read permission; CI verifies FileProvider remains non-exported and exposes only the intended cache path.
 - Export path containment uses canonical path semantics rather than vulnerable string-prefix matching.
 - CSV text values are protected from common spreadsheet formula injection prefixes.
-- Backup document reading uses a strict UTF-8 decoder that reports malformed/unmappable byte sequences instead of silently replacing them before parser validation.
-- Backup parser rejects oversized payloads, excessive line counts, malformed checksum fields, exponent-expansion decimal shapes, duplicate identifiers, invalid timestamps, invalid or noncanonical currencies, unsupported schema versions, oversized saved names, malformed UTF-8 input, and out-of-contract result magnitudes.
+- Backup document reading uses a strict UTF-8 decoder that reports malformed/unmappable byte sequences.
+- Backup parser rejects oversized payloads, excessive line counts, malformed checksums, exponent-expansion decimal shapes, duplicate IDs, invalid timestamps, invalid/noncanonical currencies, unsupported schema versions, oversized saved names, malformed UTF-8, and out-of-contract result magnitudes.
 - Backup export rejects malformed Unicode instead of silently replacing invalid surrogate data.
-- Saved-name input hardening prevents normal UI truncation from manufacturing malformed trailing surrogate data.
-- Repository persistence rejects invalid history/template IDs, timestamps, result shapes, split counts, finance settings, and duplicate batch identifiers before DAO writes/replacement, reducing the risk of locally stored data becoming un-exportable.
-- Structured logging redacts sensitive keys and performs key normalization with `Locale.ROOT` so redaction is locale independent.
+- Saved-name hardening prevents normal UI truncation from manufacturing malformed trailing surrogate data.
+- Repository persistence rejects invalid IDs, timestamps, result shapes, split counts, finance settings, and duplicate batch IDs before DAO writes/replacement.
+- Structured logging redacts sensitive keys using locale-independent normalization.
 - Production signing material is intentionally not stored in the repository.
 
-## [2.0.12] - Planned
+## [2.15.4] - Release Candidate
 
-Target production release after the exact release-candidate pull-request automation and remaining manual Android device/accessibility/export/backup/signing/screenshot release gates are completed.
+Prepared as the current Android release target. Final release remains blocked on successful exact-head CI, CodeQL, Dependency Review, Repository Audit, Android Instrumentation, and the manual Android/accessibility/export/backup/offline/screenshot/signing/artifact gates documented in `docs/verification.md`.
+
+## [2.0.12] - Superseded Candidate
+
+The earlier 2.0.12 stabilization milestone is retained as historical engineering context. It was superseded by the 2.15.4 release target before being represented here as the current verified public release.
