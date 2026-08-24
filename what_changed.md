@@ -1,425 +1,467 @@
 # SpendCalc — Work Continuity
 
-## 2026-08-23 continuation
+## 2026-08-24 — 2.15.4 release preparation
+
+### Current repository state
 
 - Repository: `sanskarIN/spendcalc`
 - Default branch: `main`
-- Active branch: `complete/v1-finalization`
+- Active release branch: `complete/v1-finalization`
 - Active pull request: `#12`
-- Target application release: `2.0.12`
-- Android `versionName`: `2.0.12`
-- Android `versionCode`: `20012`
+- Pull-request title: `release: prepare SpendCalc 2.15.4 release candidate`
+- Application ID: `in.sanskar.spendcalc`
+- Target application release: `2.15.4`
+- Android `versionName`: `2.15.4`
+- Android `versionCode`: `21504`
+- Android minimum API: `26`
+- Android target/compile API: `35`
+- Java/JVM target: `17`
 - Room database version: `1`
 - Explicit backup schema version: `1`
-- Exact source head immediately before this final handoff update: `f144afbb9bef84e33d5bb387ff700883b2f17e36`
-- `main` comparison during this continuation: `behind_by = 0`; the release branch remains ahead and PR #12 remains open/non-draft/mergeable.
+- License: MIT
+- Core runtime model: Android-first, Kotlin + Jetpack Compose, local/offline-first
+- Product credit: `Made by the Sanskar`
 
-### Concrete CI failures investigated and corrected
-
-The continuation inspected the real GitHub Actions evidence for release-candidate head `82f0b866050a8173cab45ac34dbd94bda3254acf` instead of inferring readiness from source alone.
-
-At that head:
-
-- CodeQL succeeded;
-- Dependency Review succeeded;
-- Repository Audit failed because the machine-enforced tracked-file documentation index had drifted after the branch/main reconciliation;
-- CI failed at the same documentation-coverage gate;
-- Android Instrumentation compiled, booted an API 35 emulator, started all 12 tests, and then failed 6 Compose tests because text-field selectors incorrectly assumed Material field labels were exposed on the editable semantics node.
-
-The six Android failures were selector failures, not production calculation or persistence failures. The test log showed the affected matchers searched for `SetText` plus visible field-label text such as `Template name`, `History label (optional)`, `Search history`, and `Amount`, while the actual editable semantics nodes exposed `SetText` without those labels.
-
-### Focused commits created in this continuation
-
-Initial CI-driven corrections:
-
-- `beaa24314fbf115b66aac2213b49dabac884cb98` — `test: stabilize calculator dialog text field selectors`
-- `4e318e4470b79a885830333ea3f1b46c877cf2c8` — `test: target history search by edit semantics`
-- `c26308e127f86cc8b1930d527654a6ee0ec2a068` — `test: stabilize end-to-end input targeting`
-- `03aaeefb61f4b1f2722690a19bc78a7d7133e0ad` — `test: keep history selector imports minimal`
-- `106eaee67c84a6f50942b11e447b2983a41ab540` — `docs: reconcile tracked-file codebase reference`
-- `0cd7723724903e846d3816ae37458cb68584cc41` — `test: scope dialog inputs to dialog semantics`
-- `69f391003a451bb825c0d077dc780a65c334970f` — `test: scope journey dialog input to modal semantics`
-- `e497ec1b52143d545cc504ed8edabd5aa56af20e` — `docs: record 2026-08-23 release-candidate continuation`
-
-Final instrumentation-stability hardening:
-
-- `39b916560cda1ed4641ab1f13ddd43cab1a5e0c6` — `ci: disable emulator metrics prompts in instrumentation`
-- `3f76f60881aeb22c629ef5d53de701f30d33dd69` — `testability: add stable calculator input test tags`
-- `df0ca18302460a4ead852c9bd50e502100c1167b` — `testability: add stable history search test tag`
-- `cb637cc22b7de6df8739c188f83d672695c2dbd2` — `test: target calculator dialogs by stable test tags`
-- `4ce49eb5edbb6a301e58ecae35e4862646696019` — `test: target activity journey inputs by stable tags`
-- `d65d1556a5d1392c6b2d9168f6fd61208a017ee4` — `test: target history search by stable test tag`
-- `1235102425513d8e92096d77d6fe85b4c465afe6` — `docs: document stable Compose test-targeting policy`
-- `f144afbb9bef84e33d5bb387ff700883b2f17e36` — `docs: record instrumentation stability hardening`
-
-The final selector shape no longer depends on Material label merging, modal tree shape, or the ordering of editable semantics nodes. Exact fields use stable, non-user-facing Compose test tags. The test-targeting policy explicitly prohibits adding fake accessibility descriptions merely to make tests pass.
-
-The Android emulator workflow now passes `-no-metrics`, removing the warning that metrics collection may become an interactive prompt in a future emulator release.
-
-The documentation coverage reference was reconciled directly from the CI-reported missing/stale sets. It now records the reconciled formatter/model/component/platform/resource/test/ADR/asset paths and removes paths that were renamed or removed.
-
-### Repository/source audit in this continuation
-
-- No open non-pull-request issues were found.
-- No `TODO`, `FIXME`, `XXX`, or `HACK` markers were found in the repository search.
-- A focused source-risk search found no `GlobalScope`, `Thread.sleep`, raw `readText()`/`readBytes()`, `runBlocking`, or forced `!!` usages.
-- The implemented product still covers the intended SpendCalc core: precision-safe itemized calculations, adjustments/splitting, manual currency conversion, history, templates, text/CSV/PDF export, local backup/restore, local-first security, responsive Compose UI, themes/accessibility controls, About/support/funding metadata, regression/fuzz tests, and repository guards.
-- Existing major-version Dependabot pull requests are intentionally not folded blindly into the 2.0.12 release candidate; major dependency upgrades remain separate maintenance work requiring isolated compatibility verification.
-
-### Exact-head verification rule
-
-This final handoff commit becomes a newer exact release-candidate head than every commit listed above. Any workflow result attached only to an older head is useful diagnostic evidence but is not final release evidence.
-
-For the exact commit containing this handoff:
-
-1. re-fetch CI, CodeQL, Dependency Review, Repository Audit, and Android Instrumentation;
-2. require every workflow family to complete successfully for this exact SHA;
-3. require CI to reach and pass repository guards, JVM unit/fuzz tests, instrumentation-test compilation, full Android lint, debug compilation, and release compilation;
-4. require Android Instrumentation to execute the connected test suite successfully, not merely compile it;
-5. inspect exact logs and fix concrete defects if any gate fails;
-6. do not merge/tag/publish from an older successful SHA after this handoff changes the branch head.
-
-Manual Android/accessibility/export/backup/offline/screenshot/signing/artifact verification in `docs/verification.md` remains blocking even after automated workflows are green. PR #12 must remain a release candidate until those gates are actually completed.
+Application release versioning remains intentionally independent from Room/backup compatibility versions. The move to 2.15.4 does **not** create fake database or backup migrations.
 
 ---
 
-## Previous handoff — 2026-08-21
+## Release target change
 
-## Current release candidate
+The active release candidate has been retargeted from the superseded `2.0.12` candidate to **2.15.4**.
 
-- Date: 2026-08-21
-- Repository: `sanskarIN/spendcalc`
-- Default branch: `main`
-- Active branch: `complete/v1-finalization`
-- Active pull request: `#12`
-- Target application release: `2.0.12`
-- Android `versionName`: `2.0.12`
-- Android `versionCode`: `20012`
-- Room database version: `1`
-- Explicit backup schema version: `1`
-- Application ID: `in.sanskar.spendcalc`
-- Android support: API 26+, Kotlin + Jetpack Compose, local/offline-first
-- License: MIT
-- Product credit: `Made by the Sanskar`
-- Current `main` incorporated through: `b307830415cf8fb1d0eca14a66f7d70b45d35f90`
-- Main-reconciliation merge: `b8bc06578a48334e75fad0c5022a152d6bcc3c11`
-- Exact pre-handoff branch head before this documentation commit: `cfe4f425514a0a8df002108b29c7111f07f37696`
-- Comparison with `main` during this continuation: `status = ahead`, `behind_by = 0`
-- Release status: automated verification is actively being driven from real GitHub Actions results. Concrete unit-test and instrumentation-compilation blockers discovered by CI were corrected. Exact-final-head automation must be re-fetched after this handoff commit, and real Android/accessibility/signing/screenshot/artifact evidence remains blocking before merge/tag/release.
+`app/build.gradle.kts` now contains:
 
-## 2026-08-21 continuation completed
-
-### Used real CI evidence instead of source-only assumptions
-
-The continuation resumed from PR #12 rather than duplicating work on `main`. The branch already contained the stronger 2.0.12 release candidate, so all fixes were applied to `complete/v1-finalization`.
-
-The first inspected release-candidate CI run, `32353151249`, executed repository guards successfully but failed at JVM tests:
-
-- 98 tests executed;
-- one test failed: `BackupCodecFuzzTest > deterministic unicode labels round trip through record encoding`;
-- the exception was an `IllegalArgumentException` raised while encoding a generated backup fixture;
-- instrumentation compilation, lint, debug build, and release compilation were correctly skipped after the failing test gate.
-
-The failure was not a production backup-codec defect. The seeded fuzz generator could create an empty or whitespace-only saved label, while the shared saved-record policy correctly requires persisted history/template names to be nonblank. The fuzz fixture was therefore outside the domain invariant it was supposed to exercise.
-
-Fix commits:
-
-- `0b6ecfcfc1d714d6f072077a203965b199dc748e` — `test: keep backup fuzz labels within saved-name invariant`
-- `4375405d25da6187b640d3d1eb5c1f59d2d330c4` — `test: keep checksum fuzz fixtures valid`
-
-The test still exercises spaces, tabs, newlines, INR symbols, accented Latin text, CJK text, commas, quotes, equals signs, URL-safe Base64 record encoding, checksum behavior, and deterministic seeded repetition. It now always keeps the saved name itself valid by prefixing generated text with a nonblank character.
-
-### Confirmed the JVM regression fix and exposed the next Android-test blocker
-
-Fresh CI run `32434604031` on head `4375405d25da6187b640d3d1eb5c1f59d2d330c4` re-passed:
-
-- formatting guard;
-- Kotlin namespace guard;
-- tracked-file documentation coverage;
-- Android string-resource audit;
-- local-first Android security policy;
-- repository metadata/link/release-version audit;
-- secret-pattern scan;
-- the complete JVM unit/fuzz suite.
-
-The run then reached `assembleDebugAndroidTest` and failed during Kotlin compilation. The concrete errors were unresolved Compose test imports across the newly expanded instrumentation suite:
-
-- `androidx.compose.ui.test.assertExists`;
-- `androidx.compose.ui.test.assertDoesNotExist`;
-- `androidx.compose.ui.test.onNode`.
-
-For the Compose test-rule API used by this project, `assertExists`, `assertDoesNotExist`, and `onNode` are available through the rule/interaction types and do not require those invalid top-level imports. The production UI was not changed; only test-source imports were corrected.
-
-Fix commits:
-
-- `812d5ed5d6fb69ff2fb9cde032c109ad226d8ee0` — `test: fix calculator Compose rule API imports`
-- `8d6db345ac66a33bf74d0cb4f2ca602ac427fbf2` — `test: fix history Compose rule API imports`
-- `c401cbe7b52d0958fcccddd3eb135ae94b9b34fd` — `test: fix activity journey Compose rule API imports`
-- `1c91c5c48dc7962ec3d0a8078bb9a799bf109eba` — `test: fix settings Compose assertion import`
-
-Because every commit changes the exact release-candidate head, any workflow runs started for intermediate heads are superseded release evidence even if they later finish successfully.
-
-### Removed a deprecated GitHub Actions runtime warning
-
-The same CI logs reported that `actions/upload-artifact@v4` targets deprecated Node 20 and was being forced by GitHub onto Node 24. The current repository has an automated dependency update path for `actions/upload-artifact@v7`, and the hosted runner used by the project supports the current action runtime.
-
-Both artifact-upload call sites were modernized:
-
-- `.github/workflows/ci.yml` failure-report upload now uses `actions/upload-artifact@v7`;
-- `.github/workflows/release.yml` unsigned release-artifact upload now uses `actions/upload-artifact@v7`.
-
-Commits:
-
-- `6a09135fc3973116ff6af0505eb147cdfbfe2725` — `ci: upgrade artifact upload action to v7`
-- `cfe4f425514a0a8df002108b29c7111f07f37696` — `ci: modernize release artifact upload action`
-
-This removes the known Node-20 artifact-upload warning from the final workflow path instead of accepting warning-only technical debt.
-
-### Exact-head verification rule for the next continuation
-
-This handoff commit advances the branch beyond `cfe4f425514a0a8df002108b29c7111f07f37696`, so all older runs are stale for final release evidence.
-
-For the exact commit containing this file:
-
-1. fetch CI, CodeQL, Dependency Review, and Repository Audit;
-2. require successful conclusions for all four families;
-3. in CI, require the full sequence to pass: guards -> JVM tests -> `assembleDebugAndroidTest` -> full Android lint -> debug APK compilation -> release APK compilation;
-4. if instrumentation compilation fails again, inspect the exact compiler error rather than guessing;
-5. do not merge/tag/release from an intermediate successful head if a newer documentation or workflow commit exists.
-
-## 2026-08-20 continuation completed
-
-### Reconciled current `main` without reverting 2.0.12
-
-`main` had advanced with Android build/command documentation after the release branch diverged, which made PR #12 non-mergeable. The branches were reconciled deliberately instead of taking one side wholesale.
-
-Merge commit `b8bc06578a48334e75fad0c5022a152d6bcc3c11` has the prior release head and current `main` as parents. It preserves the stronger 2.0.12 implementation/release state while importing the useful documentation additions. After reconciliation, comparison with `main` reports the release branch is not behind and GitHub reports PR #12 mergeable.
-
-Imported/integrated documents:
-
-- `docs/README.md` — task-oriented documentation index;
-- `docs/android-build-guide.md` — complete APK/AAB/build/install/signing/artifact workflow;
-- `docs/command-reference.md` — detailed Git/Java/Gradle/ADB/Android tooling/repository command reference.
-
-The exhaustive `docs/codebase-reference.md` was updated in the reconciliation itself so those tracked files remained covered by `scripts/check_documentation_coverage.py`.
-
-### Fixed stale release data in imported build documentation
-
-The imported Android executable guide and command reference still contained old `1.0.0` / `versionCode 1` / `SpendCalc-1.0.0-release.apk` examples. Those examples conflicted with the actual 2.0.12 branch and were corrected.
-
-Current documentation now consistently identifies:
-
-```text
-versionName = 2.0.12
-versionCode = 20012
-Room database version = 1
-Explicit backup schema version = 1
+```kotlin
+versionCode = 21504
+versionName = "2.15.4"
 ```
 
-Application release versioning remains intentionally independent from persistence compatibility versions. No fake Room or backup migration was introduced merely to mirror 2.0.12.
+The `21504` versionCode follows the repository's existing semantic-component encoding convention and is greater than the earlier 20012 candidate code.
 
-### Added a release-document drift guard
+The following current release-facing documents have been retargeted to 2.15.4:
 
-`scripts/check_repository.py` now treats release-document consistency as an automated repository invariant.
+- `README.md`
+- `docs/README.md`
+- `docs/android-build-guide.md`
+- `docs/command-reference.md`
+- `docs/release.md`
+- `docs/verification.md`
+- `CHANGELOG.md`
+- `ROADMAP.md`
+- `what_changed.md`
+- `what_changed_latest.md`
+- `what_changed_final.md`
+- PR `#12` title/body
 
-It:
+Current signed-APK documentation examples use:
 
-- requires `docs/README.md`, `docs/android-build-guide.md`, and `docs/command-reference.md` in addition to the established release/documentation set;
-- parses the current application `versionName` and `versionCode` directly from `app/build.gradle.kts` rather than maintaining another version constant;
-- requires the documentation index, Android build guide, and command reference to expose the current application release metadata;
-- rejects semantic-versioned signed-APK examples that do not match the current application version;
-- preserves the prior required-file, README identity/contact, and local Markdown-link checks.
+```text
+SpendCalc-2.15.4-release.apk
+```
 
-This closes the exact failure mode discovered during reconciliation: a release retarget can no longer leave stale copy/paste signing filenames in the deep build documentation without failing the repository audit.
+The repository audit still derives application `versionName` and `versionCode` directly from `app/build.gradle.kts`, requires the documentation index/build guide/command reference to match those values, and rejects stale semantic-versioned signed-APK examples.
 
-The guard is documented consistently in:
+---
 
-- `README.md`;
-- `docs/README.md`;
-- `docs/codebase-reference.md`;
-- `docs/command-reference.md`;
-- `docs/development.md`;
-- `docs/documentation-map.md`;
-- `docs/github-maintenance.md`;
-- `docs/testing.md`;
-- `docs/verification.md`;
-- `CHANGELOG.md`.
+## Concrete Android instrumentation blocker fixed
 
-### Completed Android build and command documentation integration
+The most recent executed Android instrumentation evidence before this continuation had one remaining failure in:
 
-`docs/android-build-guide.md` now covers the current 2.0.12 candidate end to end:
+```text
+MainActivityJourneyTest.calculateSaveAndFindHistoryJourney
+```
 
-- environment verification;
-- Gradle task meanings;
-- debug/release APK output;
-- AAB output;
-- ADB installation and package inspection;
-- external production signing flow;
-- `zipalign`, `apksigner`, `jarsigner`, and `keytool` roles;
-- `SpendCalc-2.0.12-release.apk` examples;
-- artifact/version inspection;
-- future-version guidance without conflating Room/backup schema versions;
-- release verification and troubleshooting links.
+The failure was:
 
-`docs/command-reference.md` now documents every repository Python guard, including cross-platform invocation guidance, and uses branch-neutral Git push guidance rather than assuming changes should be pushed directly to `main`.
+```text
+Expected exactly 1 node but found 3 nodes matching INR 25.00
+```
 
-`docs/README.md`, the root `README.md`, and `docs/documentation-map.md` now expose clear navigation and authority boundaries so setup/build/commands/release/troubleshooting documents can share necessary commands without becoming competing sources of truth.
+The application had successfully compiled, the API 35 emulator had booted, and 11 of 12 instrumentation tests passed. The failure was caused by the test assuming that the correctly formatted amount could only appear once in the Compose semantics tree.
 
-## Important continuation commits
+That uniqueness assumption was invalid because the same amount may be represented in multiple legitimate UI semantics nodes.
 
-### 2026-08-21
+The journey test now:
 
-- `0b6ecfcfc1d714d6f072077a203965b199dc748e` — `test: keep backup fuzz labels within saved-name invariant`
-- `4375405d25da6187b640d3d1eb5c1f59d2d330c4` — `test: keep checksum fuzz fixtures valid`
-- `812d5ed5d6fb69ff2fb9cde032c109ad226d8ee0` — `test: fix calculator Compose rule API imports`
-- `8d6db345ac66a33bf74d0cb4f2ca602ac427fbf2` — `test: fix history Compose rule API imports`
-- `c401cbe7b52d0958fcccddd3eb135ae94b9b34fd` — `test: fix activity journey Compose rule API imports`
-- `1c91c5c48dc7962ec3d0a8078bb9a799bf109eba` — `test: fix settings Compose assertion import`
-- `6a09135fc3973116ff6af0505eb147cdfbfe2725` — `ci: upgrade artifact upload action to v7`
-- `cfe4f425514a0a8df002108b29c7111f07f37696` — `ci: modernize release artifact upload action`
-- this handoff commit becomes the newest exact release-candidate head and therefore invalidates all older exact-head workflow evidence.
+1. waits until at least one node contains the expected formatted amount;
+2. asserts the first matching collection interaction exists;
+3. keeps the exact saved-history-name assertion;
+4. does not weaken production UI behavior or add fake accessibility descriptions for testing.
 
-### Earlier continuation
+This preserves the intent of the end-to-end journey while removing a false semantics-uniqueness requirement.
 
-- `b8bc06578a48334e75fad0c5022a152d6bcc3c11` — `docs: reconcile Android build documentation from main`
-- `cc59e1a30c309430ec2580e4ffcad3467a4b5fc3` — `docs: integrate build guides into documentation authority map`
-- `7e12c423a5925bafd8540f458888f0e03f0e8f69` — `docs: record reconciled 2.0.12 release head`
-- `d50a0246d72498915e40d35294eddda6367b458b` — `docs: align Android build guide with 2.0.12`
-- `f2999aa68af3b2c487bac9652c7299a2ba622f74` — `docs: align command reference with release and repository guards`
-- `74cdc577b8ecd8c67423662ffa8588201863832b` — `docs: complete documentation index for 2.0.12`
-- `4e8cddb42f02d5e002672408081060f390dfe094` — `ci: guard release metadata in build documentation`
-- `c01d9028635d2f0947ecad324f7dc69aa903f23e` — `docs: expose complete build documentation from README`
-- `84562a0d54c79b51c0d2f4d6bba722f9500ebc09` — `docs: document release metadata repository guard`
-- `0ca6fad0d26ea4b67138bcb20ffeb43f9a9f5c8a` — `docs: specify release documentation guard coverage`
-- `a0474ad2f9b15d2c9a2e03e710e87f5161406ea6` — `docs: document release metadata maintenance guard`
-- `121c2b04a9bd54cc914170887e9022a670c41a8c` — `docs: record build documentation and drift guards`
-- `dcb54a1081e8ac91c1066e04d74be94bd03b87b5` — `docs: require build documentation metadata validation`
-- `7b95a3a48629613c2a89aac0f66f501d9c9e7c2f` — `docs: verify build documentation release metadata alignment`
+Fix commit:
 
-## Exact workflow truth from the latest inspected completed runs
+- `7c859340f8c4739507ed8047e689249e908a2299` — `test: allow repeated amount semantics in activity journey`
 
-For head `4375405d25da6187b640d3d1eb5c1f59d2d330c4`:
+Because later release-preparation commits advanced the branch, workflow runs on the isolated test-fix commit were intentionally superseded/cancelled by concurrency rules and are not final release evidence.
 
-- Repository Audit — run `32434604048` — success;
-- Dependency Review — run `32434604049` — success;
-- CI — run `32434604031` — failed only after JVM tests passed, at instrumentation-test compilation because of the invalid Compose imports documented above;
-- CodeQL was still pending/in progress when that head was superseded.
+---
 
-Those results proved the JVM regression fix and exposed the next compiler defect, but they are **not final release evidence** because subsequent commits changed the branch.
+## Focused commits created in this continuation
 
-For the exact commit containing this file, re-fetch all four workflow families and require successful conclusions before merge/tag/release. Missing, configured, queued, in-progress, skipped, cancelled, superseded, or older-head runs are never treated as passed.
+- `7c859340f8c4739507ed8047e689249e908a2299` — `test: allow repeated amount semantics in activity journey`
+- `941bfa67a69bf35091a19cceac749490fbc440ee` — `release: bump application version to 2.15.4`
+- `458243050c4ade8f3c051b4def6c5b5cb4fc0afc` — `docs: retarget documentation index to 2.15.4`
+- `c3e0f864bfb9652dbd892389d0dd9f6acb6f096b` — `docs: retarget Android build guide to 2.15.4`
+- `3c40baf53acc36dfde4cdb2a9807236adb3844b2` — `docs: retarget command reference to 2.15.4`
+- `757d937ca0a2d210b80d711e48cb74bb5f26b6a7` — `docs: retarget release verification to 2.15.4`
+- `276474ebc148bed3f37f9a1d98817d518adb9173` — `docs: prepare 2.15.4 release workflow`
+- `e7977feb450fa45b693bd681eae46995e66fefba` — `docs: retarget project README to 2.15.4`
+- `139f5c56b70a83adac9d98bfc3493f59c1a08fc3` — `docs: prepare changelog for 2.15.4`
+- `ac3095ee71cbbd30a1ea2cb3983d1ac3294817c1` — `docs: retarget roadmap to 2.15.4`
+- `676a722fd91c91dc9d82084d26d84f0d59af42bf` — `docs: retarget latest continuity pointer to 2.15.4`
+- `afb5f69e76cd22d33e753eb17347405cb2936dcc` — `docs: retarget final handoff pointer to 2.15.4`
 
-## Product/source state retained
+The commit containing this canonical handoff becomes a newer exact head than every SHA above and therefore requires its own final workflow evidence.
 
-The release branch continues to include the prior completed implementation and hardening work:
+---
 
-- precision-safe `BigDecimal` finance engine with deterministic order and bounded input shapes;
-- maximum 100 editable expense items, discount <= 100%, split count 1–1,000,000;
-- Room history with optional labels/search/delete/Undo/clear/30-90-day retention;
-- Room reusable templates with naming/load/delete/Undo;
-- shared 120-character UTF-16-safe saved-name policy;
-- repository-level persisted-record validation and duplicate-ID rejection;
-- DataStore theme/large-text/reduced-motion/retention/onboarding preferences;
-- versioned local backup/restore with bounded parsing, strict UTF-8, exact canonical persisted-currency validation, SHA-256 corruption detection, transactional Room replacement, and compensating preference rollback;
-- text/CSV/PDF export, CSV formula neutralization, Unicode-safe PDF truncation, canonical export-path containment, and non-exported restricted `FileProvider`;
-- no core Android Internet permission;
-- Compose Material 3 responsive phone/tablet UI, onboarding, settings, accessibility behavior, About/support/funding/version information, and branded splash;
-- JVM finance/repository/backup/export/platform regressions and deterministic fuzz coverage;
-- Android Room/Compose/activity integration tests compiled in CI once the exact-head instrumentation gate is green;
-- formatting, namespace, documentation coverage, Android resource, Android security, repository metadata/link/version consistency, and secret-pattern guards.
+## PR #12 retargeted
 
-Permanent behavioral detail belongs in the specialized documentation and tests rather than being duplicated further into this handoff.
+PR `#12` remains the active release candidate on `complete/v1-finalization` targeting `main`.
 
-## Documentation authority
+The PR metadata now describes 2.15.4, including:
 
-- `README.md` — public product/release/build entry point.
-- `docs/README.md` — task-oriented documentation index.
-- `docs/android-build-guide.md` — complete Android executable/APK/AAB/install/signing workflow.
-- `docs/command-reference.md` — detailed command meanings and repository guard invocations.
-- `docs/features.md` — implemented user behavior.
-- `docs/architecture.md` — architecture boundaries.
-- `docs/codebase-reference.md` — exhaustive tracked-file ownership.
-- `docs/documentation-map.md` — documentation authority and update matrix.
-- `docs/development.md` — contributor change rules.
-- `docs/testing.md` — verification strategy and guard/test ownership.
-- `docs/persistence-invariants.md` — persisted record/backup compatibility contract.
-- `docs/backup-restore.md` — explicit backup behavior.
-- `docs/security-backup.md` — backup threat/parser model.
-- `docs/privacy-backup.md` and `PRIVACY.md` — backup/runtime privacy behavior.
-- `docs/accessibility.md` — accessibility behavior/manual checks.
-- `docs/performance.md` — bounded-work/performance policy.
-- `docs/logging.md` — logging/redaction contract.
-- `docs/github-maintenance.md` — repository maintenance and release-retarget process.
-- `docs/release.md` — release procedure.
-- `docs/verification.md` — authoritative blocking automated/manual/distribution checklist.
-- `docs/release-candidate-final-audit.md` — source-level 2.0.12 audit only.
-- `CHANGELOG.md` — notable release-candidate changes.
-- `ROADMAP.md` — planning and still-open gates.
-- this file — volatile active branch/PR/exact-head continuation truth.
+- `versionName 2.15.4`;
+- `versionCode 21504`;
+- Room/backup schema independence;
+- the activity-journey semantics fix;
+- current release documentation;
+- exact-head automated/manual gates;
+- isolation of major dependency upgrades;
+- browser-extension work as post-Android-release work.
 
-## Remaining blocking gates
+Do not merge/tag/publish the pull request as a verified release until every blocking gate below is actually complete.
 
-### Exact-final-head automation
+---
 
-All must be successful for the exact final commit:
+## Current implemented product baseline
+
+The release branch contains the Android application and hardening work accumulated through the earlier stabilization phases.
+
+### Finance/domain
+
+- precision-safe `BigDecimal` arithmetic;
+- itemized expense lines;
+- discount, tax, tip, service charge;
+- split bill;
+- manual currency conversion;
+- centralized rounding/validation;
+- bounded decimal precision/scale/input lengths;
+- bounded split count;
+- bounded 100-item calculator editor;
+- deterministic calculation order.
+
+### Persistence
+
+- Room history;
+- saved history labels;
+- History search/filter;
+- delete/Undo/clear confirmation;
+- retention options;
+- Room templates;
+- template save/load/delete/Undo;
+- Preferences DataStore settings;
+- shared persisted-record policy;
+- ID/timestamp/currency/name/result/split validation;
+- duplicate replacement-ID rejection;
+- repository-boundary validation before DAO replacement.
+
+### Backup/restore
+
+- explicit user-driven local backup;
+- Android Storage Access Framework document flows;
+- versioned bounded backup format;
+- SHA-256 accidental-corruption detection;
+- strict malformed/unmappable UTF-8 rejection;
+- canonical persisted-currency validation;
+- Unicode-safe saved names;
+- duplicate-ID and structural validation;
+- confirmation before replacement;
+- visible busy/progress state;
+- multi-store restore compensation behavior.
+
+### Export/share
+
+- text receipts;
+- CSV export;
+- spreadsheet-formula neutralization for text cells;
+- offline PDF receipts;
+- Unicode-safe PDF truncation;
+- non-exported FileProvider;
+- canonical-path export containment.
+
+### UI/accessibility
+
+- Kotlin + Jetpack Compose + Material 3;
+- responsive phone/tablet layout;
+- light/dark/system themes;
+- large-text preference;
+- reduced-motion preference;
+- branded splash screen;
+- repository-owned navigation icons;
+- user-facing string resources;
+- first-run onboarding;
+- About/support/funding/version UI;
+- stable non-user-facing Compose test tags for exact editable-field targeting.
+
+### Privacy/security
+
+- local-first core;
+- no account required;
+- no remote API key required;
+- no Android Internet permission in current manifest;
+- no production signing material in Git;
+- conservative secret-pattern guard;
+- safe logging/redaction coverage;
+- privacy/security/support/contribution policies.
+
+---
+
+## Testing/automation baseline
+
+The repository includes:
+
+- finance unit tests;
+- deterministic finance fuzz/regression tests;
+- history/template repository tests;
+- persistence invariant tests;
+- saved-name Unicode-boundary tests;
+- backup codec/validation/corruption/fuzz tests;
+- strict backup-byte UTF-8 tests;
+- CSV security tests;
+- PDF Unicode truncation tests;
+- path containment tests;
+- SafeLogger redaction tests;
+- Room integration tests;
+- Compose calculator/history/settings/dialog tests;
+- real-activity calculate → named save → History journey;
+- instrumentation-test compilation in CI.
+
+GitHub workflow families:
 
 - CI;
 - CodeQL;
 - Dependency Review;
 - Repository Audit;
-- Android Instrumentation.
+- Android Instrumentation;
+- tag-triggered release-candidate build.
 
-CI specifically must complete, not merely start, all of these stages:
+Workflow concurrency intentionally cancels superseded PR runs so CI resources focus on the newest head.
 
-- repository/script guards;
-- JVM unit and deterministic fuzz tests;
+---
+
+## Documentation/repository integrity baseline
+
+Current documentation includes:
+
+- task-oriented `docs/README.md`;
+- complete 2.15.4 Android build/sign/install guide;
+- 2.15.4 command reference;
+- architecture/development/testing/accessibility/performance docs;
+- backup/security/privacy/persistence docs;
+- documentation source-of-truth map;
+- exhaustive tracked-file codebase reference;
+- release guide;
+- blocking 2.15.4 verification checklist;
+- troubleshooting;
+- screenshot-capture policy;
+- ADRs.
+
+Repository guards cover:
+
+```bash
+python3 scripts/check_format.py
+python3 scripts/check_kotlin_namespace.py
+python3 scripts/check_documentation_coverage.py
+python3 scripts/check_android_resources.py
+python3 scripts/check_android_security.py
+python3 scripts/check_repository.py
+python3 scripts/scan_secrets.py
+```
+
+The repository intentionally does not commit a Gradle wrapper JAR. Documentation uses compatible local Gradle 8.9 and CI pins Gradle 8.9 through `gradle/actions/setup-gradle`.
+
+---
+
+## Dependency-upgrade policy for 2.15.4
+
+Open Dependabot major/minor updates are not blindly folded into the current release candidate.
+
+They require isolated compatibility review for:
+
+- Android Gradle Plugin/Gradle compatibility;
+- Kotlin/Compose/KSP compatibility;
+- Room compiler/runtime behavior;
+- AndroidX test/runtime behavior;
+- GitHub Actions Node/runner requirements;
+- action/cache behavior;
+- licensing/terms changes.
+
+The current 2.15.4 release prep keeps those dependency changes separate unless one becomes necessary to resolve a specific release blocker.
+
+---
+
+## Browser-extension planning boundary
+
+Browser-extension work is planned **after Android 2.15.4 stabilization** and is not a blocking gate for this release.
+
+Current roadmap preparation includes:
+
+- supported browser scope;
+- Manifest V3 baseline;
+- platform-neutral finance-rule reuse where practical;
+- local-only extension storage/privacy model;
+- popup/options/history UX;
+- import/export compatibility boundaries;
+- dedicated extension build/test/security automation;
+- separate extension publishing credentials from Android signing credentials.
+
+Do not couple Android production stability to unfinished browser-extension implementation.
+
+---
+
+## Exact-head automated verification still required
+
+For the exact commit containing this handoff, fetch workflow results again and require:
+
+1. CI — success;
+2. CodeQL — success;
+3. Dependency Review — success;
+4. Repository Audit — success;
+5. Android Instrumentation — success.
+
+CI must reach and pass:
+
+- repository guards;
+- JVM tests;
 - instrumentation-test compilation;
 - full Android lint;
-- debug APK compilation;
-- release APK compilation.
+- debug compilation;
+- release compilation.
 
-### Android/runtime/accessibility
+Android Instrumentation must execute `connectedDebugAndroidTest` successfully, not merely compile test sources.
 
-Still require a real connected Android runtime and human/device review as specified in `docs/verification.md`, including:
+If any gate fails, inspect the exact workflow/job logs and fix the concrete defect. Do not mark a failed/cancelled/pending run as successful evidence.
 
-- a representative local/physical `connectedDebugAndroidTest` pass in addition to hosted emulator evidence;
-- phone/tablet layouts;
+---
+
+## Manual release blockers still required
+
+Even after all automated workflows are green, the following remain blocking until real evidence exists:
+
+### Representative Android runtime
+
+- fresh install;
+- splash/onboarding;
+- returning-user state;
+- Calculator/History/Templates/Settings/About navigation;
+- named history/save/search/delete/Undo/retention;
+- templates save/load/delete/Undo;
+- item/input limits;
+- Unicode boundary behavior.
+
+### Export/share
+
+- text share;
+- CSV share;
+- PDF share;
+- FileProvider containment;
+- Unicode-heavy PDF behavior.
+
+### Backup/restore
+
+- document creator/picker;
+- confirmation before replace;
+- visible progress state;
+- history/template/preferences round-trip;
+- malformed UTF-8 rejection;
+- checksum-invalid rejection;
+- noncanonical persisted-currency rejection;
+- invalid/duplicate replacement protection.
+
+### Offline/privacy/security
+
+- core calculation/history/templates/settings/export with network disabled;
+- no unintended Internet permission;
+- no secrets/private data/signing material in repository/artifacts/screenshots.
+
+### Accessibility/layout
+
 - light/dark/system themes;
-- app and Android large-text behavior;
+- app/system large text;
 - reduced motion;
-- TalkBack traversal/labels/dialog/list/progress behavior;
-- history/template workflows and Unicode name boundaries;
-- 100-item limit;
-- text/CSV/PDF share flows and long-Unicode PDF behavior;
-- backup create/restore/progress/confirmation/data-integrity cases;
-- malformed UTF-8 and checksum-valid noncanonical-currency restore rejection;
-- offline/airplane-mode core workflow;
-- branded launch splash.
+- TalkBack order/labels/dialogs;
+- color-independent validation meaning;
+- small phone layout;
+- tablet/wide layout;
+- touch targets/destructive wording.
 
-### Distribution
+### Screenshots
 
-Still require:
+- real screenshots from the verified 2.15.4 build;
+- fictional data only;
+- privacy review before publication.
 
-- genuine screenshots from the exact verified build using fictional data;
-- production signing material kept outside source control;
-- signed artifact produced from exact verified source;
-- artifact inspection confirming application ID, `versionName 2.0.12`, `versionCode 20012`, SDK/permission expectations;
-- About screen reporting 2.0.12;
-- artifact checksum/source-SHA relationship recorded and verified;
-- tag `v2.0.12` only after every blocking automated/manual/distribution gate is complete.
+### Production signing/artifact
 
-## Continuation instructions
+- build production candidate from exact verified SHA;
+- keep signing material outside Git;
+- sign using controlled identity;
+- verify certificate/signature;
+- inspect application ID/versionCode/versionName/SDK/permissions;
+- install exact signed artifact;
+- verify About reports 2.15.4;
+- record artifact SHA-256 and source SHA relationship.
 
-1. Treat the exact commit containing this file as the newest 2.0.12 release-candidate head.
-2. Re-fetch PR #12; require it to remain open/non-draft and confirm mergeability before the intended merge step.
-3. Compare `main` to `complete/v1-finalization`; require `behind_by = 0`. If `main` advances, reconcile deliberately instead of overwriting the release branch.
-4. Fetch CI, CodeQL, Dependency Review, Repository Audit, and Android Instrumentation for this exact SHA.
-5. In CI, require the unit-test, instrumentation-compile, lint, debug-build, and release-build steps all to succeed.
-6. If any exact-head workflow fails, inspect the failed job/log and fix only the concrete defect with appropriate regression/documentation coverage.
-7. Any further source/documentation commit invalidates older workflow release evidence and should be reflected here if work continues across sessions.
-8. Once exact-head automation is green, execute every remaining manual gate in `docs/verification.md` on real Android hardware/emulator as appropriate.
-9. Do not merge PR #12, claim production readiness, capture release screenshots, sign/tag, or publish merely because the PR is mergeable.
-10. Capture screenshots only from the exact verified build using fictional data.
-11. Keep signing credentials outside Git; verify the final artifact version, signature, checksum, and source relationship before `v2.0.12`.
+Only after all blocking automated/manual gates pass should `v2.15.4` be created and published.
 
-While PR #12 remains open, continue from `complete/v1-finalization`. After a verified merge, continue from `main`.
+---
+
+## Recommended continuation order
+
+1. Fetch exact-head CI/CodeQL/Dependency Review/Repository Audit/Android Instrumentation.
+2. If any workflow fails, inspect exact job logs and fix the concrete error.
+3. Repeat until the exact current head is green across all automated families.
+4. Perform representative Android/manual/accessibility/export/backup/offline checks.
+5. Capture real screenshots with fictional data.
+6. Build/sign/verify/install the exact production artifact outside Git.
+7. Record checksum/source SHA/certificate evidence.
+8. Reconcile README/changelog/roadmap/release/verification/continuity docs with actual completed evidence.
+9. Merge PR #12 only when release policy permits.
+10. Tag/publish `v2.15.4` only after every blocking gate passes.
+11. Then evaluate isolated dependency upgrades.
+12. Then begin browser-extension implementation as a separate next-version stream.
+
+---
+
+## Safety/secret rules
+
+Never commit or paste into repository history, issues, PR comments, docs, screenshots, or logs:
+
+- production keystore/private key;
+- signing passwords;
+- API/access tokens;
+- private user data;
+- real financial records;
+- machine-local secret configuration.
+
+Production signing and store credentials intentionally remain outside source control.
+
+---
+
+## Historical continuity
+
+Earlier development/release-candidate details, including the 2.0.12 stabilization work, remain available in repository Git history and earlier revisions of this file. They are historical engineering evidence, not the current release target.
+
+Current continuation authority is:
+
+1. current GitHub PR/workflow state;
+2. this canonical `what_changed.md`;
+3. `docs/verification.md` for release blockers;
+4. `app/build.gradle.kts` for application release metadata;
+5. authoritative permanent documentation identified by `docs/documentation-map.md`.
+
+**Made by the Sanskar**
