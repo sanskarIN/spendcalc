@@ -20,122 +20,212 @@
 
 > **Made by the Sanskar**
 
-SpendCalc is built for everyday expense calculations rather than demo arithmetic. It keeps finance rules separate from Android UI/infrastructure, uses `BigDecimal` for money, works without a required network connection or account, and provides local history, templates, explicit backup/restore, accessibility settings, and offline export options.
+SpendCalc is an Android-first expense calculator designed for real finance workflows rather than demo arithmetic. It uses `BigDecimal` for monetary calculations, keeps core behavior local/offline, stores history/templates/preferences on-device, supports explicit backup/restore, and can export receipts as text, CSV, and PDF.
 
-> **Current release candidate:** `2.0.12` (`versionCode 20012`). Room database and explicit backup schema versions are maintained separately from the application release number. See [`docs/verification.md`](docs/verification.md) for the exact-head release gates.
+> **Current release candidate:** `2.15.4` (`versionCode 21504`). Room database version and explicit backup schema version remain `1` because application releases and persistence compatibility versions are intentionally independent.
 
-> **Build/documentation entry point:** [`docs/README.md`](docs/README.md). For Android executable files use the complete [`Android build/APK/AAB/signing guide`](docs/android-build-guide.md); for command meanings and options use the [`command reference`](docs/command-reference.md).
+> **Release status:** 2.15.4 is a release candidate, not a verified public release until every exact-head automated and manual gate in [`docs/verification.md`](docs/verification.md) is complete.
 
-## Screenshots
+## Documentation entry points
 
-Verified screenshots are intentionally captured from real release-candidate builds rather than presented as fake production images. The capture checklist is in [`docs/assets/screenshots/README.md`](docs/assets/screenshots/README.md). Until those captures are added, the editable brand artwork at [`docs/assets/spendcalc-logo.svg`](docs/assets/spendcalc-logo.svg) is the repository's visual placeholder.
+- [Documentation index](docs/README.md)
+- [Android APK/AAB/build/install/signing guide](docs/android-build-guide.md)
+- [Complete command reference](docs/command-reference.md)
+- [Architecture](docs/architecture.md)
+- [Features](docs/features.md)
+- [Testing](docs/testing.md)
+- [Accessibility](docs/accessibility.md)
+- [Backup/restore](docs/backup-restore.md)
+- [Persistence invariants](docs/persistence-invariants.md)
+- [Release guide](docs/release.md)
+- [Blocking release verification checklist](docs/verification.md)
+- [Troubleshooting](docs/troubleshooting.md)
+- [Tracked-file codebase reference](docs/codebase-reference.md)
+- [Documentation source-of-truth map](docs/documentation-map.md)
 
-## Features
-
-### Expense calculation
-
-- Itemized expense lines with live totals.
-- Up to 100 editable expense items per calculation, with an explicit limit state to keep the eager Compose editor bounded.
-- Discount, tax, tip, and service-charge percentages.
-- Discount capped at 100% so valid input cannot produce a negative discounted base.
-- Split-bill calculation for 1 through 1,000,000 people.
-- Manual exchange-rate conversion with three-letter currency codes.
-- Precision-safe `BigDecimal` arithmetic and centralized rounding policy.
-- Bounded decimal precision/scale and input lengths to prevent pathological numeric expansion.
-- Receipt-style result view.
-
-### Save, find, and reuse
-
-- Room-backed calculation history.
-- Optional user-provided history labels, bounded to 120 characters, with a safe default when left blank.
-- UTF-16-safe saved-name truncation avoids splitting valid surrogate pairs such as emoji at the boundary.
-- Local history search by labels, currencies, totals, and per-person values, with a bounded 120-character query.
-- Individual history deletion with Snackbar Undo.
-- Clear-all confirmation.
-- Optional history auto-delete after 30 or 90 days.
-- Saved templates for common discount/tax/tip/service/split/currency settings.
-- Template naming displays the same 120-character guidance and Unicode-safe boundary behavior as history labels.
-- Template dialog confirmation uses a concise `Save` action distinct from the underlying `Save template` calculator action.
-- New saved history labels/template names are normalized at the persistence boundary, while already-valid restored names are preserved exactly.
-- Individual template deletion with Snackbar Undo.
-
-### Persistence integrity
-
-- Repositories are validation boundaries rather than passive DAO wrappers.
-- Shared persisted-record rules cover IDs, timestamps, canonical currency codes, saved names, history split/result bounds, and duplicate IDs in replacement collections.
-- History records are validated before save/restore/replace DAO writes.
-- Template settings are validated through the same `CalculatorEngine` rules used by the calculator, even when repository callers bypass the ViewModel.
-- Batch replacement validates the entire candidate set before invoking DAO replacement, so one invalid/duplicate record cannot clear valid existing data first.
-- Backup validation reuses the same persisted-record structural policy, preventing local persistence and explicit backup rules from drifting apart.
-
-See [`docs/persistence-invariants.md`](docs/persistence-invariants.md).
-
-### Backup and restore
-
-- Explicit user-driven local backup for history, templates, and preferences.
-- Android Storage Access Framework document creation/selection; no broad storage permission.
-- Visible busy/progress state while backup data is being read, written, or restored.
-- Duplicate backup actions are disabled while a backup operation is active.
-- Versioned, bounded backup format with URL-safe Base64 text fields.
-- SHA-256 accidental-corruption detection.
-- Strict schema, record, identifier, timestamp, currency, split, checksum, decimal, saved-name, duplicate-ID, and Unicode validation.
-- Backup document input rejects malformed/unmappable UTF-8 instead of silently replacing bytes.
-- Backup decode validates canonical persisted currency text exactly rather than repairing noncanonical forms.
-- Backup encoding rejects structurally invalid/noncanonical in-memory records instead of silently changing them.
-- Restore confirmation before replacing current data.
-- Valid decoded history labels/template names are restored without silent trimming or rewriting.
-- Transactional Room replacement plus compensating rollback for the separate DataStore preference write when a multi-store restore fails.
-
-See [`docs/backup-restore.md`](docs/backup-restore.md), [`docs/security-backup.md`](docs/security-backup.md), and [`docs/persistence-invariants.md`](docs/persistence-invariants.md).
-
-### Export
-
-- Plain-text receipt sharing.
-- CSV export with quote escaping and spreadsheet-formula neutralization for text cells.
-- Offline PDF receipt creation using Android `PdfDocument`.
-- Unicode-safe PDF line truncation preserves valid surrogate boundaries for long item names.
-- Cache-file sharing through a non-exported Android `FileProvider` with temporary read permission.
-- Canonical-path containment prevents sharing files outside the private export cache directory.
-- Backup/CSV/PDF file I/O runs off the main thread.
-
-### UI, branding, and accessibility
-
-- Jetpack Compose + Material 3.
-- Responsive phone/tablet layout.
-- Light, dark, and system theme modes.
-- Large-text preference.
-- Reduced-motion preference that removes navigation transitions when enabled.
-- Repository-owned vector icons for primary navigation with visible text labels.
-- Branded AndroidX launch splash treatment using the SpendCalc icon.
-- Externalized user-facing strings for localization readiness.
-- Clear validation text in addition to color/state styling.
-- Named-history/template dialogs include visible input guidance and unambiguous Save/Cancel actions.
-- First-run onboarding.
-- About screen with version, license, support, repository, funding, and credit.
-
-### Privacy
-
-- Core use requires no account.
-- Core calculation, history, templates, backup encoding, and receipt generation require no network.
-- Current manifest does not request Android Internet permission.
-- History/templates/preferences live in app-local storage.
-- No analytics or advertising SDK is required by the current implementation.
-- Android system-managed backup/device transfer is documented separately from user-created backup files.
-
-See [`PRIVACY.md`](PRIVACY.md) and [`SECURITY.md`](SECURITY.md).
-
-## Supported platform
+## Platform support
 
 | Platform | Status |
 | --- | --- |
 | Android API 26+ | Primary supported target |
 | Android phone | Supported |
-| Android tablet / wide screen | Responsive layout supported |
-| iOS / desktop / web | Not part of the 2.0.12 Android release candidate |
+| Android tablet / wide layout | Supported/responsive |
+| iOS | Not part of 2.15.4 |
+| Desktop | Not part of 2.15.4 |
+| Web/browser extension | Future work; deliberately separate from Android 2.15.4 stabilization |
+
+## Current release metadata
+
+```text
+Application ID: in.sanskar.spendcalc
+versionName: 2.15.4
+versionCode: 21504
+minSdk: 26
+targetSdk: 35
+compileSdk: 35
+Room schema: 1
+Explicit backup schema: 1
+Java/JVM target: 17
+```
+
+Application version bumps do not automatically change Room or backup schemas.
+
+## Features
+
+### Precision-safe expense calculation
+
+- Itemized expense lines.
+- Up to 100 editable items per calculation.
+- Discount percentage.
+- Tax percentage.
+- Tip percentage.
+- Service-charge percentage.
+- Split bill from 1 through the documented bounded maximum.
+- Manual currency conversion using three-letter currency codes.
+- `BigDecimal` finance arithmetic.
+- Centralized validation/rounding policy.
+- Receipt-style results.
+- Bounded numeric precision/scale/input lengths to prevent pathological expansion.
+
+### Deterministic calculation order
+
+1. Sum items.
+2. Calculate/subtract discount.
+3. Calculate tax/tip/service charge from the discounted base.
+4. Sum the discounted base and charges.
+5. Apply manual exchange rate.
+6. Round using the project policy.
+7. Divide by split count.
+
+Any change to this order should include exact regression tests and changelog/release documentation.
+
+### History
+
+- Room-backed local calculation history.
+- Optional user-provided labels.
+- Safe default label when left blank.
+- Saved-name length boundary and Unicode-safe truncation.
+- Search by meaningful stored data.
+- Bounded search query.
+- Individual delete.
+- Snackbar Undo.
+- Clear-all confirmation.
+- Optional 30/90-day retention behavior.
+
+### Templates
+
+- Save reusable calculation templates.
+- Load template settings back into the calculator.
+- Delete template.
+- Undo template deletion.
+- Shared saved-name/Unicode-boundary behavior.
+- Repository-level finance validation, even if a caller bypasses the ViewModel.
+
+### Persistence integrity
+
+Repositories are validation boundaries, not passive DAO wrappers.
+
+Shared persisted-record rules cover:
+
+- IDs;
+- timestamps;
+- canonical uppercase currency codes;
+- saved names;
+- split/result bounds;
+- duplicate IDs in replacement collections;
+- template finance settings.
+
+Batch replacement validates the full candidate set before destructive replacement.
+
+See [`docs/persistence-invariants.md`](docs/persistence-invariants.md).
+
+### Explicit local backup/restore
+
+- Android Storage Access Framework document creation/selection.
+- No broad storage permission.
+- Versioned bounded backup format.
+- URL-safe Base64 text fields.
+- SHA-256 accidental-corruption detection.
+- Strict schema/record/ID/timestamp/currency/split/decimal/name/duplicate validation.
+- Strict malformed/unmappable UTF-8 rejection.
+- Canonical persisted-currency validation without silent repair.
+- Confirmation before replacing local data.
+- Visible busy/progress state.
+- Duplicate backup actions disabled while work is active.
+- Room replacement plus compensating preference rollback across multi-store restore failures.
+
+The backup checksum is not a digital signature/MAC/authorship proof.
+
+See:
+
+- [`docs/backup-restore.md`](docs/backup-restore.md)
+- [`docs/security-backup.md`](docs/security-backup.md)
+- [`docs/privacy-backup.md`](docs/privacy-backup.md)
+
+### Export/share
+
+- Plain-text receipt sharing.
+- CSV export with quoting and spreadsheet-formula neutralization for text cells.
+- Offline PDF receipt generation with Android `PdfDocument`.
+- Unicode-safe PDF truncation.
+- Cache-file sharing through a non-exported `FileProvider`.
+- Canonical-path containment preventing export outside the intended private cache path.
+
+### UI/accessibility
+
+- Jetpack Compose + Material 3.
+- Responsive phone/tablet layout.
+- Light, dark, system themes.
+- App large-text preference.
+- Reduced-motion preference.
+- Branded AndroidX splash screen.
+- Repository-owned navigation icons.
+- Visible navigation labels.
+- User-facing strings in Android resources.
+- Validation messages that do not rely only on color.
+- First-run onboarding.
+- About screen with version/license/support/repository/funding/credit.
+
+### Privacy/local-first design
+
+- No account required for core use.
+- No remote API key required for core use.
+- No analytics/advertising SDK required by the current implementation.
+- Core calculation/history/templates/backup encoding/receipt generation are local.
+- Current manifest has no Android `INTERNET` permission.
+- History/templates/preferences live in app-local storage.
+
+See [`PRIVACY.md`](PRIVACY.md) and [`SECURITY.md`](SECURITY.md).
+
+## Architecture
+
+SpendCalc is a small layered modular monolith inside one Android app module:
+
+```text
+Compose UI
+   ↓
+SpendCalcViewModel
+   ↓
+Domain calculation + repository boundaries
+   ↓
+Room / DataStore
+
+Platform adapters:
+Document picker / FileProvider / PDF / share intents / external links
+```
+
+The domain finance layer is kept independent from Compose/Room/Activity/Android resources.
+
+Architecture decisions:
+
+- [ADR 0001 — BigDecimal finance arithmetic](docs/adr/0001-use-bigdecimal-for-finance.md)
+- [ADR 0002 — Local-first core](docs/adr/0002-local-first-core.md)
+- [ADR 0003 — Room and DataStore](docs/adr/0003-room-and-datastore.md)
+- [ADR 0004 — Versioned local backup](docs/adr/0004-versioned-local-backup.md)
 
 ## Tech stack
 
-- Kotlin
+- Kotlin 2.0.21
 - Jetpack Compose
 - Material 3
 - AndroidX SplashScreen
@@ -143,136 +233,71 @@ See [`PRIVACY.md`](PRIVACY.md) and [`SECURITY.md`](SECURITY.md).
 - AndroidX Lifecycle/ViewModel
 - Room + KSP
 - Preferences DataStore
-- Kotlin coroutines/Flow
+- Kotlin Coroutines + Flow
 - Android `PdfDocument`
-- JUnit + Android/Compose UI tests
-- GitHub Actions + CodeQL + Dependabot
+- JUnit
+- AndroidX Test / Espresso / Compose UI Test
+- GitHub Actions
+- CodeQL
+- Dependabot
 
-## Architecture
+Major dependency upgrades are intentionally reviewed independently rather than automatically mixed into release stabilization.
 
-SpendCalc follows a small layered modular-monolith approach inside one Android module:
-
-```text
-Compose UI
-   ↓
-SpendCalcViewModel
-   ↓
-Domain calculation + repositories
-   ↓
-Room / DataStore
-
-Platform adapters: document picker, FileProvider, PDF, share intents, external links
-```
-
-The domain layer does not depend on Compose, Room, Activity, or Android resources. It owns finance rules plus shared saved-name/persisted-record policies. Repositories remain authoritative persistence boundaries, and backup orchestration coordinates Room and DataStore through explicit repositories rather than bypassing them.
-
-Full details: [`docs/architecture.md`](docs/architecture.md)
-
-Architecture decisions:
-
-- [`ADR 0001 — BigDecimal finance arithmetic`](docs/adr/0001-use-bigdecimal-for-finance.md)
-- [`ADR 0002 — Local-first core`](docs/adr/0002-local-first-core.md)
-- [`ADR 0003 — Room and DataStore`](docs/adr/0003-room-and-datastore.md)
-- [`ADR 0004 — Versioned bounded backup format`](docs/adr/0004-versioned-local-backup.md)
-
-Persistence contract: [`docs/persistence-invariants.md`](docs/persistence-invariants.md)
-
-## Complete documentation
-
-SpendCalc treats documentation coverage as a repository invariant rather than a one-time release task.
-
-- [`docs/README.md`](docs/README.md) is the central documentation index and provides task-based reading paths.
-- [`docs/android-build-guide.md`](docs/android-build-guide.md) is the complete Android executable guide for environment verification, APK/AAB generation, output locations, ADB installation, signing, version inspection, checksums, and release artifact preparation.
-- [`docs/command-reference.md`](docs/command-reference.md) explains Git, Java, Gradle, ADB, Android packaging/signing, and all repository guard commands instead of requiring users to copy commands without understanding them.
-- [`docs/codebase-reference.md`](docs/codebase-reference.md) documents **every tracked file individually**, including root/build/configuration, `.github` automation/templates, production Kotlin, Android resources, JVM/instrumentation tests, scripts, policies, assets, and permanent/compatibility documentation.
-- [`docs/documentation-map.md`](docs/documentation-map.md) defines which document is authoritative for product behavior, architecture, build/commands, persistence/backup/security/privacy, testing, maintenance, release, ADRs, planning, and active-work continuity.
-- `scripts/check_documentation_coverage.py` compares the marked file index with `git ls-files` and fails when a tracked file is missing, a stale path remains documented, or a path is listed more than once.
-- `scripts/check_repository.py` requires the core documentation suite, validates local Markdown links/project identity, and checks the build/index/command documents against application release metadata parsed from `app/build.gradle.kts`.
-- Main CI and the lightweight Repository Audit run the repository/documentation guards.
-- Adding, deleting, or renaming a tracked file therefore requires updating the codebase reference in the same pull request.
-
-Useful documentation entry points:
-
-- [Documentation index](docs/README.md)
-- [Android APK/AAB/build/sign/install guide](docs/android-build-guide.md)
-- [Complete command reference](docs/command-reference.md)
-- [Features](docs/features.md)
-- [Architecture](docs/architecture.md)
-- [Codebase file reference](docs/codebase-reference.md)
-- [Documentation source-of-truth map](docs/documentation-map.md)
-- [Development](docs/development.md)
-- [Testing](docs/testing.md)
-- [Accessibility](docs/accessibility.md)
-- [Performance](docs/performance.md)
-- [Backup/restore](docs/backup-restore.md)
-- [Backup security](docs/security-backup.md)
-- [Backup privacy](docs/privacy-backup.md)
-- [Persistence invariants](docs/persistence-invariants.md)
-- [Release-candidate source audit](docs/release-candidate-final-audit.md)
-- [Release guide](docs/release.md)
-- [Release verification](docs/verification.md)
-- [Troubleshooting](docs/troubleshooting.md)
-
-## Calculation rule
-
-The calculation order is deterministic:
-
-1. Sum item amounts.
-2. Calculate discount from subtotal.
-3. Subtract discount.
-4. Calculate tax, tip, and service charge from the discounted base.
-5. Sum the discounted base and charges.
-6. Apply the manual exchange rate.
-7. Round monetary outputs using the configured policy.
-8. Divide by split count.
-
-Any behavior change to this order should include exact regression tests and changelog notes.
-
-## Quick start
-
-### Requirements
+## Requirements
 
 - Git
 - JDK 17
 - Android SDK Platform 35
-- Gradle 8.9 for command-line builds
+- Android Build-Tools/Platform-Tools
+- Gradle 8.9 for the documented command-line workflow
 
-The repository currently does **not** commit a Gradle wrapper. This is intentional; local commands use a compatible installed Gradle 8.9 or Android Studio environment, while CI pins Gradle 8.9 via `gradle/actions/setup-gradle`.
+The repository currently does not commit a Gradle wrapper JAR. CI pins Gradle through `gradle/actions/setup-gradle`.
 
-Clone:
+## Clone
 
 ```bash
 git clone https://github.com/sanskarIN/spendcalc.git
 cd spendcalc
 ```
 
-Build the debug APK:
+Optional local Git identity:
 
 ```bash
-gradle assembleDebug
+git config user.name "Sanskar"
+git config user.email "sanskarin@outlook.in"
 ```
 
-Expected debug executable:
+## Quick debug build
+
+```bash
+gradle --no-daemon assembleDebug
+```
+
+Expected APK:
 
 ```text
 app/build/outputs/apk/debug/app-debug.apk
 ```
 
-For Android Studio, open the repository, use JDK 17 for Gradle, allow sync to complete, select an API 26+ device/emulator, and run the `app` configuration.
-
-- Environment/setup: [`docs/setup.md`](docs/setup.md)
-- Complete APK/AAB/build/install/signing steps: [`docs/android-build-guide.md`](docs/android-build-guide.md)
-- Meaning of every project/tool command: [`docs/command-reference.md`](docs/command-reference.md)
-- Build failure diagnosis: [`docs/troubleshooting.md`](docs/troubleshooting.md)
-
-## Development checks
+Install with ADB:
 
 ```bash
-gradle testDebugUnitTest
-gradle assembleDebugAndroidTest
-gradle lint
-gradle assembleDebug
-gradle assembleRelease
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+Or:
+
+```bash
+gradle --no-daemon installDebug
+```
+
+See [`docs/android-build-guide.md`](docs/android-build-guide.md) for the complete build/sign/install flow.
+
+## Repository guards
+
+Run:
+
+```bash
 python3 scripts/check_format.py
 python3 scripts/check_kotlin_namespace.py
 python3 scripts/check_documentation_coverage.py
@@ -282,144 +307,160 @@ python3 scripts/check_repository.py
 python3 scripts/scan_secrets.py
 ```
 
-With an emulator/device:
+These cover formatting, Kotlin namespaces, exhaustive tracked-file documentation, Android resources, local-first security policy, repository metadata/version/doc/link consistency, and common secret patterns.
+
+## JVM/build checks
 
 ```bash
-gradle connectedDebugAndroidTest
+gradle --no-daemon clean testDebugUnitTest
+gradle --no-daemon assembleDebugAndroidTest
+gradle --no-daemon lint
+gradle --no-daemon assembleDebug
+gradle --no-daemon assembleRelease
+gradle --no-daemon bundleRelease
 ```
 
-See [`docs/development.md`](docs/development.md) and [`docs/command-reference.md`](docs/command-reference.md).
+## Connected Android tests
 
-## Testing
-
-The repository includes:
-
-- finance arithmetic, rounding, bounds, and validation unit tests;
-- deterministic seeded finance fuzz/regression coverage;
-- history/template repository tests covering names, canonical currencies, persisted-record envelopes, finance settings, exact restore behavior, duplicate replacement IDs, and fail-before-replace semantics;
-- shared persisted-record policy tests for identifiers, timestamps, currencies, split/result bounds, and template envelopes;
-- UTF-16-safe saved-name policy tests, including emoji-boundary and malformed-surrogate cases;
-- backup round-trip coverage for Unicode saved names at the saved-name boundary;
-- backup persisted-policy tests that reject noncanonical/invalid in-memory records before encoding and checksum-valid noncanonical currencies during decode;
-- strict malformed UTF-8 backup-byte decoder regression coverage;
-- backup corruption, schema, structural-bound, and semantic-validation tests;
-- deterministic seeded backup serialization/corruption fuzz coverage;
-- CSV security/escaping and receipt formatter tests;
-- export path-containment, Unicode-safe PDF truncation, and structured-log redaction tests;
-- Room history/template/backup integration tests;
-- Compose calculator, named-history-save/Unicode-boundary, template-name/Unicode-boundary, History label-filter, and Settings busy-state tests;
-- a real-activity calculate/named-save/history journey test;
-- fast repository guards for formatting, namespace, exhaustive tracked-file documentation, required-document/release-metadata alignment, string resources, Android local-first security, links/required files, and common secret patterns.
-
-CI compiles the instrumentation suite; final release verification still requires executing it on a connected emulator/device.
-
-Testing strategy: [`docs/testing.md`](docs/testing.md)
-
-## Build and release
-
-Debug build:
+With a device/emulator:
 
 ```bash
-gradle assembleDebug
+gradle --no-daemon connectedDebugAndroidTest
 ```
 
-Release compilation:
+The repository also includes an `Android Instrumentation` GitHub Actions workflow that runs the connected test suite on an API 35 emulator.
+
+Release verification requires connected execution, not only instrumentation compilation.
+
+## Test coverage areas
+
+The repository includes coverage for:
+
+- finance arithmetic/rounding/validation;
+- deterministic finance fuzz/regression cases;
+- history/template repositories;
+- persistence envelopes and duplicate IDs;
+- backup encode/decode/corruption/strict UTF-8 behavior;
+- Unicode saved-name boundaries;
+- CSV security/escaping;
+- PDF Unicode truncation;
+- path containment;
+- safe logging/redaction;
+- Room integration;
+- Compose calculator/history/settings/dialog behavior;
+- real-activity calculate → named save → History journey.
+
+The activity journey intentionally asserts that at least one correct formatted amount exists because the UI may expose the same amount in multiple legitimate semantics nodes.
+
+## Release build
 
 ```bash
-gradle assembleRelease
+gradle --no-daemon assembleRelease
+gradle --no-daemon bundleRelease
 ```
 
-Release App Bundle:
+Production signing material is not committed.
+
+Current production APK example after external signing:
+
+```text
+SpendCalc-2.15.4-release.apk
+```
+
+Verify signature:
 
 ```bash
-gradle bundleRelease
+apksigner verify --verbose --print-certs SpendCalc-2.15.4-release.apk
 ```
 
-Production signing material is **not** committed to the repository. Tagged release-candidate workflow runs produce an unsigned release artifact after repository/test/lint/release-build verification. Signing and store distribution use protected credentials outside source control.
+Install exact signed candidate:
 
-A configured, queued, pending, cancelled, or superseded workflow is not treated as a successful release check. The exact commit being released must satisfy [`docs/verification.md`](docs/verification.md), including connected-device/accessibility/export/backup/signing/screenshot gates that source CI cannot prove.
+```bash
+adb install SpendCalc-2.15.4-release.apk
+```
 
-Current tag target after all blocking gates pass: `v2.0.12`.
+Generate/record a SHA-256 checksum and exact source commit SHA before distribution.
 
-- Android artifact/build/signing guide: [`docs/android-build-guide.md`](docs/android-build-guide.md)
-- Command meanings: [`docs/command-reference.md`](docs/command-reference.md)
-- Release procedure: [`docs/release.md`](docs/release.md)
-- Blocking release checklist: [`docs/verification.md`](docs/verification.md)
+See [`docs/release.md`](docs/release.md).
 
-## CI and repository automation
+## Release gates
 
-- `CI`: format, Kotlin namespace, exhaustive tracked-file documentation coverage, Android string-resource audit, Android local-first security policy, repository/link/release-document audit, secret scan, JVM tests, instrumentation-test compilation, full Android lint, debug build, release build.
-- `CodeQL`: Java/Kotlin static analysis.
-- `Dependency Review`: pull-request dependency change review.
-- `Repository Audit`: required-document/local-link/release-metadata audit plus tracked-file documentation coverage and Android string-resource/reference/security guards.
-- `Dependabot`: weekly Gradle and GitHub Actions updates.
-- `Release Candidate`: tag-triggered unsigned release build.
-- Superseded PR workflow runs use concurrency cancellation so the newest revision receives runner priority.
+For the exact final 2.15.4 commit require successful:
 
-Repository workflow files live under [`.github/workflows/`](.github/workflows/).
+- CI;
+- CodeQL;
+- Dependency Review;
+- Repository Audit;
+- Android Instrumentation.
+
+Then complete the manual gates in [`docs/verification.md`](docs/verification.md), including:
+
+- representative Android device/emulator checks;
+- accessibility/font-scale/TalkBack/reduced-motion review;
+- small/wide layout review;
+- export/share/FileProvider checks;
+- backup/restore/malformed-data checks;
+- offline operation;
+- privacy/security review;
+- real screenshots with fictional data;
+- production signing;
+- signed artifact install/version/permission inspection;
+- checksum/source-SHA recording.
+
+Only after those gates are complete should `v2.15.4` be tagged/published.
+
+## Screenshots
+
+Real release screenshots are intentionally captured from verified builds rather than fabricated.
+
+Use fictional data only and follow [`docs/assets/screenshots/README.md`](docs/assets/screenshots/README.md).
+
+## Documentation invariants
+
+Documentation is treated as maintained engineering state:
+
+- `docs/README.md` is the task-oriented index.
+- `docs/codebase-reference.md` documents every tracked file exactly once.
+- `scripts/check_documentation_coverage.py` compares that inventory with `git ls-files`.
+- `docs/documentation-map.md` assigns authoritative documents by topic.
+- `scripts/check_repository.py` checks required files, local Markdown links, repository identity markers, and current application version alignment in release/build command documentation.
+
+When adding/renaming/deleting tracked files, update the codebase reference in the same change.
 
 ## Security
 
-SpendCalc minimizes permissions and remote dependencies. The export provider is non-exported, path-restricted, and grants temporary read access only during a user-selected share action. CSV text cells are escaped and common formula-leading characters are neutralized. Repository persistence and explicit backup parsing both fail closed for unsupported/malformed records, including malformed Unicode saved text, malformed UTF-8 document bytes, noncanonical persisted currencies, and invalid persisted-record envelopes.
+Please report vulnerabilities according to [`SECURITY.md`](SECURITY.md).
 
-The backup SHA-256 checksum detects accidental corruption; it is not a signature, MAC, encryption mechanism, or proof of backup authorship.
+Do not commit or paste into issues/PRs/logs:
 
-Do not report exploitable vulnerability details in a public issue. Follow [`SECURITY.md`](SECURITY.md).
+- production keystores/private keys;
+- passwords;
+- API tokens;
+- private user data;
+- real financial records;
+- machine-local secret configuration.
 
-## Privacy and data
+## Contribution
 
-History/templates use Room while preferences use DataStore. Users can name saved calculations, search/clear history, undo an individual history deletion, delete/undo templates, and configure history expiry. Explicit backup is user-selected and local; Android system backup/device transfer may separately include the documented private database/preferences according to OS/device settings.
+See:
 
-Read [`PRIVACY.md`](PRIVACY.md) and [`docs/privacy-backup.md`](docs/privacy-backup.md).
+- [`CONTRIBUTING.md`](CONTRIBUTING.md)
+- [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)
+- [`docs/development.md`](docs/development.md)
+- [`docs/testing.md`](docs/testing.md)
+- [`docs/command-reference.md`](docs/command-reference.md)
 
-## Accessibility
+## Support and project links
 
-Release checks include TalkBack traversal, large system font scale, light/dark/system themes, app large-text behavior, reduced-motion behavior, navigation-label semantics, named-history/template dialog semantics, backup-progress messaging, touch-target review, small/wide screen behavior, and non-color-only validation.
-
-Read [`docs/accessibility.md`](docs/accessibility.md).
-
-## Performance
-
-The app avoids network initialization, keeps ordinary calculation work in memory, caps the editable calculator at 100 line items, bounds history search and user/backup inputs, prevalidates replacement collections before DAO calls, and moves document/PDF/CSV file I/O off the main thread. Optimization should remain evidence-driven rather than replacing correct decimal math with unsafe primitives.
-
-Read [`docs/performance.md`](docs/performance.md).
-
-## Troubleshooting
-
-JDK, Android SDK, local Gradle/no-wrapper setup, documentation/resource/security guards, KSP/Room, emulator, persistence, export/backup, and release troubleshooting is documented in [`docs/troubleshooting.md`](docs/troubleshooting.md). Build/signing-specific troubleshooting is also cross-referenced from [`docs/android-build-guide.md`](docs/android-build-guide.md).
-
-## Contributing
-
-Contributions are welcome. Start with [`CONTRIBUTING.md`](CONTRIBUTING.md) and the pull-request checklist. Any new/renamed/deleted tracked file must update the exhaustive codebase reference in the same change.
-
-For local commits, the requested project commit email is:
-
-```bash
-git config user.email "sanskarin@outlook.in"
-```
-
-## Roadmap and changes
-
-- [`ROADMAP.md`](ROADMAP.md)
-- [`CHANGELOG.md`](CHANGELOG.md)
-- [`what_changed.md`](what_changed.md) — canonical multi-session engineering handoff/current verification state
-
-`what_changed_final.md` and `what_changed_latest.md` are retained only as compatibility pointers and must not be treated as newer state than `what_changed.md`.
-
-## Support and contact
-
-- Business: `sanskarin@outlook.in`
-- Business: `sanskarin.business@gmail.com`
-- Support: `supportramsandesh@gmail.com`
-- GitHub: https://github.com/sanskarIN
+- GitHub profile: https://github.com/sanskarIN
 - Repository: https://github.com/sanskarIN/spendcalc
-
-Funding is optional and never required to use SpendCalc:
-
-[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-sanskarIN-FFDD00?logo=buy-me-a-coffee&logoColor=000000)](https://buymeacoffee.com/sanskarIN)
+- Buy Me a Coffee: https://buymeacoffee.com/sanskarIN
+- Business: sanskarin@outlook.in
+- Business: sanskarin.business@gmail.com
+- Support: supportramsandesh@gmail.com
 
 ## License
 
-SpendCalc is open source under the [`MIT License`](LICENSE).
+SpendCalc is released under the **MIT License**. See [`LICENSE`](LICENSE).
 
 **Made by the Sanskar**
