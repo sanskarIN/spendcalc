@@ -25,6 +25,30 @@ class SafeLoggerTest {
     }
 
     @Test
+    fun `redacts common sensitive key variants`() {
+        val message = SafeLogger.format(
+            event = "event",
+            fields = mapOf(
+                "access_token" to "access-value",
+                "refreshToken" to "refresh-value",
+                "PASSWORD_HASH" to "password-value",
+                "api-key" to "api-value",
+                "stage" to "safe-value",
+            ),
+        )
+
+        assertFalse(message.contains("access-value"))
+        assertFalse(message.contains("refresh-value"))
+        assertFalse(message.contains("password-value"))
+        assertFalse(message.contains("api-value"))
+        assertTrue(message.contains("access_token=[REDACTED]"))
+        assertTrue(message.contains("refreshToken=[REDACTED]"))
+        assertTrue(message.contains("PASSWORD_HASH=[REDACTED]"))
+        assertTrue(message.contains("api-key=[REDACTED]"))
+        assertTrue(message.contains("stage=safe-value"))
+    }
+
+    @Test
     fun `redaction keys are locale independent`() {
         val previousLocale = Locale.getDefault()
         try {
