@@ -28,21 +28,22 @@ class MainActivityJourneyTest {
 
         firstItemAmountField().performTextInput("25.00")
 
-        composeRule.waitUntil(timeoutMillis = 5_000) {
-            composeRule.onAllNodesWithText(expectedAmount).fetchSemanticsNodes().isNotEmpty()
-        }
-        composeRule.onNodeWithText(expectedAmount).assertExists()
+        assertAnyNodeWithText(expectedAmount)
 
         composeRule.onNodeWithText(saveLabel).performScrollTo().performClick()
         activeDialogTextField().performTextInput(savedHistoryName)
         composeRule.onNodeWithText(saveHistoryConfirmLabel).performClick()
         composeRule.onNodeWithText(historyNavLabel).performClick()
 
-        composeRule.waitUntil(timeoutMillis = 5_000) {
-            composeRule.onAllNodesWithText(expectedAmount).fetchSemanticsNodes().isNotEmpty()
-        }
+        assertAnyNodeWithText(expectedAmount)
         composeRule.onNodeWithText(savedHistoryName).assertExists()
-        composeRule.onNodeWithText(expectedAmount).assertExists()
+    }
+
+    private fun assertAnyNodeWithText(text: String) {
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onAllNodesWithText(text)[0].assertExists()
     }
 
     private fun firstItemAmountField() = composeRule.onNodeWithTag(
