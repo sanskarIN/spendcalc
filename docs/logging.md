@@ -9,8 +9,8 @@ SpendCalc deliberately keeps production logging minimal because calculation labe
 - Log stable event metadata, not user content.
 - Never log receipt text, history/template names, backup contents, document contents, tokens, authorization values, cookies, passwords, API keys, signing material, or secrets.
 - Do not log raw file/document URIs when they may expose user-selected provider paths/account identifiers; prefer a stable operation/stage category.
-- Common sensitive field names are automatically replaced with `[REDACTED]`.
-- Sensitive-key matching is normalized with `Locale.ROOT` so redaction behavior does not change under locales such as Turkish.
+- Common sensitive field names and common key variants are automatically replaced with `[REDACTED]`.
+- Sensitive-key matching is normalized with `Locale.ROOT`, removes separators before classification, and treats sensitive fragments conservatively so variants such as `access_token`, `refreshToken`, `password_hash`, and `api-key` are redacted too.
 - Values are line-break sanitized and length-bounded before reaching Android Logcat.
 - Do not use `println`, direct `Log.*`, or exception dumps containing payloads for new production diagnostics when `SafeLogger` can express the event safely.
 - Release logs should be sparse, actionable, and safe if included in a sanitized bug report.
@@ -49,6 +49,6 @@ Opening GitHub, funding, or email applications is user-triggered. If diagnostics
 
 ## Testing
 
-`SafeLoggerTest` verifies redaction, newline sanitization, and locale-independent sensitive-key handling. Any new blocked category or change to key normalization should receive a regression assertion.
+`SafeLoggerTest` verifies exact and variant sensitive-key redaction, newline sanitization, and locale-independent sensitive-key handling. Any new blocked category or change to key normalization should receive a regression assertion.
 
 Logging-policy changes should also review [`SECURITY.md`](../SECURITY.md), [`PRIVACY.md`](../PRIVACY.md), and the documentation change matrix in [`documentation-map.md`](documentation-map.md) when they affect public privacy/security claims.
