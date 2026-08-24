@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate required repository metadata and local Markdown links."""
+"""Validate required repository metadata, release-doc version alignment, and local Markdown links."""
 
 from __future__ import annotations
 
@@ -24,16 +24,38 @@ REQUIRED_FILES = [
     ".editorconfig",
     ".gitattributes",
     ".env.example",
-    "docs/architecture.md",
-    "docs/setup.md",
-    "docs/development.md",
-    "docs/testing.md",
-    "docs/release.md",
-    "docs/troubleshooting.md",
+    "docs/README.md",
     "docs/accessibility.md",
-    "docs/performance.md",
+    "docs/adr/0001-use-bigdecimal-for-finance.md",
+    "docs/adr/0002-local-first-core.md",
+    "docs/adr/0003-room-and-datastore.md",
+    "docs/adr/0004-versioned-local-backup.md",
+    "docs/android-build-guide.md",
+    "docs/architecture.md",
+    "docs/assets/screenshots/README.md",
+    "docs/assets/spendcalc-logo.svg",
     "docs/backup-restore.md",
+    "docs/codebase-reference.md",
+    "docs/command-reference.md",
+    "docs/design-system.md",
+    "docs/development.md",
+    "docs/documentation-map.md",
+    "docs/features.md",
+    "docs/github-maintenance.md",
     "docs/logging.md",
+    "docs/performance.md",
+    "docs/persistence-invariants.md",
+    "docs/privacy-backup.md",
+    "docs/release-candidate-final-audit.md",
+    "docs/release.md",
+    "docs/security-backup.md",
+    "docs/setup.md",
+    "docs/testing.md",
+    "docs/troubleshooting.md",
+    "docs/verification.md",
+    "scripts/check_android_resources.py",
+    "scripts/check_android_security.py",
+    "scripts/check_documentation_coverage.py",
 ]
 README_REQUIREMENTS = [
     "Made by the Sanskar",
@@ -44,7 +66,15 @@ README_REQUIREMENTS = [
     "https://github.com/sanskarIN",
     "MIT",
 ]
+BUILD_VERSION_DOCS = [
+    "docs/README.md",
+    "docs/android-build-guide.md",
+    "docs/command-reference.md",
+]
 MARKDOWN_LINK = re.compile(r"(?<!!)\[[^\]]*\]\(([^)]+)\)")
+VERSION_NAME = re.compile(r'versionName\s*=\s*"([^"]+)"')
+VERSION_CODE = re.compile(r"versionCode\s*=\s*(\d+)")
+SIGNED_APK_VERSION = re.compile(r"SpendCalc-(\d+\.\d+\.\d+)-release\.apk")
 
 
 def local_target(markdown: Path, raw_target: str) -> Path | None:
@@ -55,6 +85,66 @@ def local_target(markdown: Path, raw_target: str) -> Path | None:
     if target.startswith("/"):
         return ROOT / target.lstrip("/")
     return markdown.parent / target
+
+
+def app_release_metadata(failures: list[str]) -> tuple[str, str] | None:
+    build_path = ROOT / "app/build.gradle.kts"
+    if not build_path.exists():
+        failures.append("missing app/build.gradle.kts; cannot validate release metadata")
+        return None
+
+    build_text = build_path.read_text(encoding="utf-8")
+    version_name_match = VERSION_NAME.search(build_text)
+    version_code_match = VERSION_CODE.search(build_text)
+    if version_name_match is None:
+        failures.append("app/build.gradle.kts missing parseable versionName")
+    if version_code_match is None:
+        failures.append("app/build.gradle.kts missing parseable versionCode")
+    if version_name_match is None or version_code_match is None:
+        return None
+
+    return version_name_match.group(1), version_code_match.group(1)
+
+
+def check_build_doc_versions(failures: list[str]) -> None:
+    metadata = app_release_metadata(failures)
+    if metadata is None:
+        return
+
+    version_name, version_code = metadata
+    version_code_marker = f"versionCode = {version_code}"
+
+    for relative in BUILD_VERSION_DOCS:
+        path = ROOT / relative
+        if not path.exists():
+            continue
+        text = path.read_text(encoding="utf-8")
+        if version_name not in text:
+            failures.append(
+                f"{relative}: missing current app versionName {version_name}",
+            )
+        if version_code_marker not in text:
+            failures.append(
+                f"{relative}: missing current {version_code_marker}",
+            )
+
+    for relative in ("docs/android-build-guide.md", "docs/command-reference.md"):
+        path = ROOT / relative
+        if not path.exists():
+            continue
+        text = path.read_text(encoding="utf-8")
+        stale_names = sorted(
+            {
+                match.group(1)
+                for match in SIGNED_APK_VERSION.finditer(text)
+                if match.group(1) != version_name
+            },
+        )
+        if stale_names:
+            failures.append(
+                f"{relative}: signed APK examples use stale app versions: "
+                + ", ".join(stale_names),
+            )
 
 
 def main() -> int:
@@ -70,6 +160,8 @@ def main() -> int:
         for required_text in README_REQUIREMENTS:
             if required_text not in readme:
                 failures.append(f"README.md missing required text: {required_text}")
+
+    check_build_doc_versions(failures)
 
     for markdown in sorted(ROOT.rglob("*.md")):
         if any(part in {".git", "build", ".gradle"} for part in markdown.parts):

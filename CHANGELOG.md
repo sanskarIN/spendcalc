@@ -4,42 +4,115 @@ All notable changes to SpendCalc are documented here. The project follows a sema
 
 ## [Unreleased]
 
+Current release candidate: **2.15.4** (`versionCode 21504`). This candidate is not considered a verified public release until the exact-head automated and manual gates in `docs/verification.md` are complete.
+
 ### Added
 
 - Android application bootstrap with Kotlin and Jetpack Compose.
-- Precision-safe `BigDecimal` calculation engine.
+- Precision-safe `BigDecimal` calculation engine with explicit rounding policy.
 - Itemized expense totals.
 - Discount, tax, tip, service-charge, and split-bill calculations.
-- Manual exchange-rate conversion with configurable currency codes.
+- Manual exchange-rate conversion with configurable three-letter currency codes.
 - Receipt-style result presentation.
-- Room-backed calculation history with individual deletion and clear-all controls.
+- Room-backed calculation history with individual deletion, clear-all confirmation, search/filter, and undo after individual deletion.
+- Optional user-provided labels when saving calculations so history search can find meaningful names; blank labels retain the safe `Calculation` fallback.
 - Optional 30-day and 90-day automatic history retention.
-- Room-backed reusable calculation templates.
-- DataStore preferences for theme, accessibility, retention, and onboarding.
+- Room-backed reusable calculation templates with undo after individual deletion.
+- DataStore preferences for theme, large text, reduced motion, retention, and onboarding.
 - Light, dark, and system appearance modes.
-- Large-text and reduced-motion preferences.
+- Reduced-motion-aware navigation transitions.
 - First-run onboarding.
+- Branded AndroidX launch splash screen using repository-owned SpendCalc artwork.
+- Repository-owned vector icons for Calculator, History, Templates, and Settings navigation.
 - CSV export with spreadsheet-formula neutralization for text cells.
 - Plain-text receipt sharing.
 - Offline Android PDF receipt generation.
 - Secure cache-file sharing through a non-exported `FileProvider`.
+- User-driven local backup/export and restore for history, templates, and preferences through Android's document picker.
+- Visible modal backup progress state while backup reads, writes, serialization, or restore work is active.
+- Versioned backup format with SHA-256 corruption detection, strict record validation, bounded decoding, duplicate-ID rejection, and compensating rollback if a multi-store restore fails.
+- Shared persisted-record policy covering IDs, timestamps, canonical currencies, saved names, split counts, and stored history result bounds.
 - Responsive phone/tablet calculator layout.
 - About/support/funding UI with `Made by the Sanskar` credit.
-- Unit tests for calculation arithmetic, rounding, validation, repositories, and exports.
-- Android integration tests for Room persistence and a Compose calculator smoke test.
+- Sequenced user-feedback events so repeated saves, deletes, backup results, and errors are not collapsed by `StateFlow` equality.
+- Unit tests for calculation arithmetic, validation, repositories, backup codec, exports, path containment, safe logging, and UI-state feedback sequencing.
+- Deterministic seeded fuzz/regression coverage for finance arithmetic and backup serialization/corruption handling.
+- Android integration tests for Room persistence and backup replacement, plus Compose and real-activity journey smoke tests.
+- Compose regression coverage for named-history save behavior, template naming, History filtering, Settings backup busy state, and Unicode boundaries.
+- UTF-16-safe saved-name policy tests plus backup round-trip coverage at emoji boundaries.
+- Persisted-record policy tests covering invalid history/template envelopes, strict decoded currency forms, and backup encode rejection.
+- Platform regression coverage for malformed UTF-8 backup bytes and surrogate-safe PDF line truncation.
+- CI compilation of instrumentation tests in addition to JVM tests, full Android lint, debug build, and release compilation.
+- Android manifest/FileProvider local-first policy guard in CI.
+- Android string-resource reference/duplicate-name audit in CI and Repository Audit.
+- Exhaustive `docs/codebase-reference.md` documenting every tracked file and its ownership/invariant role.
+- `docs/documentation-map.md` defining documentation authority, update triggers, anti-drift rules, and a change-to-document matrix.
+- `docs/README.md` as the task-oriented documentation index.
+- `docs/android-build-guide.md` with Android APK/AAB generation, output discovery, ADB installation, signing, artifact/version inspection, checksum, and release troubleshooting guidance.
+- `docs/command-reference.md` explaining Git, Java, Gradle, ADB, Android packaging/signing utilities, repository guards, options, and examples.
+- `scripts/check_documentation_coverage.py` comparing the file index with `git ls-files` and rejecting missing/stale/duplicate inventory entries.
+- Documentation coverage enforcement in CI and Repository Audit.
 - Project policies for privacy, security, support, contribution, and community conduct.
-- Complete Android build/executable documentation covering debug APK, release APK, AAB generation, output locations, ADB installation, Gradle diagnostics, release signing, `zipalign`, `apksigner`, `jarsigner`, checksum verification, and release testing.
-- Central `docs/README.md` documentation index with setup, development, testing, architecture, release, troubleshooting, accessibility, performance, security, and privacy reading paths.
-- Detailed `docs/command-reference.md` explaining Git, Java, Gradle, ADB, Android SDK signing/packaging tools, repository scripts, command options, and expected behavior.
-- Expanded Windows/macOS/Linux setup, release, and troubleshooting documentation.
+
+### Changed
+
+- Release metadata now targets SpendCalc `2.15.4` with Android `versionCode` `21504`; Room database version and explicit backup schema version remain independent compatibility versions at `1`.
+- Release/build/command/root documentation has been retargeted to the 2.15.4 candidate and current signed-APK examples use `SpendCalc-2.15.4-release.apk`.
+- `docs/verification.md` now defines the blocking 2.15.4 exact-head, Android runtime, accessibility, export, backup, offline, signing, screenshot, and artifact gates.
+- `docs/release.md` now defines the exact-source 2.15.4 build/sign/tag/publication workflow and dependency-upgrade isolation rules.
+- The real-activity calculate → save → History instrumentation journey no longer incorrectly requires formatted amount text to exist in exactly one Compose semantics node; it waits for and asserts at least one valid matching amount while still requiring the saved history name.
+- Discount validation caps discounts at 100% so a valid discount cannot make the taxable base negative.
+- Monetary/exchange-rate inputs are bounded by supported precision, scale, text length, and integer-digit limits.
+- Split counts are bounded to 1 through 1,000,000.
+- Editable expense items are capped at 100 with a visible UI limit state to bound eager Compose work.
+- Calculator item/name/input counts are bounded before expensive conversion or rendering work.
+- Saved history labels and template names share one 120-character domain limit.
+- Saved-name truncation is UTF-16 safe and cannot split a valid surrogate pair such as an emoji at the length boundary.
+- Valid history/template names entering restore/replace paths are validated and preserved exactly rather than silently trimmed or rewritten.
+- Saved-name normalization occurs at the repository boundary.
+- History search input is capped at 120 characters using the shared Unicode-safe truncation policy.
+- Template naming displays the same 120-character guidance and uses a concise `Save` confirmation distinct from the underlying `Save template` control.
+- Template persistence validates finance settings at the repository boundary rather than trusting ViewModel-only validation.
+- History/template repositories validate persisted record envelopes before writes.
+- Restore/replace validates every mapped record and duplicate identifier before DAO replacement.
+- Backup validation reuses persisted-record policy, including canonical currency forms, and decode does not silently normalize noncanonical persisted currency text.
+- The production container shares one `CalculatorEngine` validator instance with template persistence.
+- Backup document I/O runs on `Dispatchers.IO`; bounded backup encode/decode runs on `Dispatchers.Default`.
+- Room history/templates are captured in one transaction for backups and restored with batch DAO inserts.
+- Backup result decimals accept the full bounded magnitude that `CalculatorEngine` can legitimately produce.
+- Returning users remain on the splash screen until stored preferences load, avoiding a false onboarding flash.
+- Corrupted Preferences DataStore files recover to safe default preferences without deleting Room history/templates.
+- PDF receipt line truncation reuses Unicode-safe truncation.
+- Bottom-navigation icon graphics are decorative when a visible text label provides the accessible name, avoiding duplicate screen-reader announcements.
+- GitHub Actions use maintained action majors and concurrency cancellation for superseded pull-request runs.
+- Android instrumentation disables emulator metrics collection.
+- Compose instrumentation targets exact editable fields with stable non-user-facing test tags instead of Material label merging or field ordering.
+- CI runs Android lint across configured variants rather than only debug.
+- Development/testing/architecture/setup/contribution/maintenance/release/build/command documentation follows one source-of-truth model.
+- The intentional absence of a committed Gradle wrapper is documented; local documentation uses compatible Gradle 8.9 while CI pins Gradle 8.9.
+- The tag-triggered release workflow runs repository guards, JVM tests, instrumentation compilation, full lint, and release compilation before uploading an unsigned artifact.
+- Repository required-file auditing covers the permanent documentation/ADR/brand-screenshot-policy suite.
+- Repository audit derives `versionName`/`versionCode` from `app/build.gradle.kts`, requires current build/index/command docs to match them, and rejects stale semantic-versioned signed-APK examples.
+- Major dependency upgrades remain separate maintenance work unless independently verified or required to resolve a release blocker.
 
 ### Security
 
-- Core application currently requires no Android Internet permission.
-- Export sharing uses app-private cache files and temporary URI read permission.
+- Core application requires no Android Internet permission, and CI fails if that manifest invariant regresses.
+- Export sharing uses app-private `cache/exports` files and temporary URI read permission; CI verifies FileProvider remains non-exported and exposes only the intended cache path.
+- Export path containment uses canonical path semantics rather than vulnerable string-prefix matching.
 - CSV text values are protected from common spreadsheet formula injection prefixes.
-- Release documentation explicitly keeps production keystores, private keys, signing passwords, and credentials outside Git.
+- Backup document reading uses a strict UTF-8 decoder that reports malformed/unmappable byte sequences.
+- Backup parser rejects oversized payloads, excessive line counts, malformed checksums, exponent-expansion decimal shapes, duplicate IDs, invalid timestamps, invalid/noncanonical currencies, unsupported schema versions, oversized saved names, malformed UTF-8, and out-of-contract result magnitudes.
+- Backup export rejects malformed Unicode instead of silently replacing invalid surrogate data.
+- Saved-name hardening prevents normal UI truncation from manufacturing malformed trailing surrogate data.
+- Repository persistence rejects invalid IDs, timestamps, result shapes, split counts, finance settings, and duplicate batch IDs before DAO writes/replacement.
+- Structured logging redacts sensitive keys using locale-independent normalization.
+- Production signing material is intentionally not stored in the repository.
 
-## [1.0.0] - Planned
+## [2.15.4] - Release Candidate
 
-First production release after clean-build, lint, test, security, accessibility, documentation, and release-candidate verification are complete.
+Prepared as the current Android release target. Final release remains blocked on successful exact-head CI, CodeQL, Dependency Review, Repository Audit, Android Instrumentation, and the manual Android/accessibility/export/backup/offline/screenshot/signing/artifact gates documented in `docs/verification.md`.
+
+## [2.0.12] - Superseded Candidate
+
+The earlier 2.0.12 stabilization milestone is retained as historical engineering context. It was superseded by the 2.15.4 release target before being represented here as the current verified public release.

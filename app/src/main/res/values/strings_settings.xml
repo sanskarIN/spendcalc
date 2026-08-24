@@ -1,11 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="templates_subtitle">Reuse common charge, split, and currency settings.</string>
-    <string name="settings_subtitle">Control appearance, accessibility, privacy, and data retention.</string>
+    <string name="settings_subtitle">Control appearance, accessibility, privacy, data retention, and local backups.</string>
     <string name="large_text_description">Increase important app text sizes.</string>
     <string name="reduced_motion_description">Minimize non-essential motion and animation.</string>
     <string name="auto_delete_description">Automatically remove older saved calculations.</string>
     <string name="privacy_title">Local-first privacy</string>
+    <string name="backup_section">Backup and restore</string>
+    <string name="backup_description">Export history, templates, and preferences to a file you choose. Restoring replaces the current saved data after confirmation.</string>
+    <string name="backup_in_progress">Backup operation in progress…</string>
+    <string name="export_backup">Export backup</string>
+    <string name="restore_backup">Restore backup</string>
+    <string name="restore_backup_title">Replace saved SpendCalc data?</string>
+    <string name="restore_backup_confirmation">The selected backup will replace current history, templates, and preferences. This action cannot be undone unless you export a backup first.</string>
+    <string name="confirm_restore">Restore</string>
+    <string name="backup_file_name">spendcalc-backup.spendcalc</string>
     <string name="project_updates">Project updates</string>
     <string name="project_updates_description">Open the public repository to review releases and changes.</string>
     <string name="open_repository">Open repository</string>

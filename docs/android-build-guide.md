@@ -1,61 +1,55 @@
 # SpendCalc Android Build, APK, AAB, Signing, and Installation Guide
 
-This document explains how to turn the SpendCalc source code into Android executable/distribution files and how to verify, install, test, sign, and prepare those files for distribution.
-
-It is intentionally detailed. A new contributor should be able to start with a clean computer, understand what each major tool does, build SpendCalc, find the generated files, install the APK on a device, and understand the difference between debug, release, APK, and AAB artifacts.
+This guide explains how to build, test, install, inspect, sign, and verify SpendCalc Android artifacts from source.
 
 > Repository: `https://github.com/sanskarIN/spendcalc`
 >
-> Android application ID: `in.sanskar.spendcalc`
+> Application ID: `in.sanskar.spendcalc`
 >
-> Minimum Android version: API 26 (Android 8.0 Oreo)
+> Current release candidate: `2.15.4`
 >
-> Compile/target SDK: API 35
+> Android `versionCode = 21504`
+>
+> Minimum Android API: 26
+>
+> Compile/target API: 35
 >
 > Java/JVM target: 17
 >
-> Primary language: Kotlin
->
-> UI toolkit: Jetpack Compose + Material 3
->
-> Current app version: `1.0.0` (`versionCode = 1`)
+> Primary language/UI: Kotlin + Jetpack Compose + Material 3
+
+The application version is independent from the Room database schema and explicit SpendCalc backup schema. Both compatibility schemas remain at version `1` unless their stored formats actually change.
 
 ---
 
-## 1. What is an Android executable file?
+## 1. Android artifact types
 
-Android commonly uses two application package formats:
+### APK
 
-### APK — Android Package Kit
+An APK is an installable Android application package.
 
-An `.apk` file is an installable Android application package. It can be installed directly on a compatible Android phone, tablet, emulator, Android TV device if the app supports that form factor, or another Android environment.
+SpendCalc commonly produces:
 
-For SpendCalc, the most useful APK types are:
+- a **debug APK** for development and local testing;
+- a **release APK** for optimized distribution preparation.
 
-- **Debug APK** — intended for development and testing. Gradle signs it automatically with a debug key.
-- **Release APK** — optimized for release. In this repository, production signing credentials are intentionally not stored in Git, so the default release artifact must be signed outside the repository before normal distribution.
+Debug APKs are automatically signed with a development key. Production release artifacts must use a controlled production signing identity that is never committed to Git.
 
-### AAB — Android App Bundle
+### AAB
 
-An `.aab` file is a publishing bundle, primarily used for Google Play and other tooling that creates device-specific APKs. Users normally do not install an AAB directly by tapping it.
-
-The store or `bundletool` turns an AAB into one or more APKs appropriate for a device.
-
-### Which one should I create?
+An Android App Bundle (`.aab`) is the preferred publishing format for Google Play. An AAB is not normally installed directly with `adb install`; the store or `bundletool` generates device-specific APKs from it.
 
 Use:
 
-- `APK` for local testing, direct installation, internal sharing, or sideloading.
-- `AAB` for Google Play publishing.
-- a **signed release APK/AAB** for actual production distribution.
+- APK for local/device testing and direct distribution;
+- AAB for app-store publishing;
+- signed production artifacts only after the exact source commit passes the release gates.
 
 ---
 
-## 2. SpendCalc build configuration
+## 2. Current Android build metadata
 
-The Android configuration is defined in `app/build.gradle.kts`.
-
-Important values are:
+`app/build.gradle.kts` is authoritative for application release metadata.
 
 ```kotlin
 android {
@@ -66,8 +60,8 @@ android {
         applicationId = "in.sanskar.spendcalc"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 21504
+        versionName = "2.15.4"
     }
 }
 ```
@@ -76,15 +70,15 @@ Meaning:
 
 | Setting | Meaning |
 | --- | --- |
-| `namespace` | Kotlin/Android generated-code namespace used by the module. |
-| `applicationId` | Unique Android package identity installed on the device and used by app stores. |
-| `minSdk = 26` | The app is declared compatible with Android API 26 and newer. |
-| `targetSdk = 35` | The Android behavior level against which the app declares that it has been tested. |
-| `compileSdk = 35` | Android SDK API level used to compile the source. |
-| `versionCode = 1` | Internal monotonically increasing integer used by Android/store upgrade logic. |
-| `versionName = "1.0.0"` | Human-readable release version. |
+| `namespace` | Android/Kotlin generated-code namespace. |
+| `applicationId` | Installed/store package identity. |
+| `minSdk = 26` | Oldest declared supported Android API. |
+| `targetSdk = 35` | Android behavior level the app targets. |
+| `compileSdk = 35` | SDK level used to compile the app. |
+| `versionCode = 21504` | Monotonically increasing Android/store upgrade number for 2.15.4. |
+| `versionName = "2.15.4"` | Human-readable application version. |
 
-The release build also enables:
+Release builds enable code/resource shrinking:
 
 ```kotlin
 release {
@@ -93,142 +87,62 @@ release {
 }
 ```
 
-`isMinifyEnabled = true` enables release code optimization/shrinking through R8. `isShrinkResources = true` removes resources that can be proven unused after code shrinking.
-
-The project compiles Java/Kotlin bytecode for Java 17:
-
-```kotlin
-compileOptions {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
-}
-
-kotlinOptions {
-    jvmTarget = "17"
-}
-```
+The project targets Java/JVM 17.
 
 ---
 
-## 3. Required development tools
+## 3. Required tools
 
-### 3.1 Git
+Install and verify:
 
-Git downloads the source repository and tracks code changes.
+1. Git.
+2. JDK 17.
+3. Android Studio.
+4. Android SDK Platform 35.
+5. Android SDK Build-Tools.
+6. Android SDK Platform-Tools (`adb`).
+7. Gradle 8.9 for the repository's documented command-line workflow.
 
-Check installation:
+The repository does not commit a Gradle wrapper JAR, so examples use the global `gradle` command.
+
+Check the environment:
 
 ```bash
 git --version
-```
-
-Example output:
-
-```text
-git version 2.x.x
-```
-
-### 3.2 JDK 17
-
-The Java Development Kit supplies the JVM and Java tools required by Gradle and Android build tooling.
-
-Check Java:
-
-```bash
 java -version
-```
-
-Check the Java compiler:
-
-```bash
 javac -version
-```
-
-Both should resolve to a JDK 17 installation for this project.
-
-`java` runs Java applications. `javac` is the Java compiler. Android Studio may include its own JetBrains Runtime/JDK, but command-line Gradle must also be able to find a compatible Java installation.
-
-### 3.3 Android Studio
-
-Android Studio provides:
-
-- Android SDK Manager;
-- emulator/AVD management;
-- Android debugging;
-- Logcat;
-- APK/App Bundle generation UI;
-- project sync and editing;
-- device deployment.
-
-Install Android SDK Platform 35 and compatible Build-Tools from Android Studio's SDK Manager.
-
-### 3.4 Android SDK Platform 35
-
-SpendCalc uses `compileSdk = 35`, so the Android 35 platform must be installed on the build machine.
-
-### 3.5 Android SDK Build-Tools
-
-Build-Tools contain utilities such as `aapt2`, `zipalign`, and `apksigner` used during packaging/signing workflows.
-
-### 3.6 Gradle 8.9
-
-The repository currently does **not** commit a Gradle wrapper JAR. The documented local build therefore uses a compatible local Gradle installation. The project uses Android Gradle Plugin `8.7.3`; this repository standardizes development/CI documentation on Gradle `8.9`.
-
-Check Gradle:
-
-```bash
 gradle --version
+adb version
 ```
 
-The command prints the Gradle version, JVM, operating system, and other environment information.
+For this repository, `java`/`javac` should resolve to JDK 17 and Gradle should be compatible with Android Gradle Plugin 8.7.3.
 
 ---
 
-## 4. Clone the project
-
-Run:
+## 4. Clone and enter the repository
 
 ```bash
 git clone https://github.com/sanskarIN/spendcalc.git
-```
-
-Meaning:
-
-- `git` starts the Git command-line client.
-- `clone` copies a remote repository and its history to the local machine.
-- the URL identifies the SpendCalc GitHub repository.
-
-Enter the project directory:
-
-```bash
 cd spendcalc
-```
-
-`cd` means **change directory**.
-
-Confirm repository status:
-
-```bash
 git status
 ```
 
-This reports the current branch and any modified/untracked files.
-
-Optional requested local commit identity:
+Optional repository-local Git identity:
 
 ```bash
+git config user.name "Sanskar"
 git config user.email "sanskarin@outlook.in"
 ```
 
-This sets the Git commit email for this repository clone only.
+Do not commit machine-specific Android SDK paths, keystores, passwords, tokens, or private configuration.
 
 ---
 
-## 5. Configure the Android SDK path
+## 5. Configure the Android SDK
 
-Android Studio usually creates `local.properties` automatically.
+Android Studio normally generates `local.properties` automatically.
 
-A typical file contains only the local SDK path.
+Typical examples:
 
 ### Windows
 
@@ -248,116 +162,88 @@ sdk.dir=/Users/YOUR_USER/Library/Android/sdk
 sdk.dir=/home/YOUR_USER/Android/Sdk
 ```
 
-Do not commit `local.properties`. It is machine-specific.
+`local.properties` is machine-specific and must not be committed.
 
 ---
 
-## 6. Understand the Gradle command structure
+## 6. Verify the project before building
 
-A command such as:
-
-```bash
-gradle assembleDebug
-```
-
-has two important parts:
-
-- `gradle` — starts Gradle using the current project.
-- `assembleDebug` — runs the task that assembles the debug variant.
-
-To view available tasks:
+Run repository guards first:
 
 ```bash
-gradle tasks
+python3 scripts/check_format.py
+python3 scripts/check_kotlin_namespace.py
+python3 scripts/check_documentation_coverage.py
+python3 scripts/check_android_resources.py
+python3 scripts/check_android_security.py
+python3 scripts/check_repository.py
+python3 scripts/scan_secrets.py
 ```
 
-To see all tasks, including less commonly displayed tasks:
+On Windows, use `python` instead of `python3` if that is how Python is installed.
 
-```bash
-gradle tasks --all
-```
-
-To ask Gradle for help:
-
-```bash
-gradle help
-```
-
-To see detailed build information:
-
-```bash
-gradle assembleDebug --info
-```
-
-To see stack traces after a failure:
-
-```bash
-gradle assembleDebug --stacktrace
-```
-
-For an even more verbose stack trace:
-
-```bash
-gradle assembleDebug --full-stacktrace
-```
-
-`--stacktrace` is especially useful when an error message is too short to identify its source.
+These checks cover text hygiene, namespaces, tracked-file documentation, Android resource references, local-first Android security policy, required repository metadata/links/version alignment, and common secret patterns.
 
 ---
 
-## 7. First recommended verification build
-
-From the repository root, run:
+## 7. Clean and run JVM tests
 
 ```bash
-gradle clean
+gradle --no-daemon clean
+gradle --no-daemon testDebugUnitTest
 ```
 
-`clean` removes Gradle-generated build output for the project so the next build does not depend on old compiled artifacts.
+`clean` removes generated build output.
 
-Then run unit tests:
-
-```bash
-gradle testDebugUnitTest
-```
-
-This executes local JVM unit tests for the debug variant.
-
-Run Android lint:
-
-```bash
-gradle lintDebug
-```
-
-Android Lint performs static analysis for Android correctness, API, resource, accessibility, and other issues.
-
-Build the debug APK:
-
-```bash
-gradle assembleDebug
-```
-
-A successful command normally ends with a Gradle success message.
+`testDebugUnitTest` runs local JVM tests, including finance arithmetic, persistence/repository behavior, backup encoding/validation, exports, path safety, safe logging, and deterministic regression/fuzz coverage.
 
 ---
 
-## 8. Build the debug APK
+## 8. Compile Android instrumentation tests
 
-Command:
+Before running an emulator/device, confirm Android test sources compile:
 
 ```bash
-gradle assembleDebug
+gradle --no-daemon assembleDebugAndroidTest
 ```
 
-Expected output file:
+This does not execute connected tests. It proves the instrumentation test APK can be built.
+
+---
+
+## 9. Run Android lint
+
+Run the full lint task used by CI:
+
+```bash
+gradle --no-daemon lint
+```
+
+For a debug-focused local pass:
+
+```bash
+gradle --no-daemon lintDebug
+```
+
+Review generated reports under `app/build/reports/` if lint fails.
+
+---
+
+## 10. Build the debug APK
+
+```bash
+gradle --no-daemon assembleDebug
+```
+
+Expected artifact:
 
 ```text
 app/build/outputs/apk/debug/app-debug.apk
 ```
 
-The debug APK is automatically signed with a development/debug signing key and can normally be installed directly on a test device.
+Inspect it:
 
-### Windows PowerShell — verify that the APK exists
+### Windows PowerShell
 
 ```powershell
 Get-Item .\app\build\outputs\apk\debug\app-debug.apk
@@ -377,186 +263,142 @@ ls -lh app/build/outputs/apk/debug/app-debug.apk
 
 ---
 
-## 9. Build the release APK
+## 11. Install the debug APK
 
-Command:
+With one compatible device/emulator connected:
 
 ```bash
-gradle assembleRelease
+adb devices
+adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Because production signing material is deliberately not stored in the repository, the release output should be treated as an unsigned release artifact until a maintainer signs it securely.
+Or let Gradle build/install it:
 
-Expected output directory:
+```bash
+gradle --no-daemon installDebug
+```
+
+If multiple devices are attached, select one explicitly:
+
+```bash
+adb -s emulator-5554 install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+Launch the installed app with a basic launcher smoke command:
+
+```bash
+adb shell monkey -p in.sanskar.spendcalc 1
+```
+
+---
+
+## 12. Run connected Android instrumentation tests
+
+Start a compatible emulator or attach a physical Android device, then run:
+
+```bash
+gradle --no-daemon connectedDebugAndroidTest
+```
+
+This builds, installs, and executes Android instrumentation tests.
+
+The GitHub Actions `Android Instrumentation` workflow runs the connected suite on an API 35 Google APIs x86_64 emulator. A release candidate is not considered fully verified merely because the test APK compiles; the connected test workflow must execute successfully for the exact release commit.
+
+---
+
+## 13. Build the release APK
+
+```bash
+gradle --no-daemon assembleRelease
+```
+
+Expected directory:
 
 ```text
 app/build/outputs/apk/release/
 ```
 
-Common output name for an unsigned Android release is:
+The repository intentionally does not contain production signing material, so treat the default release output as unsigned/untrusted for production until it is securely signed outside source control.
 
-```text
-app-release-unsigned.apk
-```
-
-Always inspect the actual directory instead of assuming a file name:
-
-### Windows PowerShell
-
-```powershell
-Get-ChildItem .\app\build\outputs\apk\release\
-```
-
-### Windows Command Prompt
-
-```cmd
-dir app\build\outputs\apk\release\
-```
-
-### macOS/Linux
+Inspect the directory instead of assuming a generated filename:
 
 ```bash
 ls -lh app/build/outputs/apk/release/
 ```
 
----
+or on PowerShell:
 
-## 10. Build the Android App Bundle (AAB)
-
-For store publishing, build the release bundle:
-
-```bash
-gradle bundleRelease
+```powershell
+Get-ChildItem .\app\build\outputs\apk\release\
 ```
 
-Expected output directory:
+---
+
+## 14. Build the release AAB
+
+```bash
+gradle --no-daemon bundleRelease
+```
+
+Expected directory:
 
 ```text
 app/build/outputs/bundle/release/
 ```
 
-Typical file:
+Typical bundle path:
 
 ```text
-app-release.aab
+app/build/outputs/bundle/release/app-release.aab
 ```
 
-Inspect it:
-
-### Windows PowerShell
-
-```powershell
-Get-ChildItem .\app\build\outputs\bundle\release\
-```
-
-### macOS/Linux
-
-```bash
-ls -lh app/build/outputs/bundle/release/
-```
-
-An AAB is a publishing artifact. It is not normally installed directly with `adb install`.
+An AAB is primarily a publishing artifact and is not installed directly with `adb install`.
 
 ---
 
-## 11. Build everything important in one command
+## 15. Recommended automated pre-release sequence
 
-Gradle can run multiple tasks in one invocation:
+Run:
 
 ```bash
-gradle clean testDebugUnitTest lintDebug assembleDebug assembleRelease bundleRelease
+python3 scripts/check_format.py
+python3 scripts/check_kotlin_namespace.py
+python3 scripts/check_documentation_coverage.py
+python3 scripts/check_android_resources.py
+python3 scripts/check_android_security.py
+python3 scripts/check_repository.py
+python3 scripts/scan_secrets.py
+gradle --no-daemon clean testDebugUnitTest
+gradle --no-daemon assembleDebugAndroidTest
+gradle --no-daemon lint
+gradle --no-daemon assembleDebug
+gradle --no-daemon assembleRelease
+gradle --no-daemon bundleRelease
 ```
 
-Meaning, in order:
+Then run connected instrumentation tests separately on a device/emulator:
 
-1. `clean` — delete old build outputs.
-2. `testDebugUnitTest` — run debug JVM unit tests.
-3. `lintDebug` — run Android lint for debug.
-4. `assembleDebug` — build debug APK.
-5. `assembleRelease` — build release APK.
-6. `bundleRelease` — build release AAB.
+```bash
+gradle --no-daemon connectedDebugAndroidTest
+```
 
-This is a useful pre-release local verification command, but it does not replace connected-device tests.
+Passing these commands does not replace manual accessibility, backup/restore, export/share, offline, screenshot, production-signing, and representative-device checks in `verification.md`.
 
 ---
 
-## 12. Build only the app module explicitly
+## 16. ADB reference for SpendCalc
 
-SpendCalc currently contains one Android module named `app`.
-
-You can qualify a task with the module path:
+List devices:
 
 ```bash
-gradle :app:assembleDebug
+adb devices -l
 ```
 
-The leading `:` represents the Gradle project path. `:app:assembleDebug` means “run the `assembleDebug` task belonging specifically to the `app` module.”
-
-Equivalent release examples:
+Reinstall a matching-signature APK while keeping app data when Android permits:
 
 ```bash
-gradle :app:assembleRelease
+adb install -r <apk-path>
 ```
-
-```bash
-gradle :app:bundleRelease
-```
-
----
-
-## 13. Install the debug build using Gradle
-
-Connect an Android device with USB debugging enabled, or start an Android emulator.
-
-Then run:
-
-```bash
-gradle installDebug
-```
-
-This builds the debug variant when required and deploys it to a compatible connected device/emulator.
-
-If more than one device is connected, deployment may require choosing a device through Android Studio or using `adb` directly.
-
----
-
-## 14. Android Debug Bridge (ADB)
-
-`adb` means **Android Debug Bridge**. It lets a development computer communicate with Android devices/emulators.
-
-Check the tool:
-
-```bash
-adb version
-```
-
-List connected devices:
-
-```bash
-adb devices
-```
-
-Example:
-
-```text
-List of devices attached
-R58...    device
-emulator-5554    device
-```
-
-Install the debug APK:
-
-```bash
-adb install app/build/outputs/apk/debug/app-debug.apk
-```
-
-Reinstall/update while preserving application data when Android permits it:
-
-```bash
-adb install -r app/build/outputs/apk/debug/app-debug.apk
-```
-
-`-r` means reinstall an existing application while keeping its data when package/signature rules allow.
 
 Uninstall SpendCalc:
 
@@ -564,111 +406,98 @@ Uninstall SpendCalc:
 adb uninstall in.sanskar.spendcalc
 ```
 
-Launch the app through Android's monkey utility for a simple launcher start:
+Inspect installed package metadata:
 
 ```bash
-adb shell monkey -p in.sanskar.spendcalc 1
+adb shell dumpsys package in.sanskar.spendcalc
 ```
 
-Open Logcat from the command line:
+Force stop:
+
+```bash
+adb shell am force-stop in.sanskar.spendcalc
+```
+
+Clear app data on a test device:
+
+```bash
+adb shell pm clear in.sanskar.spendcalc
+```
+
+Stream logs:
 
 ```bash
 adb logcat
 ```
 
-Stop Logcat with `Ctrl+C`.
+Never publish logs containing sensitive user data or local secrets.
 
 ---
 
-## 15. Connected Android instrumentation tests
+## 17. Inspect APK metadata
 
-Start an emulator or connect a device, then run:
+When `aapt` is available:
 
 ```bash
-gradle connectedDebugAndroidTest
+aapt dump badging app/build/outputs/apk/debug/app-debug.apk
 ```
 
-This compiles and installs the debug app/test packages and executes Android instrumentation/UI tests on connected Android targets.
+For the 2.15.4 candidate, artifact inspection must agree with:
 
-Use this in addition to local unit tests because Android framework/database/UI behavior cannot be fully proven by JVM-only tests.
+```text
+package/applicationId: in.sanskar.spendcalc
+versionName: 2.15.4
+versionCode: 21504
+minSdk: 26
+targetSdk: 35
+```
+
+Inspect declared permissions:
+
+```bash
+aapt dump permissions app/build/outputs/apk/debug/app-debug.apk
+```
+
+SpendCalc's local-first core must not silently gain an `INTERNET` permission without an explicit feature, security/privacy review, and documentation update.
 
 ---
 
-## 16. Create a release signing key
+## 18. Create a production signing key
 
-A production release must use a securely controlled signing key.
+A production signing identity must be controlled outside the repository.
 
-**Never commit the `.jks`/`.keystore` file or passwords to Git.**
-
-Java's `keytool` can create a keystore:
+Example key creation:
 
 ```bash
 keytool -genkeypair -v -keystore spendcalc-release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias spendcalc
 ```
 
-Meaning:
+Options:
 
-| Part | Meaning |
-| --- | --- |
-| `keytool` | JDK key/certificate management utility. |
-| `-genkeypair` | Generate a public/private key pair. |
-| `-v` | Verbose output. |
-| `-keystore spendcalc-release.jks` | Output keystore file. |
-| `-keyalg RSA` | Use the RSA key algorithm. |
-| `-keysize 2048` | Generate a 2048-bit RSA key. |
-| `-validity 10000` | Certificate validity in days. |
-| `-alias spendcalc` | Logical name used to identify the key inside the keystore. |
+- `-genkeypair` creates a key pair;
+- `-keystore` selects the keystore file;
+- `-keyalg RSA` selects RSA;
+- `-keysize 2048` selects key size;
+- `-validity 10000` sets certificate validity days;
+- `-alias spendcalc` names the entry.
 
-Store the keystore and passwords in a secure backup location. Losing the production signing identity can create serious update/distribution problems.
-
-List entries in a keystore:
+Inspect a keystore:
 
 ```bash
 keytool -list -v -keystore spendcalc-release.jks
 ```
 
-Do not paste secrets into public terminal logs, issues, screenshots, CI logs, or documentation.
+Never commit `.jks`/`.keystore` files or passwords. Keep secure backups of the production signing identity.
 
 ---
 
-## 17. Manually sign a release APK
+## 19. Align a release APK
 
-A safe manual flow is:
-
-1. build the unsigned release APK;
-2. align the APK;
-3. sign the aligned APK;
-4. verify the signature;
-5. install/test the final signed APK.
-
-### Step 1 — build
-
-```bash
-gradle assembleRelease
-```
-
-### Step 2 — find the exact unsigned APK
-
-```text
-app/build/outputs/apk/release/
-```
-
-Assume the file is named `app-release-unsigned.apk` for the examples below. If your generated filename differs, use the actual filename.
-
-### Step 3 — align with `zipalign`
+Find the exact unsigned release APK produced by Gradle, then align it with Android Build-Tools:
 
 ```bash
 zipalign -v -p 4 app/build/outputs/apk/release/app-release-unsigned.apk SpendCalc-release-aligned.apk
 ```
-
-Meaning:
-
-- `zipalign` optimizes ZIP/APK data alignment.
-- `-v` prints verbose information.
-- `-p` aligns uncompressed native shared libraries when applicable.
-- `4` specifies 4-byte alignment for other uncompressed data.
-- first path = input APK.
-- second path = aligned output APK.
 
 Verify alignment:
 
@@ -676,77 +505,47 @@ Verify alignment:
 zipalign -c -v 4 SpendCalc-release-aligned.apk
 ```
 
-`-c` means check existing alignment instead of creating a new file.
-
-### Step 4 — sign with `apksigner`
-
-```bash
-apksigner sign --ks spendcalc-release.jks --ks-key-alias spendcalc --out SpendCalc-1.0.0-release.apk SpendCalc-release-aligned.apk
-```
-
-Meaning:
-
-- `apksigner sign` performs APK signing.
-- `--ks` specifies the keystore.
-- `--ks-key-alias` selects the signing key alias.
-- `--out` names the signed output APK.
-- final argument is the aligned unsigned input APK.
-
-The tool may securely prompt for passwords instead of placing them directly in the shell command.
-
-### Step 5 — verify signing
-
-```bash
-apksigner verify --verbose --print-certs SpendCalc-1.0.0-release.apk
-```
-
-This checks APK signatures and prints signing certificate information.
-
-### Step 6 — install the signed APK
-
-```bash
-adb install SpendCalc-1.0.0-release.apk
-```
-
-If replacing an already installed build signed with the same key:
-
-```bash
-adb install -r SpendCalc-1.0.0-release.apk
-```
-
-A debug build and production release build generally use different signing keys, so Android may require uninstalling the debug-signed package before installing a production-signed package with the same application ID.
+`-c` checks an existing APK instead of creating one.
 
 ---
 
-## 18. Sign a release AAB manually
-
-First build the bundle:
+## 20. Sign the 2.15.4 release APK
 
 ```bash
-gradle bundleRelease
+apksigner sign --ks spendcalc-release.jks --ks-key-alias spendcalc --out SpendCalc-2.15.4-release.apk SpendCalc-release-aligned.apk
 ```
 
-Assuming the generated file is:
+Prefer interactive/password-manager/secret-store prompts rather than placing passwords directly in shell history.
 
-```text
-app/build/outputs/bundle/release/app-release.aab
+Verify the signed APK:
+
+```bash
+apksigner verify --verbose --print-certs SpendCalc-2.15.4-release.apk
 ```
 
-You can sign the bundle with `jarsigner`:
+Install it on a test device:
+
+```bash
+adb install SpendCalc-2.15.4-release.apk
+```
+
+When replacing a build signed with the same production key:
+
+```bash
+adb install -r SpendCalc-2.15.4-release.apk
+```
+
+A debug build normally uses a different signing key, so Android may require uninstalling the debug-signed package before installing a production-signed artifact with the same application ID.
+
+---
+
+## 21. Sign and verify an AAB
+
+If your release process requires direct JAR-style bundle signing:
 
 ```bash
 jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore spendcalc-release.jks app/build/outputs/bundle/release/app-release.aab spendcalc
 ```
-
-Meaning:
-
-- `jarsigner` signs JAR/ZIP-style Java archives, including Android App Bundles.
-- `-verbose` prints detailed information.
-- `-sigalg SHA256withRSA` selects the signature algorithm.
-- `-digestalg SHA-256` selects the digest algorithm.
-- `-keystore` identifies the keystore.
-- next argument is the AAB.
-- final argument is the key alias.
 
 Verify:
 
@@ -754,523 +553,286 @@ Verify:
 jarsigner -verify -verbose -certs app/build/outputs/bundle/release/app-release.aab
 ```
 
-For production store workflows, follow the store's current app-signing requirements and keep upload/app-signing keys separate where appropriate.
+For Google Play, follow the store's current Play App Signing workflow and keep upload/production credentials outside source control.
 
 ---
 
-## 19. Android Studio: generate APK without the command line
+## 22. Generate checksums
 
-You can also use Android Studio.
+Checksums help identify the exact artifact that was tested/distributed.
 
-For a development APK, use the Build menu's APK build action. Android Studio/Gradle produces the debug APK in the module build output directory.
-
-For a signed release:
-
-1. open the project in Android Studio;
-2. allow Gradle sync to finish;
-3. choose the signed APK/App Bundle generation action from the Build menu;
-4. choose **APK** or **Android App Bundle**;
-5. select/create a keystore outside the repository;
-6. choose the key alias;
-7. choose the `release` build variant;
-8. complete the wizard;
-9. verify and test the resulting artifact before distribution.
-
-The exact menu wording can differ between Android Studio releases; the important concept is to use Gradle's release variant with protected signing credentials.
-
----
-
-## 20. Where generated files are stored
-
-Important Gradle output locations:
-
-```text
-app/build/outputs/apk/debug/
-app/build/outputs/apk/release/
-app/build/outputs/bundle/release/
-app/build/reports/
-```
-
-Common examples:
-
-```text
-app/build/outputs/apk/debug/app-debug.apk
-app/build/outputs/apk/release/app-release-unsigned.apk
-app/build/outputs/bundle/release/app-release.aab
-```
-
-Build output is generated content and should normally not be committed to source control.
-
----
-
-## 21. Inspect the application package information
-
-Android SDK tooling can inspect built packages.
-
-For example, if `aapt` is available on your PATH:
+### Linux
 
 ```bash
-aapt dump badging app/build/outputs/apk/debug/app-debug.apk
+sha256sum SpendCalc-2.15.4-release.apk
 ```
 
-This can show package name, SDK requirements, version values, permissions, and related package metadata.
-
-You can also inspect a device package with ADB:
+### macOS
 
 ```bash
-adb shell dumpsys package in.sanskar.spendcalc
+shasum -a 256 SpendCalc-2.15.4-release.apk
 ```
 
-This is useful when diagnosing installation/version/signature behavior.
+### Windows PowerShell
+
+```powershell
+Get-FileHash .\SpendCalc-2.15.4-release.apk -Algorithm SHA256
+```
+
+Record the SHA-256 together with the exact Git commit SHA that produced the artifact.
 
 ---
 
-## 22. Verify that SpendCalc does not require Internet permission
+## 23. Verify source identity
 
-After building, inspect the merged manifest or APK permissions. One simple SDK-tool approach is to inspect APK metadata, or inspect the merged manifest under the Gradle intermediates for the selected variant.
+Before release, record the exact commit:
 
-The source manifest intentionally does not request Android Internet permission for core functionality.
+```bash
+git rev-parse HEAD
+```
 
-Never add permissions merely to silence unrelated tooling warnings. Every permission should have a real product requirement and privacy review.
+Confirm the working tree is clean:
+
+```bash
+git status --short
+```
+
+A production artifact should come from the exact commit whose CI/runtime/manual gates were verified. Do not test one commit and publish an artifact built from a later unverified commit.
 
 ---
 
-## 23. Version a new Android release
+## 24. Versioning rules
 
-Edit in `app/build.gradle.kts`:
+For the current release:
 
 ```kotlin
-versionCode = 2
-versionName = "1.0.1"
+versionCode = 21504
+versionName = "2.15.4"
 ```
 
 Rules:
 
-- `versionCode` must increase for each published upgrade accepted by Android stores.
-- `versionName` is the user-facing version string.
-- update `CHANGELOG.md`.
-- update release documentation when behavior changes.
-- create artifacts only from the exact reviewed release commit/tag.
+1. `versionCode` must monotonically increase for published Android upgrades.
+2. `versionName` is the user-facing semantic version.
+3. Do not change the Room database schema merely to match an app version.
+4. Do not change the explicit backup schema merely to match an app version.
+5. A real storage/serialization compatibility change requires its own schema/version/migration decision and tests.
+6. Keep release docs and build metadata aligned in the same change.
 
-Check the change:
-
-```bash
-git diff -- app/build.gradle.kts
-```
-
-`git diff` displays uncommitted content changes. `--` separates Git options/revisions from the file path.
+A future release must choose a new `versionCode` greater than `21504`.
 
 ---
 
-## 24. Clean rebuild after changing dependencies or Gradle configuration
+## 25. Fresh-install verification
 
-Use:
+On a clean test device/emulator:
 
-```bash
-gradle clean assembleDebug --refresh-dependencies
-```
-
-`--refresh-dependencies` tells Gradle to refresh dependency metadata/artifacts instead of relying entirely on cached resolution state. It should not be used for every ordinary build because caching is an important performance feature.
-
-If Gradle daemons need to be stopped:
-
-```bash
-gradle --stop
-```
-
-Then retry the build.
-
----
-
-## 25. Offline Gradle builds
-
-Once required dependencies are already available in the Gradle cache, you can ask Gradle not to access the network:
-
-```bash
-gradle assembleDebug --offline
-```
-
-`--offline` prevents Gradle from trying network dependency resolution. It will fail if a required dependency is not already cached locally.
-
-This is separate from SpendCalc's runtime offline-first behavior. The app can operate without a required network connection, but the first source build may need internet access to download Gradle/Android/Kotlin dependencies.
+1. uninstall any previous test package when appropriate;
+2. install the exact candidate APK;
+3. launch the app;
+4. confirm branded splash/onboarding behavior;
+5. calculate a representative receipt;
+6. save and search history;
+7. save/load/delete a template;
+8. exercise text/CSV/PDF export;
+9. exercise explicit backup/restore;
+10. confirm themes/accessibility settings;
+11. verify About reports `2.15.4`;
+12. repeat critical flows with network disabled.
 
 ---
 
-## 26. Dependency information
+## 26. Upgrade verification
 
-Display dependencies for the app module:
+When a previous published version exists:
 
-```bash
-gradle :app:dependencies
-```
+1. install the previous production-signed release;
+2. create representative history/templates/preferences;
+3. install `SpendCalc-2.15.4-release.apk` with the same production signing identity;
+4. verify the upgrade succeeds without clearing data;
+5. verify history/templates/preferences still load correctly;
+6. verify backup/export behavior;
+7. verify About reports `2.15.4`.
 
-Display a specific configuration, for example debug runtime dependencies:
-
-```bash
-gradle :app:dependencies --configuration debugRuntimeClasspath
-```
-
-This is useful for understanding transitive libraries and diagnosing version conflicts.
+Do not claim upgrade compatibility until this is actually executed against a real prior published artifact.
 
 ---
 
-## 27. Build scan/logging options
+## 27. Offline verification
 
-Useful Gradle diagnostic flags include:
+SpendCalc is local-first.
 
-```bash
-gradle assembleDebug --info
-```
+With Wi-Fi/mobile data disabled, verify:
 
-More detailed log level:
+- calculation;
+- history save/search/delete;
+- template save/load/delete;
+- settings;
+- text/CSV/PDF generation;
+- local explicit backup/restore through Android document-provider flows that do not themselves require a remote provider.
 
-```bash
-gradle assembleDebug --debug
-```
-
-Use `--debug` carefully because extremely verbose logs can expose local paths or environment information when pasted publicly.
-
-Standard stack trace:
-
-```bash
-gradle assembleDebug --stacktrace
-```
-
-Full stack trace:
-
-```bash
-gradle assembleDebug --full-stacktrace
-```
+Core calculation/storage must not depend on an account, API key, or remote service.
 
 ---
 
-## 28. Common build failures
+## 28. Export and FileProvider verification
 
-### `gradle` is not recognized / command not found
+Verify:
 
-Cause: Gradle is not installed or its `bin` directory is not on PATH.
+- text receipt share flow;
+- CSV share flow and spreadsheet-formula neutralization;
+- PDF receipt generation;
+- long Unicode content near truncation limits;
+- generated cache files are exposed only through the intended non-exported FileProvider configuration;
+- no broad filesystem path is shared accidentally.
 
-Check:
+---
+
+## 29. Backup/restore verification
+
+Verify:
+
+- document creator opens for backup;
+- document picker opens for restore;
+- restore requires confirmation before replacing current data;
+- progress/busy state is visible;
+- history/templates/preferences round-trip;
+- malformed UTF-8 is rejected;
+- checksum-invalid backup data is rejected;
+- invalid/noncanonical persisted records are rejected;
+- failed replacement does not erase valid existing data.
+
+The backup checksum detects accidental corruption. It is not a digital signature, MAC, or proof of authorship.
+
+---
+
+## 30. Accessibility/layout verification
+
+Before release, manually check:
+
+- light/dark/system themes;
+- app large-text preference;
+- large Android font scale;
+- TalkBack order and labels;
+- dialog focus/announcements;
+- reduced-motion behavior;
+- validation meaning without color alone;
+- touch targets;
+- small phone layout;
+- wide/tablet layout.
+
+Automated Compose tests strengthen confidence but do not replace representative accessibility review.
+
+---
+
+## 31. Real screenshots
+
+Release screenshots must come from a verified build.
+
+Use fictional data only. Do not fabricate screenshots or include private user information, tokens, email contents, real financial records, signing material, or local machine secrets.
+
+Follow `docs/assets/screenshots/README.md`.
+
+---
+
+## 32. GitHub Actions release gates
+
+For the exact final candidate commit, require successful conclusions for:
+
+- CI;
+- CodeQL;
+- Dependency Review;
+- Repository Audit;
+- Android Instrumentation.
+
+A successful older commit does not verify a newer head.
+
+After any code/documentation/version commit, re-fetch and evaluate the new exact-head workflow results.
+
+---
+
+## 33. Dependency upgrades during release preparation
+
+Major dependency upgrades should normally remain separate from a release-candidate stabilization change unless the upgrade is required to fix a release blocker.
+
+SpendCalc currently has automated dependency update pull requests. Evaluate each independently for:
+
+- build compatibility;
+- Kotlin/AGP/Compose/KSP interaction;
+- Room schema/compiler behavior;
+- Android test/runtime behavior;
+- GitHub Actions runner/runtime/licensing changes.
+
+Do not merge a major dependency jump merely because Dependabot opened it.
+
+---
+
+## 34. Troubleshooting quick checks
+
+### Gradle uses the wrong Java version
 
 ```bash
 gradle --version
-```
-
-Fix the Gradle installation/PATH, then open a new terminal.
-
-### Wrong Java version
-
-Check:
-
-```bash
 java -version
 ```
 
-```bash
-javac -version
-```
+Make sure JDK 17 is active.
 
-Use JDK 17 for the documented SpendCalc build environment.
+### Android SDK missing
 
-### Android SDK not found
+Verify `local.properties`, Android Studio SDK Manager, and `ANDROID_HOME`/SDK installation paths.
 
-Check `local.properties` and Android Studio SDK settings.
-
-### API 35 missing
-
-Install Android SDK Platform 35 using Android Studio SDK Manager, then sync/build again.
-
-### Dependency download failure
-
-Check internet access, proxy configuration, repository availability, and Gradle cache state.
-
-### `adb: command not found`
-
-Add the Android SDK `platform-tools` directory to PATH or invoke `adb` using its full path.
-
-### `INSTALL_FAILED_UPDATE_INCOMPATIBLE`
-
-A common cause is trying to update an installed package using an APK signed with a different key. Uninstall the existing test build if appropriate, or install an update signed with the same identity.
-
-### Release APK will not install
-
-A release APK may be unsigned. Sign and verify it before installation/distribution.
-
-### Instrumentation tests say no connected devices
-
-Check:
+### Device not detected
 
 ```bash
-adb devices
+adb kill-server
+adb start-server
+adb devices -l
 ```
 
-Start an emulator or authorize USB debugging on a physical device.
+Check USB debugging authorization or emulator state.
 
----
+### Installation signature mismatch
 
-## 29. Recommended development command sequence
+A debug-signed package cannot normally be upgraded in place by a production-signed package with the same application ID. Use the correct matching signing identity or uninstall the test package when data preservation is not required.
 
-For ordinary changes:
+### Connected test failure
 
-```bash
-git status
-gradle testDebugUnitTest
-gradle lintDebug
-gradle assembleDebug
-```
-
-When a device/emulator is available:
-
-```bash
-gradle connectedDebugAndroidTest
-```
-
-Then inspect changes:
-
-```bash
-git diff
-```
-
----
-
-## 30. Recommended release-candidate command sequence
-
-From a clean reviewed working tree:
-
-```bash
-git status
-gradle clean
-gradle testDebugUnitTest
-gradle lintDebug
-gradle connectedDebugAndroidTest
-gradle assembleDebug
-gradle assembleRelease
-gradle bundleRelease
-```
-
-Then:
-
-1. inspect generated artifacts;
-2. sign production artifacts outside Git;
-3. verify signatures;
-4. install/test the signed APK on a real device;
-5. test upgrade behavior from the previous release when applicable;
-6. verify About/version information;
-7. verify calculations, history, templates, text export, CSV export, PDF export, themes, large text, and reduced motion;
-8. review privacy/security documentation;
-9. publish only the artifact created from the approved release commit.
-
----
-
-## 31. Shell differences: Windows vs macOS/Linux
-
-This repository currently uses a local `gradle` executable, so these Gradle commands are intentionally the same when `gradle` is correctly on PATH:
-
-```bash
-gradle assembleDebug
-```
-
-If a Gradle Wrapper is added to the repository in the future, preferred wrapper syntax would be:
-
-### Windows Command Prompt / PowerShell
+Open:
 
 ```text
-gradlew.bat assembleDebug
+app/build/reports/androidTests/connected/debug/index.html
 ```
 
-or in PowerShell:
+Review the exact failing assertion/log instead of weakening unrelated production behavior.
 
-```powershell
-.\gradlew.bat assembleDebug
-```
+### Lint failure
 
-### macOS/Linux
+Inspect `app/build/reports/` and address the concrete warning/error at the source.
 
-```bash
-./gradlew assembleDebug
-```
-
-Do not assume those wrapper files exist in the current repository; use the current documented local Gradle 8.9 setup unless the repository later adds a wrapper.
+See `troubleshooting.md` for broader diagnostics.
 
 ---
 
-## 32. Environment checks before reporting a build bug
+## 35. Final 2.15.4 release sequence
 
-Include the output of these commands, after removing sensitive/private information:
-
-```bash
-git status
-git rev-parse --short HEAD
-java -version
-gradle --version
-adb version
-adb devices
-```
-
-Meanings:
-
-- `git status` — working tree and branch state.
-- `git rev-parse --short HEAD` — abbreviated commit ID currently checked out.
-- `java -version` — active Java runtime.
-- `gradle --version` — Gradle/JVM/OS build environment.
-- `adb version` — Android Debug Bridge version.
-- `adb devices` — connected Android targets.
-
-Never include keystore passwords, signing credentials, access tokens, personal device data, or private source data in bug reports.
-
----
-
-## 33. Artifact security rules
-
-Production release hygiene:
-
-- never commit `.jks` or `.keystore` files;
-- never commit signing passwords;
-- never store raw secrets in `gradle.properties` if that file is tracked;
-- use protected local/CI secret storage;
-- do not upload unreviewed debug builds as production releases;
-- verify the final signing certificate;
-- preserve the production signing key securely;
-- do not overwrite historical release tags;
-- increase `versionCode` for new distributed versions;
-- retain reproducible source/tag information for every release.
-
----
-
-## 34. Quick command cheat sheet
-
-### Clone
-
-```bash
-git clone https://github.com/sanskarIN/spendcalc.git
-cd spendcalc
-```
-
-### Environment
-
-```bash
-java -version
-gradle --version
-adb version
-```
-
-### Unit tests
-
-```bash
-gradle testDebugUnitTest
-```
-
-### Lint
-
-```bash
-gradle lintDebug
-```
-
-### Debug APK
-
-```bash
-gradle assembleDebug
-```
-
-Output:
-
-```text
-app/build/outputs/apk/debug/app-debug.apk
-```
-
-### Install debug build
-
-```bash
-gradle installDebug
-```
-
-or:
-
-```bash
-adb install -r app/build/outputs/apk/debug/app-debug.apk
-```
-
-### Android device/UI tests
-
-```bash
-gradle connectedDebugAndroidTest
-```
-
-### Release APK
-
-```bash
-gradle assembleRelease
-```
-
-### Release AAB
-
-```bash
-gradle bundleRelease
-```
-
-### Full local build set
-
-```bash
-gradle clean testDebugUnitTest lintDebug assembleDebug assembleRelease bundleRelease
-```
-
-### Verify connected devices
-
-```bash
-adb devices
-```
-
-### Remove installed app
-
-```bash
-adb uninstall in.sanskar.spendcalc
-```
-
-### APK signature verification
-
-```bash
-apksigner verify --verbose --print-certs SpendCalc-1.0.0-release.apk
-```
-
----
-
-## 35. Final distinction: build, sign, install, publish
-
-These words mean different stages:
-
-**Build** converts source code and resources into Android package artifacts.
-
-```bash
-gradle assembleDebug
-```
-
-**Sign** attaches a trusted cryptographic application identity to a release artifact.
-
-```bash
-apksigner sign ...
-```
-
-**Install** places an APK on an Android device/emulator.
-
-```bash
-adb install ...
-```
-
-**Publish** distributes a reviewed, signed release to users, for example through an app store or approved release channel.
-
-Do not treat a successful compilation alone as proof that a production release is ready. SpendCalc release readiness also requires tests, lint, device verification, signing verification, privacy/security review, version checks, and final functional testing.
-
----
-
-## Related documentation
-
-- [`setup.md`](setup.md) — initial workstation/project setup.
-- [`command-reference.md`](command-reference.md) — detailed command dictionary.
-- [`development.md`](development.md) — development architecture and quality workflow.
-- [`testing.md`](testing.md) — testing strategy.
-- [`release.md`](release.md) — release policy/checklist.
-- [`troubleshooting.md`](troubleshooting.md) — common failures and diagnostics.
-- [`../SECURITY.md`](../SECURITY.md) — security policy.
-- [`../PRIVACY.md`](../PRIVACY.md) — privacy model.
+1. Freeze the intended source head.
+2. Confirm `versionName = "2.15.4"` and `versionCode = 21504`.
+3. Run every repository guard.
+4. Run JVM unit/regression/fuzz tests.
+5. Compile instrumentation tests.
+6. Run full Android lint.
+7. Build debug and release artifacts.
+8. Run connected Android instrumentation tests.
+9. Require all exact-head GitHub workflow families to succeed.
+10. Perform manual Android/accessibility/export/backup/offline/layout checks.
+11. Capture real screenshots from the verified build using fictional data.
+12. Build/sign the production APK/AAB outside Git.
+13. Verify the signing certificate.
+14. Inspect package/version/SDK/permission metadata.
+15. Install and test the exact signed artifact.
+16. Record artifact SHA-256 and source commit SHA.
+17. Tag `v2.15.4` only after all blocking gates are complete.
+18. Publish only artifacts derived from that verified/tagged commit.
 
 **Made by the Sanskar**

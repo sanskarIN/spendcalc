@@ -25,6 +25,7 @@
     <string name="exchange_rate_hint">Use 1 for no conversion</string>
     <string name="save_to_history">Save result</string>
     <string name="save_template">Save template</string>
+    <string name="save_template_confirm">Save</string>
     <string name="reset">Reset</string>
     <string name="share_receipt">Share receipt</string>
     <string name="share_csv">Share CSV</string>
@@ -49,6 +50,7 @@
     <string name="templates_empty_title">No templates yet</string>
     <string name="templates_empty_body">Save your common tax, tip, service, split, and currency settings for quick reuse.</string>
     <string name="template_name">Template name</string>
+    <string name="template_name_hint">Give this template a short name. Up to 120 characters.</string>
     <string name="load_template">Load template</string>
     <string name="delete_template">Delete template</string>
 
@@ -82,11 +84,11 @@
     <string name="repository_url">https://github.com/sanskarIN/spendcalc</string>
     <string name="bmc_url">https://buymeacoffee.com/sanskarIN</string>
 
-    <string name="validation_amount">Enter a valid non-negative amount.</string>
-    <string name="validation_percent">Enter a percentage from 0 to 1000.</string>
-    <string name="validation_split">Split count must be at least 1.</string>
+    <string name="validation_amount">Enter a valid non-negative amount within the supported numeric range.</string>
+    <string name="validation_percent">Enter a valid percentage within the allowed range.</string>
+    <string name="validation_split">Use between 1 and 1,000,000 people.</string>
     <string name="validation_currency">Use a 3-letter currency code.</string>
-    <string name="validation_exchange_rate">Exchange rate must be greater than 0.</string>
+    <string name="validation_exchange_rate">Enter an exchange rate greater than 0 within the supported numeric range.</string>
     <string name="save_success">Saved.</string>
     <string name="delete_success">Deleted.</string>
     <string name="generic_error">Something went wrong. Please try again.</string>

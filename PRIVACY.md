@@ -8,7 +8,7 @@ SpendCalc is designed to perform its core functions locally on the Android devic
 
 When you choose to save information, SpendCalc can store:
 
-- calculation history summaries;
+- calculation history summaries, including an optional history label you enter when saving a result;
 - saved calculation templates;
 - app preferences such as theme, large text, reduced motion, history-retention choice, and onboarding completion.
 
@@ -31,6 +31,8 @@ Links on the About/Settings screens can open external apps or websites only afte
 ## Backups
 
 The Android manifest permits system-managed backup/device transfer of the local database and preference files when the device and operating-system backup settings allow it. Users control platform-level backup availability through Android/device settings.
+
+Explicit user-created SpendCalc backups include saved history labels because those labels are part of the local history records. A user-created backup leaves app-private storage only when you choose a destination through Android's document picker.
 
 ## Data deletion
 

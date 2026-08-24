@@ -10,7 +10,7 @@
   <a href="https://github.com/sanskarIN/spendcalc/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/sanskarIN/spendcalc/actions/workflows/ci.yml/badge.svg" /></a>
   <a href="https://github.com/sanskarIN/spendcalc/actions/workflows/codeql.yml"><img alt="CodeQL" src="https://github.com/sanskarIN/spendcalc/actions/workflows/codeql.yml/badge.svg" /></a>
   <img alt="Android API 26+" src="https://img.shields.io/badge/Android-API%2026%2B-3DDC84?logo=android&logoColor=white" />
-  <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-Jetpack%20Compose-7F52FF?logo=kotlin&logoColor=white" />
+  <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-Jetpack%20Compose-7F52FF?logo=kotlin" />
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/License-MIT-blue.svg" /></a>
 </p>
 
@@ -20,437 +20,447 @@
 
 > **Made by the Sanskar**
 
-SpendCalc is built for real everyday bills rather than classroom-demo arithmetic. It keeps the finance engine separate from Android UI/infrastructure, uses `BigDecimal` for money, works without a required network connection, and provides local history, templates, accessibility settings, and export options.
+SpendCalc is an Android-first expense calculator designed for real finance workflows rather than demo arithmetic. It uses `BigDecimal` for monetary calculations, keeps core behavior local/offline, stores history/templates/preferences on-device, supports explicit backup/restore, and can export receipts as text, CSV, and PDF.
 
-## Documentation
+> **Current release candidate:** `2.15.4` (`versionCode 21504`). Room database version and explicit backup schema version remain `1` because application releases and persistence compatibility versions are intentionally independent.
 
-The repository now includes a deep, command-by-command Android documentation set.
+> **Release status:** 2.15.4 is a release candidate, not a verified public release until every exact-head automated and manual gate in [`docs/verification.md`](docs/verification.md) is complete.
 
-Start with:
+## Documentation entry points
 
-- [`docs/README.md`](docs/README.md) — complete documentation index and recommended reading paths.
-- [`docs/setup.md`](docs/setup.md) — Windows/macOS/Linux workstation setup, JDK 17, Android SDK 35, Gradle 8.9, ADB, and first build.
-- [`docs/android-build-guide.md`](docs/android-build-guide.md) — complete source-to-APK/AAB workflow, debug/release builds, artifact paths, device installation, signing, verification, and release preparation.
-- [`docs/command-reference.md`](docs/command-reference.md) — detailed meanings for Git, Java, Gradle, ADB, `keytool`, `zipalign`, `apksigner`, `jarsigner`, and repository quality commands.
-- [`docs/troubleshooting.md`](docs/troubleshooting.md) — Gradle/JDK/SDK/dependency/ADB/APK/AAB/signing/test/release diagnosis.
-- [`docs/release.md`](docs/release.md) — release gates, versioning, APK/AAB signing, checksums, upgrade testing, and publication rules.
+- [Documentation index](docs/README.md)
+- [Android APK/AAB/build/install/signing guide](docs/android-build-guide.md)
+- [Complete command reference](docs/command-reference.md)
+- [Architecture](docs/architecture.md)
+- [Features](docs/features.md)
+- [Testing](docs/testing.md)
+- [Accessibility](docs/accessibility.md)
+- [Backup/restore](docs/backup-restore.md)
+- [Persistence invariants](docs/persistence-invariants.md)
+- [Release guide](docs/release.md)
+- [Blocking release verification checklist](docs/verification.md)
+- [Troubleshooting](docs/troubleshooting.md)
+- [Tracked-file codebase reference](docs/codebase-reference.md)
+- [Documentation source-of-truth map](docs/documentation-map.md)
 
-## Screenshots
-
-Verified screenshots are intentionally captured from real release-candidate builds rather than presented as fake production images. The capture checklist is in [`docs/assets/screenshots/README.md`](docs/assets/screenshots/README.md). Until those captures are added, the editable brand artwork at [`docs/assets/spendcalc-logo.svg`](docs/assets/spendcalc-logo.svg) is the repository's visual placeholder.
-
-## Features
-
-### Expense calculation
-
-- Itemized expense lines with quick totals.
-- Discount, tax, tip, and service-charge percentages.
-- Split-bill calculation for one or more people.
-- Manual exchange-rate conversion with three-letter currency codes.
-- Explicit charge order documented in the architecture guide.
-- Precision-safe `BigDecimal` arithmetic and centralized rounding policy.
-- Live receipt-style result view.
-
-### Save and reuse
-
-- Room-backed calculation history.
-- Individual history deletion and clear-all confirmation.
-- Optional history auto-delete after 30 or 90 days.
-- Saved templates for common discount/tax/tip/service/split/currency settings.
-
-### Export
-
-- Plain-text receipt sharing.
-- CSV export with quote escaping and spreadsheet-formula neutralization for text cells.
-- Offline PDF receipt creation using Android `PdfDocument`.
-- Cache-file sharing through a non-exported Android `FileProvider` with temporary read permission.
-
-### UI and accessibility
-
-- Jetpack Compose + Material 3.
-- Responsive phone/tablet layout.
-- Light, dark, and system theme modes.
-- Large-text preference.
-- Reduced-motion preference and no fake loading delays.
-- Externalized user-facing strings for localization readiness.
-- Clear validation text in addition to color/state styling.
-- First-run onboarding.
-- About screen with version, license, support, repository, funding, and credit.
-
-### Privacy
-
-- Core calculation requires no account.
-- Core calculation requires no network.
-- Current manifest does not request Android Internet permission.
-- History/templates/preferences live in app-local storage.
-- No analytics or advertising SDK is required by the current implementation.
-
-See [`PRIVACY.md`](PRIVACY.md) and [`SECURITY.md`](SECURITY.md).
-
-## Supported platform
+## Platform support
 
 | Platform | Status |
 | --- | --- |
-| Android API 26+ | Primary supported runtime target |
+| Android API 26+ | Primary supported target |
 | Android phone | Supported |
-| Android tablet / wide screen | Responsive layout supported |
-| Windows | Development/build host supported with Android toolchain |
-| macOS | Development/build host supported with Android toolchain |
-| Linux | Development/build host supported with Android toolchain |
-| iOS / iPadOS runtime | Not part of this repository |
-| Windows/macOS/Linux desktop runtime | Not part of this repository |
-| Web/browser runtime | Not part of this repository |
+| Android tablet / wide layout | Supported/responsive |
+| iOS | Not part of 2.15.4 |
+| Desktop | Not part of 2.15.4 |
+| Web/browser extension | Future work; deliberately separate from Android 2.15.4 stabilization |
 
-## Language and tech stack
-
-Primary application language: **Kotlin**.
-
-Main technologies:
-
-- Kotlin `2.0.21`
-- Jetpack Compose
-- Material 3
-- AndroidX Navigation Compose
-- AndroidX Lifecycle/ViewModel
-- Room + KSP
-- Preferences DataStore
-- Kotlin coroutines/Flow
-- Android `PdfDocument`
-- JUnit + AndroidX/Compose UI tests
-- Android Gradle Plugin `8.7.3`
-- documented Gradle `8.9`
-- Java/JVM 17
-- GitHub Actions + CodeQL + Dependabot
-
-## Android configuration
-
-Current `app/build.gradle.kts` baseline:
+## Current release metadata
 
 ```text
-applicationId = in.sanskar.spendcalc
-minSdk = 26
-targetSdk = 35
-compileSdk = 35
-versionCode = 1
-versionName = 1.0.0
-Java/JVM target = 17
+Application ID: in.sanskar.spendcalc
+versionName: 2.15.4
+versionCode: 21504
+minSdk: 26
+targetSdk: 35
+compileSdk: 35
+Room schema: 1
+Explicit backup schema: 1
+Java/JVM target: 17
 ```
 
-The release build enables code minification and resource shrinking.
+Application version bumps do not automatically change Room or backup schemas.
 
-## What Android executable files can be built?
+## Features
 
-### Debug APK
+### Precision-safe expense calculation
 
-```bash
-gradle assembleDebug
-```
+- Itemized expense lines.
+- Up to 100 editable items per calculation.
+- Discount percentage.
+- Tax percentage.
+- Tip percentage.
+- Service-charge percentage.
+- Split bill from 1 through the documented bounded maximum.
+- Manual currency conversion using three-letter currency codes.
+- `BigDecimal` finance arithmetic.
+- Centralized validation/rounding policy.
+- Receipt-style results.
+- Bounded numeric precision/scale/input lengths to prevent pathological expansion.
 
-Expected output:
+### Deterministic calculation order
 
-```text
-app/build/outputs/apk/debug/app-debug.apk
-```
+1. Sum items.
+2. Calculate/subtract discount.
+3. Calculate tax/tip/service charge from the discounted base.
+4. Sum the discounted base and charges.
+5. Apply manual exchange rate.
+6. Round using the project policy.
+7. Divide by split count.
 
-The debug APK is intended for development/testing and is automatically debug-signed by Android tooling.
+Any change to this order should include exact regression tests and changelog/release documentation.
 
-### Release APK
+### History
 
-```bash
-gradle assembleRelease
-```
+- Room-backed local calculation history.
+- Optional user-provided labels.
+- Safe default label when left blank.
+- Saved-name length boundary and Unicode-safe truncation.
+- Search by meaningful stored data.
+- Bounded search query.
+- Individual delete.
+- Snackbar Undo.
+- Clear-all confirmation.
+- Optional 30/90-day retention behavior.
 
-Inspect:
+### Templates
 
-```text
-app/build/outputs/apk/release/
-```
+- Save reusable calculation templates.
+- Load template settings back into the calculator.
+- Delete template.
+- Undo template deletion.
+- Shared saved-name/Unicode-boundary behavior.
+- Repository-level finance validation, even if a caller bypasses the ViewModel.
 
-The repository deliberately does not store production signing credentials. A release output must be securely signed and verified before production distribution.
+### Persistence integrity
 
-### Release Android App Bundle (AAB)
+Repositories are validation boundaries, not passive DAO wrappers.
 
-```bash
-gradle bundleRelease
-```
+Shared persisted-record rules cover:
 
-Inspect:
+- IDs;
+- timestamps;
+- canonical uppercase currency codes;
+- saved names;
+- split/result bounds;
+- duplicate IDs in replacement collections;
+- template finance settings.
 
-```text
-app/build/outputs/bundle/release/
-```
+Batch replacement validates the full candidate set before destructive replacement.
 
-AAB is primarily a publishing format. It is not normally installed directly with `adb install`.
+See [`docs/persistence-invariants.md`](docs/persistence-invariants.md).
 
-Full details: [`docs/android-build-guide.md`](docs/android-build-guide.md).
+### Explicit local backup/restore
+
+- Android Storage Access Framework document creation/selection.
+- No broad storage permission.
+- Versioned bounded backup format.
+- URL-safe Base64 text fields.
+- SHA-256 accidental-corruption detection.
+- Strict schema/record/ID/timestamp/currency/split/decimal/name/duplicate validation.
+- Strict malformed/unmappable UTF-8 rejection.
+- Canonical persisted-currency validation without silent repair.
+- Confirmation before replacing local data.
+- Visible busy/progress state.
+- Duplicate backup actions disabled while work is active.
+- Room replacement plus compensating preference rollback across multi-store restore failures.
+
+The backup checksum is not a digital signature/MAC/authorship proof.
+
+See:
+
+- [`docs/backup-restore.md`](docs/backup-restore.md)
+- [`docs/security-backup.md`](docs/security-backup.md)
+- [`docs/privacy-backup.md`](docs/privacy-backup.md)
+
+### Export/share
+
+- Plain-text receipt sharing.
+- CSV export with quoting and spreadsheet-formula neutralization for text cells.
+- Offline PDF receipt generation with Android `PdfDocument`.
+- Unicode-safe PDF truncation.
+- Cache-file sharing through a non-exported `FileProvider`.
+- Canonical-path containment preventing export outside the intended private cache path.
+
+### UI/accessibility
+
+- Jetpack Compose + Material 3.
+- Responsive phone/tablet layout.
+- Light, dark, system themes.
+- App large-text preference.
+- Reduced-motion preference.
+- Branded AndroidX splash screen.
+- Repository-owned navigation icons.
+- Visible navigation labels.
+- User-facing strings in Android resources.
+- Validation messages that do not rely only on color.
+- First-run onboarding.
+- About screen with version/license/support/repository/funding/credit.
+
+### Privacy/local-first design
+
+- No account required for core use.
+- No remote API key required for core use.
+- No analytics/advertising SDK required by the current implementation.
+- Core calculation/history/templates/backup encoding/receipt generation are local.
+- Current manifest has no Android `INTERNET` permission.
+- History/templates/preferences live in app-local storage.
+
+See [`PRIVACY.md`](PRIVACY.md) and [`SECURITY.md`](SECURITY.md).
 
 ## Architecture
 
-SpendCalc follows a small layered modular-monolith approach inside one Android module:
+SpendCalc is a small layered modular monolith inside one Android app module:
 
 ```text
 Compose UI
    ↓
 SpendCalcViewModel
    ↓
-Domain calculation + repositories
+Domain calculation + repository boundaries
    ↓
 Room / DataStore
 
-Platform adapters: FileProvider, PDF, share intents, external links
+Platform adapters:
+Document picker / FileProvider / PDF / share intents / external links
 ```
 
-The domain layer contains finance rules and does not depend on Compose, Room, Activity, or Android resources.
-
-Full details: [`docs/architecture.md`](docs/architecture.md)
+The domain finance layer is kept independent from Compose/Room/Activity/Android resources.
 
 Architecture decisions:
 
-- [`ADR 0001 — BigDecimal finance arithmetic`](docs/adr/0001-use-bigdecimal-for-finance.md)
-- [`ADR 0002 — Local-first core`](docs/adr/0002-local-first-core.md)
-- [`ADR 0003 — Room and DataStore`](docs/adr/0003-room-and-datastore.md)
+- [ADR 0001 — BigDecimal finance arithmetic](docs/adr/0001-use-bigdecimal-for-finance.md)
+- [ADR 0002 — Local-first core](docs/adr/0002-local-first-core.md)
+- [ADR 0003 — Room and DataStore](docs/adr/0003-room-and-datastore.md)
+- [ADR 0004 — Versioned local backup](docs/adr/0004-versioned-local-backup.md)
 
-## Calculation rule
+## Tech stack
 
-The initial calculation order is intentionally deterministic:
+- Kotlin 2.0.21
+- Jetpack Compose
+- Material 3
+- AndroidX SplashScreen
+- AndroidX Navigation Compose
+- AndroidX Lifecycle/ViewModel
+- Room + KSP
+- Preferences DataStore
+- Kotlin Coroutines + Flow
+- Android `PdfDocument`
+- JUnit
+- AndroidX Test / Espresso / Compose UI Test
+- GitHub Actions
+- CodeQL
+- Dependabot
 
-1. Sum item amounts.
-2. Calculate discount from subtotal.
-3. Subtract discount.
-4. Calculate tax, tip, and service charge from the discounted base.
-5. Sum the discounted base and charges.
-6. Apply the manual exchange rate.
-7. Round monetary outputs using the configured policy.
-8. Divide by split count.
+Major dependency upgrades are intentionally reviewed independently rather than automatically mixed into release stabilization.
 
-Any behavior change to this order should include exact regression tests and changelog notes.
-
-## Quick start
-
-### Requirements
+## Requirements
 
 - Git
 - JDK 17
-- Android Studio
 - Android SDK Platform 35
-- compatible Android SDK Build-Tools and Platform-Tools
-- Gradle 8.9 for the current command-line setup
+- Android Build-Tools/Platform-Tools
+- Gradle 8.9 for the documented command-line workflow
 
-The repository currently does not commit a Gradle wrapper JAR, so examples use the local `gradle` executable.
+The repository currently does not commit a Gradle wrapper JAR. CI pins Gradle through `gradle/actions/setup-gradle`.
 
-Clone:
+## Clone
 
 ```bash
 git clone https://github.com/sanskarIN/spendcalc.git
 cd spendcalc
 ```
 
-Check environment:
+Optional local Git identity:
 
 ```bash
-java -version
-gradle --version
-adb version
-```
-
-Run tests and lint:
-
-```bash
-gradle testDebugUnitTest
-gradle lintDebug
-```
-
-Build the debug APK:
-
-```bash
-gradle assembleDebug
-```
-
-Install on a connected Android device/emulator:
-
-```bash
-gradle installDebug
-```
-
-or:
-
-```bash
-adb install -r app/build/outputs/apk/debug/app-debug.apk
-```
-
-For Android Studio, open the repository, use JDK 17 for Gradle, allow sync to complete, select an API 26+ device/emulator, and run the `app` configuration.
-
-Detailed setup: [`docs/setup.md`](docs/setup.md)
-
-## Complete local verification
-
-A useful grouped source/build verification command is:
-
-```bash
-gradle clean testDebugUnitTest lintDebug assembleDebug assembleRelease bundleRelease
-```
-
-With an emulator/device:
-
-```bash
-gradle connectedDebugAndroidTest
-```
-
-Repository utility checks:
-
-```bash
-python3 scripts/check_format.py
-python3 scripts/scan_secrets.py
-```
-
-On Windows environments that expose Python as `python` rather than `python3`, use `python` for those scripts.
-
-## Development
-
-The app uses Android SDK 35 and Java 17 bytecode. `local.properties` is intentionally excluded from Git.
-
-Development guide: [`docs/development.md`](docs/development.md)
-
-Command dictionary: [`docs/command-reference.md`](docs/command-reference.md)
-
-## Testing
-
-The repository includes:
-
-- finance arithmetic and validation unit tests;
-- decimal/rounding regression tests;
-- history repository tests;
-- template repository tests;
-- CSV security/escaping tests;
-- receipt formatter tests;
-- Room Android integration tests;
-- a Compose calculator screen smoke test.
-
-Testing strategy: [`docs/testing.md`](docs/testing.md)
-
-## Android APK installation and ADB
-
-Check devices:
-
-```bash
-adb devices
-```
-
-Install/reinstall debug APK:
-
-```bash
-adb install -r app/build/outputs/apk/debug/app-debug.apk
-```
-
-Uninstall SpendCalc from the selected test device:
-
-```bash
-adb uninstall in.sanskar.spendcalc
-```
-
-Deep ADB/build instructions: [`docs/android-build-guide.md`](docs/android-build-guide.md).
-
-## Release signing
-
-Production signing keys and passwords are **not** committed.
-
-The documented manual release flow is:
-
-1. `gradle assembleRelease`
-2. inspect the generated unsigned release APK
-3. align it with `zipalign`
-4. sign it with `apksigner`
-5. verify its signing certificate
-6. install/test the final signed APK
-7. build/sign an AAB when store publishing is required
-
-See [`docs/android-build-guide.md`](docs/android-build-guide.md) and [`docs/release.md`](docs/release.md) for exact commands, flag meanings, security rules, and verification steps.
-
-## CI and repository automation
-
-- `CI`: format guard, common-secret-pattern guard, JVM tests, Android lint, debug build, and release compilation.
-- `CodeQL`: Java/Kotlin static analysis.
-- `Dependency Review`: pull-request dependency change review.
-- `Dependabot`: weekly Gradle and GitHub Actions updates.
-- `Release Candidate`: tag-triggered verified unsigned release build.
-
-Repository workflow files live under [`.github/workflows/`](.github/workflows/).
-
-## Security
-
-SpendCalc intentionally minimizes permissions and remote dependencies. The export provider is non-exported and only grants temporary read access during a user-selected share action. CSV text cells are escaped and common formula-leading characters are neutralized.
-
-Do not report exploitable vulnerability details in a public issue. Follow [`SECURITY.md`](SECURITY.md).
-
-Production keystores, private keys, signing passwords, access tokens, and credentials must never be committed.
-
-## Privacy and data
-
-History/templates use Room, while preferences use DataStore. Users can clear history and delete templates, and history can automatically expire after 30 or 90 days. Android system backup/device transfer may include app-local database/preferences according to OS/device backup settings.
-
-Read [`PRIVACY.md`](PRIVACY.md).
-
-## Accessibility
-
-Release checks include TalkBack traversal, large system font scale, light/dark themes, touch-target review, small/wide screen behavior, and non-color-only validation.
-
-Read [`docs/accessibility.md`](docs/accessibility.md).
-
-## Performance
-
-The app avoids network initialization and keeps ordinary calculation work in memory. Performance work should be based on profiling rather than replacing correct decimal math with faster but unsafe primitives.
-
-Read [`docs/performance.md`](docs/performance.md).
-
-## Troubleshooting
-
-The troubleshooting guide now covers:
-
-- Gradle/JDK/PATH problems;
-- Android SDK 35 configuration;
-- dependency/cache failures;
-- ADB/device authorization;
-- APK/AAB output locations;
-- installation/signature/version errors;
-- `zipalign`/`apksigner` problems;
-- Room/KSP issues;
-- lint/unit/instrumentation failures;
-- release-only shrinking problems.
-
-Read [`docs/troubleshooting.md`](docs/troubleshooting.md).
-
-## Contributing
-
-Contributions are welcome. Start with [`CONTRIBUTING.md`](CONTRIBUTING.md) and the pull-request checklist.
-
-For local commits, the requested project commit email is:
-
-```bash
+git config user.name "Sanskar"
 git config user.email "sanskarin@outlook.in"
 ```
 
-The connected GitHub contents API may attribute commits to the authenticated GitHub identity; local contributors can explicitly set the requested Git email as shown above.
+## Quick debug build
 
-## Roadmap and changes
+```bash
+gradle --no-daemon assembleDebug
+```
 
-- [`ROADMAP.md`](ROADMAP.md)
-- [`CHANGELOG.md`](CHANGELOG.md)
-- [`what_changed.md`](what_changed.md) — multi-session engineering handoff/current verification state
+Expected APK:
 
-## Support and contact
+```text
+app/build/outputs/apk/debug/app-debug.apk
+```
 
-- Business: `sanskarin@outlook.in`
-- Business: `sanskarin.business@gmail.com`
-- Support: `supportramsandesh@gmail.com`
-- GitHub: https://github.com/sanskarIN
+Install with ADB:
+
+```bash
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+Or:
+
+```bash
+gradle --no-daemon installDebug
+```
+
+See [`docs/android-build-guide.md`](docs/android-build-guide.md) for the complete build/sign/install flow.
+
+## Repository guards
+
+Run:
+
+```bash
+python3 scripts/check_format.py
+python3 scripts/check_kotlin_namespace.py
+python3 scripts/check_documentation_coverage.py
+python3 scripts/check_android_resources.py
+python3 scripts/check_android_security.py
+python3 scripts/check_repository.py
+python3 scripts/scan_secrets.py
+```
+
+These cover formatting, Kotlin namespaces, exhaustive tracked-file documentation, Android resources, local-first security policy, repository metadata/version/doc/link consistency, and common secret patterns.
+
+## JVM/build checks
+
+```bash
+gradle --no-daemon clean testDebugUnitTest
+gradle --no-daemon assembleDebugAndroidTest
+gradle --no-daemon lint
+gradle --no-daemon assembleDebug
+gradle --no-daemon assembleRelease
+gradle --no-daemon bundleRelease
+```
+
+## Connected Android tests
+
+With a device/emulator:
+
+```bash
+gradle --no-daemon connectedDebugAndroidTest
+```
+
+The repository also includes an `Android Instrumentation` GitHub Actions workflow that runs the connected test suite on an API 35 emulator.
+
+Release verification requires connected execution, not only instrumentation compilation.
+
+## Test coverage areas
+
+The repository includes coverage for:
+
+- finance arithmetic/rounding/validation;
+- deterministic finance fuzz/regression cases;
+- history/template repositories;
+- persistence envelopes and duplicate IDs;
+- backup encode/decode/corruption/strict UTF-8 behavior;
+- Unicode saved-name boundaries;
+- CSV security/escaping;
+- PDF Unicode truncation;
+- path containment;
+- safe logging/redaction;
+- Room integration;
+- Compose calculator/history/settings/dialog behavior;
+- real-activity calculate → named save → History journey.
+
+The activity journey intentionally asserts that at least one correct formatted amount exists because the UI may expose the same amount in multiple legitimate semantics nodes.
+
+## Release build
+
+```bash
+gradle --no-daemon assembleRelease
+gradle --no-daemon bundleRelease
+```
+
+Production signing material is not committed.
+
+Current production APK example after external signing:
+
+```text
+SpendCalc-2.15.4-release.apk
+```
+
+Verify signature:
+
+```bash
+apksigner verify --verbose --print-certs SpendCalc-2.15.4-release.apk
+```
+
+Install exact signed candidate:
+
+```bash
+adb install SpendCalc-2.15.4-release.apk
+```
+
+Generate/record a SHA-256 checksum and exact source commit SHA before distribution.
+
+See [`docs/release.md`](docs/release.md).
+
+## Release gates
+
+For the exact final 2.15.4 commit require successful:
+
+- CI;
+- CodeQL;
+- Dependency Review;
+- Repository Audit;
+- Android Instrumentation.
+
+Then complete the manual gates in [`docs/verification.md`](docs/verification.md), including:
+
+- representative Android device/emulator checks;
+- accessibility/font-scale/TalkBack/reduced-motion review;
+- small/wide layout review;
+- export/share/FileProvider checks;
+- backup/restore/malformed-data checks;
+- offline operation;
+- privacy/security review;
+- real screenshots with fictional data;
+- production signing;
+- signed artifact install/version/permission inspection;
+- checksum/source-SHA recording.
+
+Only after those gates are complete should `v2.15.4` be tagged/published.
+
+## Screenshots
+
+Real release screenshots are intentionally captured from verified builds rather than fabricated.
+
+Use fictional data only and follow [`docs/assets/screenshots/README.md`](docs/assets/screenshots/README.md).
+
+## Documentation invariants
+
+Documentation is treated as maintained engineering state:
+
+- `docs/README.md` is the task-oriented index.
+- `docs/codebase-reference.md` documents every tracked file exactly once.
+- `scripts/check_documentation_coverage.py` compares that inventory with `git ls-files`.
+- `docs/documentation-map.md` assigns authoritative documents by topic.
+- `scripts/check_repository.py` checks required files, local Markdown links, repository identity markers, and current application version alignment in release/build command documentation.
+
+When adding/renaming/deleting tracked files, update the codebase reference in the same change.
+
+## Security
+
+Please report vulnerabilities according to [`SECURITY.md`](SECURITY.md).
+
+Do not commit or paste into issues/PRs/logs:
+
+- production keystores/private keys;
+- passwords;
+- API tokens;
+- private user data;
+- real financial records;
+- machine-local secret configuration.
+
+## Contribution
+
+See:
+
+- [`CONTRIBUTING.md`](CONTRIBUTING.md)
+- [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)
+- [`docs/development.md`](docs/development.md)
+- [`docs/testing.md`](docs/testing.md)
+- [`docs/command-reference.md`](docs/command-reference.md)
+
+## Support and project links
+
+- GitHub profile: https://github.com/sanskarIN
 - Repository: https://github.com/sanskarIN/spendcalc
-
-Funding is optional and never required to use SpendCalc:
-
-[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-sanskarIN-FFDD00?logo=buy-me-a-coffee&logoColor=000000)](https://buymeacoffee.com/sanskarIN)
+- Buy Me a Coffee: https://buymeacoffee.com/sanskarIN
+- Business: sanskarin@outlook.in
+- Business: sanskarin.business@gmail.com
+- Support: supportramsandesh@gmail.com
 
 ## License
 
-SpendCalc is open source under the [`MIT License`](LICENSE).
+SpendCalc is released under the **MIT License**. See [`LICENSE`](LICENSE).
 
 **Made by the Sanskar**

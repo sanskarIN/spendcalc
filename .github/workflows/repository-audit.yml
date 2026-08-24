@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: repository-audit-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   audit:
     runs-on: ubuntu-latest
@@ -18,3 +22,7 @@ jobs:
         uses: actions/checkout@v5
       - name: Audit repository metadata and Markdown links
         run: python3 scripts/check_repository.py
+      - name: Audit tracked-file documentation coverage
+        run: python3 scripts/check_documentation_coverage.py
+      - name: Audit Android string resource references
+        run: python3 scripts/check_android_resources.py

@@ -5,9 +5,13 @@ import `in`.sanskar.spendcalc.domain.model.AutoDeleteHistory
 import `in`.sanskar.spendcalc.domain.model.CalculationInput
 import `in`.sanskar.spendcalc.domain.model.CalculationTemplate
 import `in`.sanskar.spendcalc.domain.model.HistoryRecord
+import `in`.sanskar.spendcalc.domain.model.MAX_SAVED_RESULT_INTEGER_DIGITS
+import `in`.sanskar.spendcalc.domain.model.MAX_SAVED_RESULT_SCALE
 import `in`.sanskar.spendcalc.domain.model.SpendCalcBackup
 import `in`.sanskar.spendcalc.domain.model.ThemeMode
 import `in`.sanskar.spendcalc.domain.model.UserPreferences
+import `in`.sanskar.spendcalc.domain.model.isValidHistoryRecord
+import `in`.sanskar.spendcalc.domain.model.isValidTemplateEnvelope
 import java.math.BigDecimal
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
@@ -34,9 +38,16 @@ enum class BackupDecodeError {
  * checksum detects accidental corruption; it is an integrity check, not a signature.
  */
 class BackupCodec {
+    private val calculatorEngine = CalculatorEngine()
+
     fun encode(backup: SpendCalcBackup): String {
         require(backup.schemaVersion == CURRENT_SCHEMA_VERSION) { "Unsupported backup schema" }
+        require(backup.exportedAtEpochMillis >= 0L) { "Invalid export timestamp" }
         require(backup.history.size + backup.templates.size <= MAX_RECORDS) { "Backup is too large" }
+        requireUniqueIds(backup.history.map { it.id }, "history")
+        requireUniqueIds(backup.templates.map { it.id }, "templates")
+        backup.history.forEach { require(validHistory(it)) { "Invalid history record" } }
+        backup.templates.forEach { require(validTemplate(it)) { "Invalid template record" } }
 
         val body = buildString {
             appendLine("$MAGIC\t${backup.schemaVersion}\t${backup.exportedAtEpochMillis}")
@@ -59,15 +70,15 @@ class BackupCodec {
                         text(entry.label),
                         text(entry.currencyCode),
                         text(entry.convertedCurrencyCode),
-                        entry.subtotal.toPlainString(),
-                        entry.discountAmount.toPlainString(),
-                        entry.taxAmount.toPlainString(),
-                        entry.tipAmount.toPlainString(),
-                        entry.serviceChargeAmount.toPlainString(),
-                        entry.total.toPlainString(),
-                        entry.convertedTotal.toPlainString(),
-                        entry.perPerson.toPlainString(),
-                        entry.convertedPerPerson.toPlainString(),
+                        safePlain(entry.subtotal),
+                        safePlain(entry.discountAmount),
+                        safePlain(entry.taxAmount),
+                        safePlain(entry.tipAmount),
+                        safePlain(entry.serviceChargeAmount),
+                        safePlain(entry.total),
+                        safePlain(entry.convertedTotal),
+                        safePlain(entry.perPerson),
+                        safePlain(entry.convertedPerPerson),
                         entry.splitCount.toString(),
                     ).joinToString("\t"),
                 )
@@ -79,25 +90,29 @@ class BackupCodec {
                         text(template.id),
                         text(template.name),
                         template.createdAtEpochMillis.toString(),
-                        template.discountPercent.toPlainString(),
-                        template.taxPercent.toPlainString(),
-                        template.tipPercent.toPlainString(),
-                        template.serviceChargePercent.toPlainString(),
+                        safePlain(template.discountPercent),
+                        safePlain(template.taxPercent),
+                        safePlain(template.tipPercent),
+                        safePlain(template.serviceChargePercent),
                         template.splitCount.toString(),
                         text(template.currencyCode),
-                        template.exchangeRate.toPlainString(),
+                        safePlain(template.exchangeRate),
                         text(template.convertedCurrencyCode),
                     ).joinToString("\t"),
                 )
             }
         }
-        require(body.length <= MAX_BACKUP_CHARS) { "Backup is too large" }
-        return body + "SHA256\t${sha256(body)}\n"
+        val payload = body + "SHA256\t${sha256(body)}\n"
+        require(payload.length <= MAX_BACKUP_CHARS) { "Backup is too large" }
+        return payload
     }
 
     fun decode(payload: String): BackupDecodeResult {
         if (payload.length > MAX_BACKUP_CHARS) return BackupDecodeResult.Failure(BackupDecodeError.TOO_LARGE)
         if (!payload.endsWith('\n')) return BackupDecodeResult.Failure(BackupDecodeError.INVALID_FORMAT)
+        if (payload.count { it == '\n' } > MAX_BACKUP_LINES) {
+            return BackupDecodeResult.Failure(BackupDecodeError.TOO_LARGE)
+        }
 
         val lines = payload.split('\n')
         if (lines.size < 4 || lines.last().isNotEmpty()) {
@@ -105,8 +120,15 @@ class BackupCodec {
         }
 
         val checksumLine = lines[lines.lastIndex - 1]
+        if (checksumLine.length > MAX_CHECKSUM_LINE_CHARS) {
+            return BackupDecodeResult.Failure(BackupDecodeError.INVALID_FORMAT)
+        }
         val checksumParts = checksumLine.split('\t')
-        if (checksumParts.size != 2 || checksumParts[0] != "SHA256") {
+        if (
+            checksumParts.size != 2 ||
+            checksumParts[0] != "SHA256" ||
+            !SHA256_HEX.matches(checksumParts[1])
+        ) {
             return BackupDecodeResult.Failure(BackupDecodeError.INVALID_FORMAT)
         }
         val bodyLines = lines.subList(0, lines.lastIndex - 1)
@@ -131,6 +153,7 @@ class BackupCodec {
         }
         val exportedAt = header[2].toLongOrNull()
             ?: return BackupDecodeResult.Failure(BackupDecodeError.INVALID_FORMAT)
+        if (exportedAt < 0L) return BackupDecodeResult.Failure(BackupDecodeError.INVALID_RECORD)
 
         var preferences: UserPreferences? = null
         val history = mutableListOf<HistoryRecord>()
@@ -167,6 +190,12 @@ class BackupCodec {
 
         val restoredPreferences = preferences
             ?: return BackupDecodeResult.Failure(BackupDecodeError.INVALID_FORMAT)
+        if (history.map { it.id }.toSet().size != history.size) {
+            return BackupDecodeResult.Failure(BackupDecodeError.INVALID_RECORD)
+        }
+        if (templates.map { it.id }.toSet().size != templates.size) {
+            return BackupDecodeResult.Failure(BackupDecodeError.INVALID_RECORD)
+        }
         return BackupDecodeResult.Success(
             SpendCalcBackup(
                 schemaVersion = version,
@@ -189,22 +218,12 @@ class BackupCodec {
     }.getOrNull()
 
     private fun decodeHistory(fields: List<String>): HistoryRecord? = runCatching {
-        val id = decodedText(fields[1])
-        val createdAt = fields[2].toLong()
-        val label = decodedText(fields[3])
-        val currency = decodedText(fields[4]).uppercase(Locale.ROOT)
-        val convertedCurrency = decodedText(fields[5]).uppercase(Locale.ROOT)
-        val splitCount = fields[15].toInt()
-        require(id.isNotBlank() && id.length <= MAX_FIELD_CHARS)
-        require(label.length <= MAX_FIELD_CHARS)
-        require(validCurrency(currency) && validCurrency(convertedCurrency))
-        require(splitCount >= 1)
-        HistoryRecord(
-            id = id,
-            createdAtEpochMillis = createdAt,
-            label = label,
-            currencyCode = currency,
-            convertedCurrencyCode = convertedCurrency,
+        val record = HistoryRecord(
+            id = decodedText(fields[1]),
+            createdAtEpochMillis = fields[2].toLong(),
+            label = decodedText(fields[3]),
+            currencyCode = decodedText(fields[4]),
+            convertedCurrencyCode = decodedText(fields[5]),
             subtotal = decimal(fields[6]),
             discountAmount = decimal(fields[7]),
             taxAmount = decimal(fields[8]),
@@ -214,8 +233,10 @@ class BackupCodec {
             convertedTotal = decimal(fields[12]),
             perPerson = decimal(fields[13]),
             convertedPerPerson = decimal(fields[14]),
-            splitCount = splitCount,
+            splitCount = fields[15].toInt(),
         )
+        require(validHistory(record))
+        record
     }.getOrNull()
 
     private fun decodeTemplate(fields: List<String>): CalculationTemplate? = runCatching {
@@ -228,13 +249,20 @@ class BackupCodec {
             tipPercent = decimal(fields[6]),
             serviceChargePercent = decimal(fields[7]),
             splitCount = fields[8].toInt(),
-            currencyCode = decodedText(fields[9]).uppercase(Locale.ROOT),
+            currencyCode = decodedText(fields[9]),
             exchangeRate = decimal(fields[10]),
-            convertedCurrencyCode = decodedText(fields[11]).uppercase(Locale.ROOT),
+            convertedCurrencyCode = decodedText(fields[11]),
         )
-        require(template.id.isNotBlank() && template.id.length <= MAX_FIELD_CHARS)
-        require(template.name.length <= MAX_FIELD_CHARS)
-        val errors = CalculatorEngine().validate(
+        require(validTemplate(template))
+        template
+    }.getOrNull()
+
+    private fun validHistory(record: HistoryRecord): Boolean =
+        isValidHistoryRecord(record)
+
+    private fun validTemplate(template: CalculationTemplate): Boolean {
+        if (!isValidTemplateEnvelope(template)) return false
+        val errors = calculatorEngine.validate(
             CalculationInput(
                 items = emptyList(),
                 discountPercent = template.discountPercent,
@@ -247,9 +275,8 @@ class BackupCodec {
                 convertedCurrencyCode = template.convertedCurrencyCode,
             ),
         )
-        require(errors.isEmpty())
-        template
-    }.getOrNull()
+        return errors.isEmpty()
+    }
 
     private fun parseBoolean(value: String): Boolean = when (value) {
         "true" -> true
@@ -259,22 +286,42 @@ class BackupCodec {
 
     private fun decimal(value: String): BigDecimal {
         require(value.length <= MAX_DECIMAL_CHARS)
-        return BigDecimal(value)
+        require(PLAIN_DECIMAL.matches(value))
+        return BigDecimal(value).also { decimal -> require(validDecimalShape(decimal)) }
     }
+
+    private fun safePlain(value: BigDecimal): String {
+        require(validDecimalShape(value))
+        return value.toPlainString()
+    }
+
+    private fun validDecimalShape(value: BigDecimal): Boolean =
+        value.scale() in 0..MAX_SAVED_RESULT_SCALE &&
+            integerDigits(value) <= MAX_SAVED_RESULT_INTEGER_DIGITS
+
+    private fun integerDigits(value: BigDecimal): Int =
+        (value.precision() - value.scale()).coerceAtLeast(1)
 
     private fun text(value: String): String {
         require(value.length <= MAX_FIELD_CHARS)
-        return ENCODER.encodeToString(value.toByteArray(StandardCharsets.UTF_8))
+        val encodedBytes = value.toByteArray(StandardCharsets.UTF_8)
+        require(String(encodedBytes, StandardCharsets.UTF_8) == value)
+        return ENCODER.encodeToString(encodedBytes)
     }
 
     private fun decodedText(value: String): String {
         require(value.length <= MAX_ENCODED_FIELD_CHARS)
         val decoded = DECODER.decode(value)
         require(decoded.size <= MAX_FIELD_BYTES)
-        return String(decoded, StandardCharsets.UTF_8)
+        val text = String(decoded, StandardCharsets.UTF_8)
+        require(text.toByteArray(StandardCharsets.UTF_8).contentEquals(decoded))
+        require(text.length <= MAX_FIELD_CHARS)
+        return text
     }
 
-    private fun validCurrency(value: String): Boolean = CURRENCY_CODE.matches(value)
+    private fun requireUniqueIds(ids: List<String>, label: String) {
+        require(ids.toSet().size == ids.size) { "Duplicate $label identifiers" }
+    }
 
     private fun sha256(value: String): String =
         MessageDigest.getInstance("SHA-256")
@@ -283,15 +330,18 @@ class BackupCodec {
 
     private companion object {
         const val MAGIC = "SPENDCALC_BACKUP"
-        const val CURRENT_SCHEMA_VERSION = 1
+        const val CURRENT_SCHEMA_VERSION = SpendCalcBackup.CURRENT_SCHEMA_VERSION
         const val MAX_BACKUP_CHARS = 5_000_000
         const val MAX_RECORDS = 10_000
+        const val MAX_BACKUP_LINES = MAX_RECORDS + 3
         const val MAX_LINE_CHARS = 16_384
+        const val MAX_CHECKSUM_LINE_CHARS = 71
         const val MAX_FIELD_CHARS = 4_096
         const val MAX_FIELD_BYTES = 16_384
         const val MAX_ENCODED_FIELD_CHARS = 24_000
         const val MAX_DECIMAL_CHARS = 128
-        val CURRENCY_CODE = Regex("[A-Z]{3}")
+        val PLAIN_DECIMAL = Regex("[+-]?\\d+(?:\\.\\d+)?")
+        val SHA256_HEX = Regex("[A-Fa-f0-9]{64}")
         val ENCODER: Base64.Encoder = Base64.getUrlEncoder().withoutPadding()
         val DECODER: Base64.Decoder = Base64.getUrlDecoder()
     }

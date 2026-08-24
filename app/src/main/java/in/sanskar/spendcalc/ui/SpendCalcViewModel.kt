@@ -4,42 +4,52 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import `in`.sanskar.spendcalc.AppContainer
+import `in`.sanskar.spendcalc.data.BackupRepository
 import `in`.sanskar.spendcalc.data.HistoryRepository
 import `in`.sanskar.spendcalc.data.SettingsRepository
 import `in`.sanskar.spendcalc.data.TemplateRepository
 import `in`.sanskar.spendcalc.domain.CalculatorEngine
+import `in`.sanskar.spendcalc.domain.export.BackupCodec
+import `in`.sanskar.spendcalc.domain.export.BackupDecodeResult
 import `in`.sanskar.spendcalc.domain.model.AutoDeleteHistory
 import `in`.sanskar.spendcalc.domain.model.CalculationError
 import `in`.sanskar.spendcalc.domain.model.CalculationInput
 import `in`.sanskar.spendcalc.domain.model.CalculationOutcome
 import `in`.sanskar.spendcalc.domain.model.CalculationTemplate
 import `in`.sanskar.spendcalc.domain.model.ExpenseItem
+import `in`.sanskar.spendcalc.domain.model.HistoryRecord
 import `in`.sanskar.spendcalc.domain.model.ThemeMode
 import `in`.sanskar.spendcalc.domain.model.UserPreferences
 import java.math.BigDecimal
 import java.util.Locale
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class SpendCalcViewModel(
     private val calculatorEngine: CalculatorEngine,
     private val historyRepository: HistoryRepository,
     private val templateRepository: TemplateRepository,
     private val settingsRepository: SettingsRepository,
+    private val backupRepository: BackupRepository,
+    private val backupCodec: BackupCodec,
 ) : ViewModel() {
     private val _calculator = MutableStateFlow(CalculatorUiState())
     val calculator: StateFlow<CalculatorUiState> = _calculator
+    private val _preferences = MutableStateFlow(UserPreferences())
+    val preferences: StateFlow<UserPreferences> = _preferences
+    private var lastDeletedHistory: HistoryRecord? = null
+    private var lastDeletedTemplate: CalculationTemplate? = null
+    private var lastAutoDeletePolicy: AutoDeleteHistory? = null
 
-    val preferences: StateFlow<UserPreferences> = settingsRepository.preferences.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = UserPreferences(),
-    )
+    @Volatile
+    var preferencesLoaded: Boolean = false
+        private set
 
     val history = historyRepository.observeHistory().stateIn(
         scope = viewModelScope,
@@ -56,23 +66,35 @@ class SpendCalcViewModel(
     init {
         recalculate()
         viewModelScope.launch {
-            settingsRepository.preferences
-                .map { it.autoDeleteHistory }
-                .distinctUntilChanged()
-                .collect(::applyAutoDeletePolicy)
+            settingsRepository.preferences.collect { storedPreferences ->
+                _preferences.value = storedPreferences
+                val policyChanged = lastAutoDeletePolicy != storedPreferences.autoDeleteHistory
+                lastAutoDeletePolicy = storedPreferences.autoDeleteHistory
+                preferencesLoaded = true
+                if (policyChanged) {
+                    applyAutoDeletePolicy(storedPreferences.autoDeleteHistory)
+                }
+            }
         }
     }
 
-    fun updateItemName(id: String, value: String) = updateCalculator { state ->
-        state.copy(items = state.items.map { if (it.id == id) it.copy(name = value) else it })
+    fun updateItemName(id: String, value: String) {
+        if (value.length > MAX_NAME_INPUT_CHARS) return
+        updateCalculator { state ->
+            state.copy(items = state.items.map { if (it.id == id) it.copy(name = value) else it })
+        }
     }
 
-    fun updateItemAmount(id: String, value: String) = updateCalculator { state ->
-        state.copy(items = state.items.map { if (it.id == id) it.copy(amount = value) else it })
+    fun updateItemAmount(id: String, value: String) {
+        if (value.length > MAX_NUMERIC_INPUT_CHARS) return
+        updateCalculator { state ->
+            state.copy(items = state.items.map { if (it.id == id) it.copy(amount = value) else it })
+        }
     }
 
-    fun addItem() = updateCalculator { state ->
-        state.copy(items = state.items + ExpenseItemDraft())
+    fun addItem() {
+        if (_calculator.value.items.size >= MAX_EXPENSE_ITEMS) return
+        updateCalculator { state -> state.copy(items = state.items + ExpenseItemDraft()) }
     }
 
     fun removeItem(id: String) = updateCalculator { state ->
@@ -80,17 +102,26 @@ class SpendCalcViewModel(
         state.copy(items = remaining.ifEmpty { listOf(ExpenseItemDraft()) })
     }
 
-    fun updateDiscount(value: String) = updateCalculator { it.copy(discountPercent = value) }
-    fun updateTax(value: String) = updateCalculator { it.copy(taxPercent = value) }
-    fun updateTip(value: String) = updateCalculator { it.copy(tipPercent = value) }
-    fun updateServiceCharge(value: String) = updateCalculator { it.copy(serviceChargePercent = value) }
-    fun updateSplitCount(value: String) = updateCalculator { it.copy(splitCount = value) }
-    fun updateCurrencyCode(value: String) = updateCalculator {
-        it.copy(currencyCode = value.uppercase(Locale.ROOT))
+    fun updateDiscount(value: String) = updateNumericField(value) { it.copy(discountPercent = value) }
+    fun updateTax(value: String) = updateNumericField(value) { it.copy(taxPercent = value) }
+    fun updateTip(value: String) = updateNumericField(value) { it.copy(tipPercent = value) }
+    fun updateServiceCharge(value: String) = updateNumericField(value) { it.copy(serviceChargePercent = value) }
+
+    fun updateSplitCount(value: String) {
+        if (value.length > MAX_SPLIT_INPUT_CHARS) return
+        updateCalculator { it.copy(splitCount = value) }
     }
-    fun updateExchangeRate(value: String) = updateCalculator { it.copy(exchangeRate = value) }
-    fun updateConvertedCurrencyCode(value: String) = updateCalculator {
-        it.copy(convertedCurrencyCode = value.uppercase(Locale.ROOT))
+
+    fun updateCurrencyCode(value: String) {
+        if (value.length > MAX_CURRENCY_INPUT_CHARS) return
+        updateCalculator { it.copy(currencyCode = value.uppercase(Locale.ROOT)) }
+    }
+
+    fun updateExchangeRate(value: String) = updateNumericField(value) { it.copy(exchangeRate = value) }
+
+    fun updateConvertedCurrencyCode(value: String) {
+        if (value.length > MAX_CURRENCY_INPUT_CHARS) return
+        updateCalculator { it.copy(convertedCurrencyCode = value.uppercase(Locale.ROOT)) }
     }
 
     fun resetCalculator() {
@@ -102,7 +133,7 @@ class SpendCalcViewModel(
         val result = _calculator.value.result ?: return
         viewModelScope.launch {
             historyRepository.save(result, label)
-            _calculator.value = _calculator.value.copy(feedback = ActionFeedback.HISTORY_SAVED)
+            showFeedback(ActionFeedback.HISTORY_SAVED)
         }
     }
 
@@ -113,7 +144,7 @@ class SpendCalcViewModel(
         val input = parsed.input ?: return
         viewModelScope.launch {
             templateRepository.save(name, input)
-            _calculator.value = _calculator.value.copy(feedback = ActionFeedback.TEMPLATE_SAVED)
+            showFeedback(ActionFeedback.TEMPLATE_SAVED)
         }
     }
 
@@ -131,23 +162,44 @@ class SpendCalcViewModel(
     }
 
     fun deleteHistory(id: String) {
+        val record = history.value.firstOrNull { it.id == id } ?: return
         viewModelScope.launch {
             historyRepository.delete(id)
-            _calculator.value = _calculator.value.copy(feedback = ActionFeedback.DELETED)
+            lastDeletedHistory = record
+            showFeedback(ActionFeedback.HISTORY_DELETED)
+        }
+    }
+
+    fun undoDeleteHistory() {
+        val record = lastDeletedHistory ?: return
+        lastDeletedHistory = null
+        viewModelScope.launch {
+            historyRepository.restore(record)
         }
     }
 
     fun clearHistory() {
         viewModelScope.launch {
+            lastDeletedHistory = null
             historyRepository.clear()
-            _calculator.value = _calculator.value.copy(feedback = ActionFeedback.HISTORY_CLEARED)
+            showFeedback(ActionFeedback.HISTORY_CLEARED)
         }
     }
 
     fun deleteTemplate(id: String) {
+        val template = templates.value.firstOrNull { it.id == id } ?: return
         viewModelScope.launch {
             templateRepository.delete(id)
-            _calculator.value = _calculator.value.copy(feedback = ActionFeedback.DELETED)
+            lastDeletedTemplate = template
+            showFeedback(ActionFeedback.TEMPLATE_DELETED)
+        }
+    }
+
+    fun undoDeleteTemplate() {
+        val template = lastDeletedTemplate ?: return
+        lastDeletedTemplate = null
+        viewModelScope.launch {
+            templateRepository.restore(template)
         }
     }
 
@@ -171,10 +223,63 @@ class SpendCalcViewModel(
         viewModelScope.launch { settingsRepository.setOnboardingCompleted(true) }
     }
 
+    suspend fun createBackupPayload(): String {
+        val backup = backupRepository.snapshot()
+        return withContext(Dispatchers.Default) {
+            backupCodec.encode(backup)
+        }
+    }
+
+    suspend fun restoreBackupPayload(payload: String): Boolean {
+        val decoded = withContext(Dispatchers.Default) {
+            backupCodec.decode(payload)
+        }
+        return when (decoded) {
+            is BackupDecodeResult.Success -> {
+                try {
+                    backupRepository.restore(decoded.backup)
+                    lastDeletedHistory = null
+                    lastDeletedTemplate = null
+                    showFeedback(ActionFeedback.BACKUP_RESTORED)
+                    true
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    showFeedback(ActionFeedback.BACKUP_FAILED)
+                    false
+                }
+            }
+            is BackupDecodeResult.Failure -> {
+                showFeedback(ActionFeedback.BACKUP_FAILED)
+                false
+            }
+        }
+    }
+
+    fun reportBackupExported() {
+        showFeedback(ActionFeedback.BACKUP_EXPORTED)
+    }
+
+    fun reportBackupFailure() {
+        showFeedback(ActionFeedback.BACKUP_FAILED)
+    }
+
     fun consumeFeedback() {
         if (_calculator.value.feedback != ActionFeedback.NONE) {
             _calculator.value = _calculator.value.copy(feedback = ActionFeedback.NONE)
         }
+    }
+
+    private fun showFeedback(value: ActionFeedback) {
+        _calculator.value = _calculator.value.withFeedback(value)
+    }
+
+    private fun updateNumericField(
+        value: String,
+        transform: (CalculatorUiState) -> CalculatorUiState,
+    ) {
+        if (value.length > MAX_NUMERIC_INPUT_CHARS) return
+        updateCalculator(transform)
     }
 
     private fun updateCalculator(transform: (CalculatorUiState) -> CalculatorUiState) {
@@ -226,7 +331,7 @@ class SpendCalcViewModel(
         val exchangeRate = parseDecimal(state.exchangeRate, blankAsZero = false)
             ?: issue(issues, FormIssue.EXCHANGE_RATE)
         val split = state.splitCount.trim().toIntOrNull()
-        if (split == null) issues += FormIssue.SPLIT_COUNT
+        if (split == null || split !in 1..MAX_SPLIT_COUNT) issues += FormIssue.SPLIT_COUNT
 
         if (issues.isNotEmpty()) return ParsedForm(null, issues)
 
@@ -248,6 +353,7 @@ class SpendCalcViewModel(
 
     private fun parseDecimal(raw: String, blankAsZero: Boolean): BigDecimal? {
         val text = raw.trim()
+        if (text.length > MAX_NUMERIC_INPUT_CHARS) return null
         if (text.isBlank()) return if (blankAsZero) BigDecimal.ZERO else null
         return text.toBigDecimalOrNull()
     }
@@ -282,6 +388,11 @@ class SpendCalcViewModel(
 
     companion object {
         private const val MILLIS_PER_DAY = 86_400_000L
+        private const val MAX_NAME_INPUT_CHARS = 120
+        private const val MAX_NUMERIC_INPUT_CHARS = 64
+        private const val MAX_SPLIT_INPUT_CHARS = 7
+        private const val MAX_SPLIT_COUNT = 1_000_000
+        private const val MAX_CURRENCY_INPUT_CHARS = 3
 
         fun factory(container: AppContainer): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
@@ -293,6 +404,8 @@ class SpendCalcViewModel(
                         historyRepository = container.historyRepository,
                         templateRepository = container.templateRepository,
                         settingsRepository = container.settingsRepository,
+                        backupRepository = container.backupRepository,
+                        backupCodec = container.backupCodec,
                     ) as T
                 }
             }
