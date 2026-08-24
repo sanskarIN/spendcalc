@@ -2,6 +2,8 @@
 
 The roadmap prioritizes correctness, privacy, accessibility, maintainability, and verifiable documentation over feature count.
 
+Current Android release target: **2.15.4** (`versionCode 21504`). Room database and explicit backup schema compatibility versions remain `1` unless their actual contracts change.
+
 ## Phase 0 — Repository foundation
 
 - [x] Android/Kotlin/Compose build configuration.
@@ -9,9 +11,9 @@ The roadmap prioritizes correctness, privacy, accessibility, maintainability, an
 - [x] Architecture, privacy, security, and support direction.
 - [x] Pull-request CI, CodeQL, dependency review, repository audit, namespace check, formatting check, Android resource/security checks, documentation coverage, and secret-pattern scan are configured.
 - [x] Exhaustive tracked-file reference and documentation source-of-truth map are maintained as required repository artifacts.
-- [ ] Current release-candidate workflow results are green on the final PR head.
+- [ ] Current 2.15.4 release-candidate workflow results are green on the exact final PR head.
 
-## Phase 1 — Core calculator MVP
+## Phase 1 — Core calculator
 
 - [x] Precision-safe decimal arithmetic.
 - [x] Itemized expenses.
@@ -53,9 +55,10 @@ The roadmap prioritizes correctness, privacy, accessibility, maintainability, an
 - [x] Destructive restore and clear-all confirmation flows.
 - [x] Calculator eager-composition budget capped at 100 editable expense items with visible feedback.
 - [x] Named-history and template save dialogs expose the 120-character/Unicode-safe naming contract and unambiguous Save/Cancel actions.
-- [ ] Add real release screenshots from verified builds using fictional data.
+- [x] Real-activity instrumentation journey updated so repeated formatted amount semantics do not create a false uniqueness failure.
+- [ ] Add real release screenshots from a verified 2.15.4 build using fictional data.
 - [ ] Profile very large history/template collections if real-device measurements identify a need.
-- [ ] Optional receipt notes/categories remain a post-2.0.12 enhancement, not a release blocker.
+- [ ] Optional receipt notes/categories remain a post-2.15.4 enhancement, not a release blocker.
 
 ## Phase 4 — Verification depth
 
@@ -73,45 +76,79 @@ The roadmap prioritizes correctness, privacy, accessibility, maintainability, an
 - [x] Real-activity calculate/named-save/history journey smoke test.
 - [x] Instrumentation-test compilation in CI.
 - [x] Fast guard rejects any tracked file omitted/stale/duplicated in exhaustive codebase documentation.
-- [ ] Execute the Android instrumentation suite on a connected emulator/device for the final release candidate.
+- [ ] Execute the Android instrumentation suite successfully on the exact final 2.15.4 candidate.
+- [ ] Re-run connected tests on a representative physical device/local emulator.
 - [ ] Add database migration tests when schema version 2 exists.
 - [ ] Add a macrobenchmark/profile module only if measured performance warrants it.
 
-## Phase 5 — Release engineering
+## Phase 5 — 2.15.4 release engineering
 
 - [x] Debug/release build, full Android lint, unit-test, static-security, documentation-coverage, dependency-review, and repository-audit workflows are defined.
 - [x] Tag-triggered unsigned release-artifact workflow is defined.
 - [x] Production signing material is kept outside source control.
 - [x] Release procedure separates source completeness, exact-head automation, manual Android verification, and distribution/signing/screenshot evidence.
-- [x] Android application metadata is set to `2.0.12` with monotonic `versionCode` `20012`.
+- [x] Android application metadata is set to `2.15.4` with monotonic `versionCode` `21504`.
 - [x] Room database and explicit backup schema compatibility versions remain independent from the app release number.
-- [ ] Confirm all current pull-request checks are green on the exact final commit.
-- [ ] Produce the signed production artifact with external signing credentials.
+- [x] Documentation index, root README, Android build guide, command reference, release guide, verification checklist, changelog, and roadmap are retargeted to 2.15.4.
+- [ ] Confirm CI is green on the exact final 2.15.4 commit.
+- [ ] Confirm CodeQL is green on the exact final 2.15.4 commit.
+- [ ] Confirm Dependency Review is green on the exact final 2.15.4 commit.
+- [ ] Confirm Repository Audit is green on the exact final 2.15.4 commit.
+- [ ] Confirm Android Instrumentation is green on the exact final 2.15.4 commit.
+- [ ] Complete representative manual Android checks.
+- [ ] Complete TalkBack/large-font/reduced-motion accessibility review.
+- [ ] Complete phone and tablet/wide layout review.
+- [ ] Manually exercise text/CSV/PDF export/share.
+- [ ] Manually exercise backup export/restore/system picker flows.
+- [ ] Verify offline core behavior.
 - [ ] Capture final screenshots from the verified build using fictional data.
-- [ ] Finalize the published 2.0.12 release entry.
-- [ ] Tag `v2.0.12` only after automated and manual release gates pass.
+- [ ] Produce the signed production artifact using protected external signing credentials.
+- [ ] Verify signing certificate and install the exact signed artifact.
+- [ ] Inspect application ID/version/SDK/permissions.
+- [ ] Record artifact SHA-256 and exact source SHA.
+- [ ] Finalize the published 2.15.4 release entry.
+- [ ] Tag `v2.15.4` only after every blocking automated/manual gate passes.
 
-## Phase 6 — Final source/documentation audit
+## Phase 6 — Documentation and source integrity
 
 - [x] Source-level architecture, persistence, privacy, backup, export, input-boundary, logging, accessibility-semantics, and performance-budget audits completed.
 - [x] Dedicated persistence-invariant documentation is required by the repository audit.
 - [x] Every tracked root/configuration/GitHub/build/source/test/resource/script/policy/documentation file is described individually in `docs/codebase-reference.md`.
 - [x] `docs/documentation-map.md` defines documentation authority, update triggers, and anti-drift rules.
 - [x] `scripts/check_documentation_coverage.py` mechanically compares exhaustive documentation to `git ls-files`.
-- [x] Main CI and lightweight Repository Audit both enforce tracked-file documentation coverage.
+- [x] Main CI and Repository Audit enforce tracked-file documentation coverage.
 - [x] Repository required-file audit requires the codebase reference, documentation map, and coverage guard.
-- [x] Contributor/development/setup/testing/release/verification/final-audit documentation explains how to maintain complete file coverage.
+- [x] Contributor/development/setup/testing/release/verification documentation explains how to maintain complete file coverage.
 - [x] Intentional absence of a committed Gradle wrapper is documented rather than mistaken for an omitted project file.
 - [x] Future tracked Room schema files are identified as migration/release artifacts that must be individually documented.
-- [x] Repository documentation reconciled with implemented behavior for the release-candidate branch.
 - [x] Secret-pattern, documentation, Android resource/security, and repository-link checks are part of CI.
-- [ ] Clean setup using `docs/setup.md` is confirmed by the final exact-head CI run.
-- [ ] Final PR documentation guard, unit tests, instrumentation compilation, lint, debug build, release build, CodeQL, dependency review, and Repository Audit are green.
-- [ ] Accessibility manual pass with TalkBack and large system font scale is completed on a device/emulator.
-- [ ] Phone and tablet/wide layouts are manually reviewed on the final build.
-- [ ] Text, CSV, PDF, backup export, and backup restore are manually exercised through Android system pickers/share sheets.
-- [ ] Real release screenshots are captured from the verified build.
-- [ ] Protected external signing and signed-artifact verification are completed.
-- [ ] `README.md`, `CHANGELOG.md`, `ROADMAP.md`, permanent `docs/`, and `what_changed.md` match the merged/tagged release candidate.
+- [ ] Final `README.md`, `CHANGELOG.md`, `ROADMAP.md`, permanent `docs/`, and continuity records match the exact merged/tagged release evidence.
 
-Future work should move into a tagged release only after the exact commit being released passes both automated checks and the documented manual Android/accessibility/export/backup/signing/screenshot gates.
+## Phase 7 — Dependency modernization after 2.15.4 stabilization
+
+Major dependency updates are deliberately isolated from the current release candidate unless required to fix a blocker.
+
+- [ ] Evaluate Android Gradle Plugin major update independently.
+- [ ] Evaluate Kotlin major/minor update together with Compose/KSP compatibility.
+- [ ] Evaluate Room update with compiler/runtime/instrumentation compatibility checks.
+- [ ] Evaluate AndroidX Core/Test updates independently.
+- [ ] Evaluate GitHub Actions major updates for runner/Node/licensing/cache behavior.
+- [ ] Close/supersede Dependabot PRs that become obsolete after controlled upgrades.
+- [ ] Re-run full CI and Android instrumentation for each accepted dependency batch.
+
+## Phase 8 — Browser-extension preparation after Android release stability
+
+Browser-extension work is not part of the Android 2.15.4 release gate. Keep it architecturally separate so Android stability is not weakened.
+
+Planned preparation:
+
+- [ ] Define extension product scope and supported browsers.
+- [ ] Decide Manifest V3 baseline and browser compatibility strategy.
+- [ ] Extract/reuse finance-domain rules in a platform-neutral form where practical without coupling Android storage/UI to web code.
+- [ ] Define local-only extension storage/privacy model.
+- [ ] Design extension popup/options/history UX.
+- [ ] Define import/export compatibility boundaries with Android without weakening validation.
+- [ ] Add dedicated extension build/test/lint/security workflow when implementation begins.
+- [ ] Keep Android production signing and browser-extension publishing credentials separate.
+
+Future work should enter a tagged release only after the exact commit being released passes both automated checks and the documented manual Android/accessibility/export/backup/signing/screenshot gates.
