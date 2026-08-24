@@ -26,6 +26,18 @@ class PathSafetyTest {
     }
 
     @Test
+    fun `rejects the export directory itself`() {
+        val root = Files.createTempDirectory("spendcalc-path-test").toFile()
+        try {
+            val exports = File(root, "exports").apply { mkdirs() }
+
+            assertFalse(exports.isWithinDirectory(exports))
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
     fun `rejects sibling directories that share the exports prefix`() {
         val root = Files.createTempDirectory("spendcalc-path-test").toFile()
         try {
