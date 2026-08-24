@@ -67,6 +67,25 @@ jobs:
       - name: Compile instrumentation tests
         run: gradle --no-daemon assembleDebugAndroidTest
 
+      - name: Verify Room schema snapshots are committed
+        shell: bash
+        run: |
+          schema_status="$(git status --porcelain --untracked-files=all -- app/schemas)"
+          if [[ -n "$schema_status" ]]; then
+            echo "Room schema snapshots changed or are untracked after compilation:"
+            printf '%s\n' "$schema_status"
+            echo "Commit the compiler-generated schema snapshots before accepting this build."
+            exit 1
+          fi
+
+      - name: Upload generated Room schemas on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: room-schema-snapshots
+          path: app/schemas/
+          if-no-files-found: ignore
+
       - name: Android lint
         run: gradle --no-daemon lint
 
